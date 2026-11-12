@@ -3,17 +3,37 @@ import Base from '../layouts/Base.astro';
 ---
 
 <Base title="Not found" noindex>
-  <section>
-    <div class="narrow lost card solid">
-      <span class="chip" style="--chip: var(--red)">404</span>
-      <h1>Page not found</h1>
-      <p>Try the <a href="/">home page</a> or the <a href="/docs/get-started/">user guide</a>.</p>
-    </div>
-  </section>
+  <div class="wrap notfound">
+    <section class="notfound-panel">
+      <div class="notfound-text">
+        <p class="notfound-code">404</p>
+        <h1>Nothing here to capture.</h1>
+        <p class="notfound-why">That page moved, or never existed.</p>
+      </div>
+      <a class="button small notfound-home" href="/">Back home</a>
+    </section>
+    <p class="notfound-help">The <a href="/docs/get-started/">user guide</a> covers every feature, and <a href="/changelog/">What's new</a> lists every release.</p>
+  </div>
 </Base>
 
 <style>
-  .lost { padding: 40px; display: grid; gap: 16px; justify-items: start; }
-  h1 { font-size: clamp(36px, 6vw, 56px); }
-  p { margin: 0; font-size: 18px; }
+  /* The board's 404 panel (Site · components and motion): the accent with a 2 px ink outline and a 5 px drop. */
+  .notfound { display: grid; gap: 20px; max-width: 900px; padding-block: clamp(48px, 10vw, 120px); }
+  .notfound-panel {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 24px;
+    padding: clamp(20px, 4vw, 32px) clamp(20px, 4vw, 36px);
+    color: var(--on-accent); background: var(--accent);
+    border-radius: var(--radius-card);
+    box-shadow: var(--ink-ring), 0 5px 0 var(--line);
+  }
+  .notfound-text { display: grid; gap: 6px; min-width: 0; }
+  .notfound-text > * { margin: 0; }
+  .notfound-code { font-size: 13px; font-weight: 800; color: #3a3010; }
+  .notfound-why { font-size: 17px; color: #3a3010; }
+  /* White like paper on the yellow, in both themes. */
+  .notfound-home { flex: none; color: #16161a; background: #fff; }
+  /* The page's focus ring turns off-white in dark, which barely shows on yellow, so on the panel it stays ink. */
+  .notfound-home:focus-visible { outline-color: #16161a; }
+  .notfound-help { margin: 0; color: var(--muted); }
+  .notfound-help a { font-weight: 600; color: var(--ink); }
 </style>

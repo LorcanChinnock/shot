@@ -52,10 +52,10 @@ const scenes = {
   'export-a-video-or-gif': `<div class="sc-seg"><p><b>Format</b><span>MP4</span><span class=on>GIF</span></p><p><b>FPS</b><span>10</span><span class=on>15</span><span>24</span></p><p><b>Width</b><span>480</span><span class=on>720</span><span>1080</span><span>Full</span></p><p><b>Speed</b><span class=on>1x</span><span>1.5x</span><span>2x</span></p><p class="est">≈ 105 KB</p></div>`,
   'organise-your-captures': shot('gallery.png', wide, [170, 88, 1260, 786]),
   'find-your-captures': shot('gallery.png', wide, [170, 88, 1260, 786]),
-  'keyboard-shortcuts': `<div class="sc-keys">${shortcuts.map(([k, l], i) => `<p style="--fill: var(--${['yellow', 'pink', 'mint'][i % 3]})">${kbd([k])}<span>${l}</span></p>`).join('')}</div>`,
+  'keyboard-shortcuts': `<div class="sc-keys">${shortcuts.map(([k, l], i) => `<p style="--fill: var(--${['accent', 'og-pink', 'og-mint'][i % 3]})">${kbd([k])}<span>${l}</span></p>`).join('')}</div>`,
   'automation-reference': code(['<b>open</b> "shot://capture-area"', '<b>open</b> "shot://capture-timer?seconds=5"', '<b>open</b> "shot://capture-window"', '<b>open</b> "shot://gallery"']),
   settings: shot('settings.png', wide, [170, 61, 1260, 840]),
-  languages: `<div class="sc-langs">${languages.map((l, i) => `<span style="--fill: var(--${['yellow', 'pink', 'sky', 'mint', 'violet', 'orange'][i % 6]})">${l}</span>`).join('')}</div>`,
+  languages: `<div class="sc-langs">${languages.map((l, i) => `<span style="--fill: var(--${['accent', 'og-pink', 'og-sky', 'og-mint', 'og-violet', 'og-orange'][i % 6]})">${l}</span>`).join('')}</div>`,
   updates: `<div class="sc-list"><p><span>Check for updates</span><i class="on"></i></p><p><span>Ask me before going online</span><i class="on"></i></p><p class="btn"><b>Check Now</b></p></div>`,
   privacy: `<div class="sc-list"><p class="no"><b>✕</b><span>No account</span></p><p class="no"><b>✕</b><span>No cloud</span></p><p class="no"><b>✕</b><span>No analytics</span></p><p class="fine">Goes online only to check for updates.</p></div>`,
   troubleshooting: `<div class="sc-list"><p class="q"><b>?</b><span>Captures fail after I turned on Screen Recording</span></p><p class="q"><b>?</b><span>Microphone says NOT ASKED</span></p><p class="q"><b>?</b><span>⌘⇧4 still opens the macOS tool</span></p></div>`,
@@ -65,6 +65,11 @@ const scenes = {
 const page = ({ chip, chipColor, tone, headline, size, keys, scene }) => `<!doctype html>
 <link rel="stylesheet" href="${url('../src/styles/global.css')}">
 <style>
+  /* The drawn scenes' bright fills. They're the cards' own, since the site keeps to its pastels. */
+  :root { --og-pink: #ff7ab6; --og-mint: #4fe3b5; --og-sky: #6fc3ff; --og-violet: #9b8cff; --og-orange: #ff9f43; }
+  @media (prefers-color-scheme: dark) {
+    :root { --og-pink: #e58bb3; --og-mint: #62cdab; --og-sky: #80bbe6; --og-violet: #9c92e3; --og-orange: #e8a060; }
+  }
   ${stageStyle}
   ${windowStyle}
   body { width: 1200px; height: 630px; min-height: 0; overflow: hidden; position: relative; }
@@ -86,7 +91,7 @@ const page = ({ chip, chipColor, tone, headline, size, keys, scene }) => `<!doct
   .sc:has(.sc-crop) { aspect-ratio: auto; display: block; } .sc-plain { width: 100%; }
   .sc-strip { padding: 0 24px; } .sc-strip img { border: 2px solid var(--line); border-radius: 8px; box-shadow: 3px 3px 0 var(--line); }
   .sc-code { width: 86%; padding: 26px 28px; background: #12121a; color: #f6f4ef; border: 3px solid var(--line); border-radius: 12px; box-shadow: 4px 4px 0 var(--line); font: 600 18px/1.8 var(--mono); }
-  .sc-code p { margin: 0; white-space: nowrap; } .sc-code b { color: var(--yellow); }
+  .sc-code p { margin: 0; white-space: nowrap; } .sc-code b { color: var(--accent); }
   .sc-keys { width: 90%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 14px; }
   .sc-keys p { margin: 0; display: grid; gap: 8px; justify-items: start; font: 800 20px/1.2 var(--font); color: var(--on-accent); }
   .sc-keys kbd { font-size: 30px; background: var(--fill); color: var(--on-accent); border-color: #000; box-shadow: 3px 3px 0 #000; }
@@ -97,16 +102,16 @@ const page = ({ chip, chipColor, tone, headline, size, keys, scene }) => `<!doct
   .sc-seg p { margin: 0; display: flex; align-items: center; gap: 10px; font: 800 22px/1.2 var(--font); color: var(--on-accent); }
   .sc-seg b { width: 100px; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase; }
   .sc-seg span { padding: 7px 16px; background: var(--paper); color: var(--ink); border: 3px solid var(--line); border-radius: 10px; box-shadow: 2px 2px 0 var(--line); }
-  .sc-seg span.on { background: var(--mint); color: var(--on-accent); }
+  .sc-seg span.on { background: var(--og-mint); color: var(--on-accent); }
   .sc-seg .est { justify-content: flex-end; font-size: 20px; }
   .sc-list { width: 82%; display: grid; gap: 12px; }
   .sc-list p { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; font: 800 24px/1.25 var(--font); background: var(--paper); color: var(--ink); border: 3px solid var(--line); border-radius: 12px; box-shadow: 4px 4px 0 var(--line); }
-  .sc-list .no, .sc-list .q { justify-content: flex-start; } .sc-list p b { flex: none; width: 36px; height: 36px; display: grid; place-items: center; font-size: 20px; color: var(--on-accent); background: var(--red); border: 3px solid var(--line); border-radius: 50%; }
-  .sc-list .q b { background: var(--yellow); } .sc-list .q { font-size: 21px; }
+  .sc-list .no, .sc-list .q { justify-content: flex-start; } .sc-list p b { flex: none; width: 36px; height: 36px; display: grid; place-items: center; font-size: 20px; color: var(--on-accent); background: var(--record); border: 3px solid var(--line); border-radius: 50%; }
+  .sc-list .q b { background: var(--accent); } .sc-list .q { font-size: 21px; }
   .sc-list .fine { display: block; font-size: 18px; font-weight: 600; background: none; border: 0; box-shadow: none; color: var(--ink); padding: 0 4px; }
   .sc-list i { flex: none; width: 56px; height: 32px; border: 3px solid var(--line); border-radius: 99px; background: var(--well); position: relative; }
-  .sc-list i.on { background: var(--mint); } .sc-list i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 2px solid var(--line); } .sc-list i.on::after { left: 27px; }
-  .sc-list .btn b { width: auto; height: auto; background: none; border: 0; border-radius: 0; font-size: 24px; } .sc-list .btn { justify-content: center; background: var(--yellow); color: var(--on-accent); }
+  .sc-list i.on { background: var(--og-mint); } .sc-list i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 2px solid var(--line); } .sc-list i.on::after { left: 27px; }
+  .sc-list .btn b { width: auto; height: auto; background: none; border: 0; border-radius: 0; font-size: 24px; } .sc-list .btn { justify-content: center; background: var(--accent); color: var(--on-accent); }
 </style>
 <div class="brand"><img src="${url('../public/icon-256.png')}"><span>Shot</span></div>
 <div class="intro">

@@ -3,10 +3,21 @@ import Prose from '../../layouts/Prose.astro';
 ---
 
 <Prose title="Privacy" description="What Shot and this website collect, which is nothing.">
-  <h1>Privacy</h1>
-  <p>Last updated 26 October 2026.</p>
-  <p>Shot doesn't collect anything about you. Your screenshots and recordings never leave your Mac unless you send them somewhere yourself. They stay in <code>~/Pictures/Shot</code> unless you pick another folder.</p>
+  <header class="longform-head">
+    <p class="longform-meta">Last updated 26 October 2026</p>
+    <h1><span class="hl">Privacy</span></h1>
+    <p class="lede">Shot doesn't collect anything about you. Your screenshots and recordings never leave your Mac unless you send them somewhere yourself.</p>
+  </header>
+
+  <h2>Your captures</h2>
+  <p>They stay in <code>~/Pictures/Shot</code> unless you pick another folder.</p>
+
+  <h2>Update checks</h2>
   <p>The one time Shot goes online is to check GitHub for updates. It asks before it does that, and you can turn it off in Settings.</p>
+
+  <h2>This website</h2>
   <p>This website has no cookies or analytics. Cloudflare hosts it and GitHub hosts the downloads, so <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's</a> and <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's</a> privacy policies cover those requests.</p>
+
+  <h2>Questions</h2>
   <p>Questions go in <a href="https://github.com/LorcanChinnock/shot/issues">GitHub issues</a>. For anything private, such as a security problem, use <a href="https://github.com/LorcanChinnock/shot/security/advisories/new">GitHub's private reporting</a>. See the <a href="https://github.com/LorcanChinnock/shot/blob/main/SECURITY.md">security policy</a>.</p>
 </Prose>

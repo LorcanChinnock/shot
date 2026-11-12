@@ -54,6 +54,9 @@ All of them are classes in `src/styles/global.css`, so each page uses them witho
   - A release can have a "Big one" sticky note across the top of its card, from `src/data/changelog-highlights.ts`. It's on the sticky-note yellow, so its Caveat label follows the sticky-notes-only rule.
   - The eight newest releases show, and the rest open under "Show older releases".
 
+- **Long-form pages** (`/privacy/` and `/screenshot-apps/`, through `layouts/Prose.astro` without `pages`, from the board **Site · guide page**): the guide's article in one centred 760px column, with no side columns or card. Each page opens with a `.longform-head`: a meta line (when it was last updated, or how long it takes to read), the title with the highlighter under one word, and the lede. Sections are H2s, and the install command uses `Copy.astro`.
+- **404** (`pages/404.astro`, from **Site · components and motion**): the yellow ink panel, with a 2px outline and a 5px drop, holding "404", "Nothing here to capture." as the H1, a line saying why, and a white Back home button. Under it, a line links to the guide and What's new. The page is `noindex`.
+
 ## Motion
 
 Every token is in `global.css` and listed in the spec:

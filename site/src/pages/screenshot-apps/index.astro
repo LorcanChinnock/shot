@@ -1,10 +1,14 @@
 ---
+import Copy from '../../components/Copy.astro';
 import Prose from '../../layouts/Prose.astro';
 ---
 
 <Prose title="Shot and other screenshot apps" description="What Shot does and doesn't do, and when another Mac screenshot app is a better fit.">
-  <h1>Shot and other screenshot apps</h1>
-  <p>Your Mac already takes screenshots, and several apps do more. Shot is a menu bar app for taking a screenshot, marking it up and pasting it. This page says what that covers and what it doesn't, so you can tell whether Shot is the right one for you.</p>
+  <header class="longform-head">
+    <p class="longform-meta">Before you install · 2 min read</p>
+    <h1>Shot and other screenshot <span class="hl">apps</span></h1>
+    <p class="lede">Your Mac already takes screenshots, and several apps do more. Shot is a menu bar app for taking a screenshot, marking it up and pasting it. This page says what that covers and what it doesn't, so you can tell whether Shot is the right one for you.</p>
+  </header>
 
   <h2>Pick Shot if you want</h2>
   <ul>
@@ -28,5 +32,6 @@ import Prose from '../../layouts/Prose.astro';
   <p>These other apps change their features and prices, so check each one's own site before you decide.</p>
 
   <h2>Try it</h2>
-  <p>Shot needs macOS 15 or later, on Apple Silicon or Intel. Install it by pasting <code>curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash</code> into Terminal. <a href="/docs/get-started/">Get started</a> covers the first launch.</p>
+  <p>Shot needs macOS 15 or later, on Apple Silicon or Intel. Install it by pasting this command into Terminal. <a href="/docs/get-started/">Get started</a> covers the first launch.</p>
+  <Copy command="curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash" />
 </Prose>
