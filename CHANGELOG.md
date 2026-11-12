@@ -1,5 +1,83 @@
 # Changelog
 
+## [0.7.0-beta.85](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.84...v0.7.0-beta.85) (2026-11-12)
+
+
+### Features
+
+* **capture:** draw the Pick Colour loupe from the redesign board ([#1178](https://github.com/LorcanChinnock/shot/issues/1178)) ([172e1e9](https://github.com/LorcanChinnock/shot/commit/172e1e90bfa4349dcd55f7720820b09aca20228f))
+* **capture:** draw the scrolling capture panel from the redesign board ([#1191](https://github.com/LorcanChinnock/shot/issues/1191)) ([73677f2](https://github.com/LorcanChinnock/shot/commit/73677f2dab457339bd1a629d4ca92bdc79a4cc3c))
+* **capture:** rebuild the capture bar from the redesign board ([#1161](https://github.com/LorcanChinnock/shot/issues/1161)) ([159cbd9](https://github.com/LorcanChinnock/shot/commit/159cbd935862ea5fa4ef6a444d6e5fbee9405801))
+* **capture:** rebuild the countdown panel from the redesign board ([#1164](https://github.com/LorcanChinnock/shot/issues/1164)) ([c63c9d4](https://github.com/LorcanChinnock/shot/commit/c63c9d49b53eb67015fadf5891f2db9f565b93c1))
+* **capture:** restyle the area selection from the redesign board ([#1162](https://github.com/LorcanChinnock/shot/issues/1162)) ([f2fd9cc](https://github.com/LorcanChinnock/shot/commit/f2fd9cce594a1f56743351feee6191e4b1dfa03d))
+* **capture:** restyle the window, page and screen highlights from the redesign board ([#1163](https://github.com/LorcanChinnock/shot/issues/1163)) ([5c40b35](https://github.com/LorcanChinnock/shot/commit/5c40b35920727b6a9884530331b8df350f3ca32a))
+* **capture:** show the browser permission card from the redesign board ([#1192](https://github.com/LorcanChinnock/shot/issues/1192)) ([e001893](https://github.com/LorcanChinnock/shot/commit/e001893294834530968dea388ccc14f7cc534552))
+* **design:** dark floating panels and standard window chrome ([#1159](https://github.com/LorcanChinnock/shot/issues/1159)) ([c94d8d9](https://github.com/LorcanChinnock/shot/commit/c94d8d9468b2207eb9ede92c16acecaaeed3eb82))
+* **design:** draw ink at 1.5 pt, snapped to whole device pixels ([#1152](https://github.com/LorcanChinnock/shot/issues/1152)) ([0a98cca](https://github.com/LorcanChinnock/shot/commit/0a98cca11a5ddb955af48b2cf73cf19b468c0779))
+* **design:** main, secondary, plain and toolbar button styles ([#1156](https://github.com/LorcanChinnock/shot/issues/1156)) ([b9d3b65](https://github.com/LorcanChinnock/shot/commit/b9d3b65bbdd92933c99f386b8b8a43a2f56f4f93))
+* **design:** motion helpers and moments of delight ([#1160](https://github.com/LorcanChinnock/shot/issues/1160)) ([549af2f](https://github.com/LorcanChinnock/shot/commit/549af2f8f98a1f70c61b28227cbbb5b9e2e7f3b0))
+* **design:** new colour, shape, type and depth tokens in BrutalStyle ([#1151](https://github.com/LorcanChinnock/shot/issues/1151)) ([048fe00](https://github.com/LorcanChinnock/shot/commit/048fe0093a70a63fa683df475473d0d7a28f766c))
+* **design:** remove the handwritten notes from empty states ([#1170](https://github.com/LorcanChinnock/shot/issues/1170)) ([1589fa8](https://github.com/LorcanChinnock/shot/commit/1589fa8b18599be87f2f977051d0f70d68271415))
+* **design:** switches, checkboxes, segmented controls, pop-up menus and sliders ([#1157](https://github.com/LorcanChinnock/shot/issues/1157)) ([3661384](https://github.com/LorcanChinnock/shot/commit/366138492de29cea35f3aa0145756fe2217243a0))
+* **design:** text fields, search, tags, badges, keycaps, tooltips, toasts, progress and empty states ([#1158](https://github.com/LorcanChinnock/shot/issues/1158)) ([1a72249](https://github.com/LorcanChinnock/shot/commit/1a722499d5f5d5cde2e599130e4788c3a9765c15))
+* **editor:** add the Canvas menu, soft image shadows and crop badges from the redesign board ([#1207](https://github.com/LorcanChinnock/shot/issues/1207)) ([a94c8ea](https://github.com/LorcanChinnock/shot/commit/a94c8ea1f7bd665b664377b749c8a2ba50b9743b))
+* **editor:** add the canvas's zoom control, hint and dotted backdrop from the redesign board ([#1200](https://github.com/LorcanChinnock/shot/issues/1200)) ([cc4b8bd](https://github.com/LorcanChinnock/shot/commit/cc4b8bda7a777afd5c8f406d7a2bb91bc3996700))
+* **editor:** float the style bar beside the selection, from the redesign board ([#1199](https://github.com/LorcanChinnock/shot/issues/1199)) ([38c00b1](https://github.com/LorcanChinnock/shot/commit/38c00b19ab19f160cd46f72c1940ae7fa97c1efa))
+* **editor:** give crop mode the crop bar from the redesign board ([#1202](https://github.com/LorcanChinnock/shot/issues/1202)) ([7257660](https://github.com/LorcanChinnock/shot/commit/7257660513c37b2be37e54e9e7e99fb61ad7eef5))
+* **editor:** one title bar with the tools, a Share menu and Copy, from the redesign board ([#1198](https://github.com/LorcanChinnock/shot/issues/1198)) ([9c7aa45](https://github.com/LorcanChinnock/shot/commit/9c7aa4576df8e12a87fcbf1951b068357f0e063f))
+* **editor:** redraw the Layers panel from the redesign board ([#1206](https://github.com/LorcanChinnock/shot/issues/1206)) ([465b463](https://github.com/LorcanChinnock/shot/commit/465b463e7193d12aa2cfa020490ff345d959f7f8))
+* **editor:** replace the Style popover with the Style panel from the redesign board ([#1201](https://github.com/LorcanChinnock/shot/issues/1201)) ([14a7490](https://github.com/LorcanChinnock/shot/commit/14a7490747d788c117cd1995105b60c4be66e9ec))
+* **gallery:** add the preview and details panel from the redesign board ([#1217](https://github.com/LorcanChinnock/shot/issues/1217)) ([db4f48b](https://github.com/LorcanChinnock/shot/commit/db4f48b206a076e835ee6b6719c9eb1003809bf4))
+* **gallery:** draw the empty gallery and ask before the Trash from the redesign board ([#1221](https://github.com/LorcanChinnock/shot/issues/1221)) ([5cf9e5c](https://github.com/LorcanChinnock/shot/commit/5cf9e5cc3252a03a02d0dfa0a99eb24bcfe19c24))
+* **gallery:** give the gallery its own window from the redesign board ([#1214](https://github.com/LorcanChinnock/shot/issues/1214)) ([4f40f4b](https://github.com/LorcanChinnock/shot/commit/4f40f4beff3cbdc5a061fed4f62cce81c320dce5))
+* **gallery:** give the gallery the board's sidebar of Library, Folders and Tags ([#1215](https://github.com/LorcanChinnock/shot/issues/1215)) ([79408e7](https://github.com/LorcanChinnock/shot/commit/79408e713b4d73fcb4145f6dab931699a246cb15))
+* **gallery:** redraw the gallery grid and add a floating selection bar from the redesign board ([#1216](https://github.com/LorcanChinnock/shot/issues/1216)) ([d81d1a2](https://github.com/LorcanChinnock/shot/commit/d81d1a2760b70b71f1d7db4e6a68fefcb55334dc))
+* **menu-bar:** add icons and a Recent row of captures to the menu bar menu ([#1168](https://github.com/LorcanChinnock/shot/issues/1168)) ([eeaa0c4](https://github.com/LorcanChinnock/shot/commit/eeaa0c4d52443d34c9df0d08ba1803c9f8f31ff4))
+* **onboarding:** draw the welcome window from the redesign board ([#1231](https://github.com/LorcanChinnock/shot/issues/1231)) ([a4175f6](https://github.com/LorcanChinnock/shot/commit/a4175f6083543fccc6a225794e850a2f7481e572))
+* **quick-access:** add the pin bar from the redesign board ([#1167](https://github.com/LorcanChinnock/shot/issues/1167)) ([7497443](https://github.com/LorcanChinnock/shot/commit/749744365f84677f9963f5d76c38d034b55edb50))
+* **quick-access:** restyle the card from the redesign board ([#1165](https://github.com/LorcanChinnock/shot/issues/1165)) ([2bf1e56](https://github.com/LorcanChinnock/shot/commit/2bf1e56dbf656898e2039f5c63aef77ab9e92c7a))
+* **quick-access:** stack older cards behind the newest ([#1166](https://github.com/LorcanChinnock/shot/issues/1166)) ([1d6385a](https://github.com/LorcanChinnock/shot/commit/1d6385ac6bd8b32263becc6726e6a0e8fa79d995))
+* **recording:** ask before recovering a recording, from the redesign board ([#1197](https://github.com/LorcanChinnock/shot/issues/1197)) ([a7cfeff](https://github.com/LorcanChinnock/shot/commit/a7cfeffa7fe30928e6329edc9bf2e58fdd5ae041))
+* **recording:** draw the camera bubble from the redesign board ([#1196](https://github.com/LorcanChinnock/shot/issues/1196)) ([b8805b2](https://github.com/LorcanChinnock/shot/commit/b8805b272ca82db0b9f4439dbc5d314e36c292a7))
+* **recording:** draw the check-before-recording panel from the redesign board ([#1193](https://github.com/LorcanChinnock/shot/issues/1193)) ([aaee11b](https://github.com/LorcanChinnock/shot/commit/aaee11b67e52f4b5d8579e585540eff16240f2e4))
+* **recording:** draw the recording border and click rings from the redesign board ([#1195](https://github.com/LorcanChinnock/shot/issues/1195)) ([d3cce9d](https://github.com/LorcanChinnock/shot/commit/d3cce9dc7c35f4101bc977ea6762f1d670f3b532))
+* **recording:** draw the recording controls and menu bar timer from the redesign board ([#1194](https://github.com/LorcanChinnock/shot/issues/1194)) ([1b6a2fa](https://github.com/LorcanChinnock/shot/commit/1b6a2fa83f90a863f1e18d6a01c05e6b4a5ffc9b))
+* redesign Shot, native first with ink where it counts ([#1259](https://github.com/LorcanChinnock/shot/issues/1259)) ([36e84f8](https://github.com/LorcanChinnock/shot/commit/36e84f81eeb4d4272d05d4943a608a3fc506135f))
+* **settings:** redraw the About pane from the redesign board ([#1229](https://github.com/LorcanChinnock/shot/issues/1229)) ([0a18db8](https://github.com/LorcanChinnock/shot/commit/0a18db88baf4039e8504245feaa694f8bf279196))
+* **settings:** redraw the Capture pane from the redesign board ([#1224](https://github.com/LorcanChinnock/shot/issues/1224)) ([07bdb1e](https://github.com/LorcanChinnock/shot/commit/07bdb1e9d74f399fffdc8e4321779d7e784396d9))
+* **settings:** redraw the General pane from the redesign board ([#1223](https://github.com/LorcanChinnock/shot/issues/1223)) ([8fe13f6](https://github.com/LorcanChinnock/shot/commit/8fe13f6cbf5f57a6d84515f98dd9fd60b304a231))
+* **settings:** redraw the Quick Access pane from the redesign board ([#1225](https://github.com/LorcanChinnock/shot/issues/1225)) ([56f6de4](https://github.com/LorcanChinnock/shot/commit/56f6de4f50da110d86450eaebdfe44d2b246f789))
+* **settings:** redraw the Recording pane from the redesign board ([#1226](https://github.com/LorcanChinnock/shot/issues/1226)) ([326533e](https://github.com/LorcanChinnock/shot/commit/326533e7878a92f779050e0ae817a7bf4029c142))
+* **settings:** redraw the Settings window and sidebar with search from the redesign board ([#1222](https://github.com/LorcanChinnock/shot/issues/1222)) ([6453531](https://github.com/LorcanChinnock/shot/commit/64535312d55c6fed2d0adde93e359afedc705263))
+* **settings:** redraw the Shortcuts pane from the redesign board ([#1227](https://github.com/LorcanChinnock/shot/issues/1227)) ([c1346fa](https://github.com/LorcanChinnock/shot/commit/c1346fa676396ad896516df9181b45d62388df8c))
+* **toast:** match the redesign board's toast and move it to the Quick Access corner ([#1171](https://github.com/LorcanChinnock/shot/issues/1171)) ([25a6e70](https://github.com/LorcanChinnock/shot/commit/25a6e7037887a2ff995dfe5170934b4f29911a68))
+* **updates:** draw the update prompt from the redesign board ([#1230](https://github.com/LorcanChinnock/shot/issues/1230)) ([9e1180d](https://github.com/LorcanChinnock/shot/commit/9e1180d6e41c59be90b28465dc12be910f762877))
+* **video:** give crop mode and the clip handles the image editor's look from the redesign board ([#1213](https://github.com/LorcanChinnock/shot/issues/1213)) ([21af9f6](https://github.com/LorcanChinnock/shot/commit/21af9f64d5ad9f21064127b4abd4031c3b00e826))
+* **video:** give the video editor the title bar from the redesign board ([#1208](https://github.com/LorcanChinnock/shot/issues/1208)) ([4105138](https://github.com/LorcanChinnock/shot/commit/4105138d77cacd10b7178d5894588862069ddfcc))
+* **video:** move the export options into a side panel from the redesign board ([#1211](https://github.com/LorcanChinnock/shot/issues/1211)) ([3f91c1c](https://github.com/LorcanChinnock/shot/commit/3f91c1c1a0d598e6d36e164729717695b96ea84c))
+* **video:** move the Inspector into a side panel from the redesign board ([#1212](https://github.com/LorcanChinnock/shot/issues/1212)) ([5d7ee3b](https://github.com/LorcanChinnock/shot/commit/5d7ee3bbc6e82425202a28a2aaed6901ce154f92))
+* **video:** put the drawing tools in a column beside the video from the redesign board ([#1209](https://github.com/LorcanChinnock/shot/issues/1209)) ([b382b6d](https://github.com/LorcanChinnock/shot/commit/b382b6d2257ebd6c352e3c78f979a93bb27ed78a))
+* **video:** redraw the playback controls and timeline from the redesign board ([#1210](https://github.com/LorcanChinnock/shot/issues/1210)) ([cfbc92c](https://github.com/LorcanChinnock/shot/commit/cfbc92c59a25a8e9a6dabfa3b50c0d8178bb4e57))
+
+
+### Bug Fixes
+
+* **a11y:** show focus on the Layers list and gallery folder rows ([#1271](https://github.com/LorcanChinnock/shot/issues/1271)) ([96869f3](https://github.com/LorcanChinnock/shot/commit/96869f3dec66a1d3206aa1837dee64b96a5b6cae))
+* **design:** check every redesigned screen for accessibility ([#1238](https://github.com/LorcanChinnock/shot/issues/1238)) ([6bd16be](https://github.com/LorcanChinnock/shot/commit/6bd16be383f8fcb4c88b489ab39ba7aebcf6ba6c))
+* **design:** check every redesigned screen in long languages ([#1239](https://github.com/LorcanChinnock/shot/issues/1239)) ([0403025](https://github.com/LorcanChinnock/shot/commit/04030253d9cf6007e6becba3b547331c93841b32))
+* **design:** check every redesigned window in dark ([#1232](https://github.com/LorcanChinnock/shot/issues/1232)) ([c667883](https://github.com/LorcanChinnock/shot/commit/c667883aabe14f26ec40c6d4dd39a6917636775e))
+* **design:** show the accent halo on plain-styled buttons ([#1270](https://github.com/LorcanChinnock/shot/issues/1270)) ([82d3b16](https://github.com/LorcanChinnock/shot/commit/82d3b160bf785aa02baa301b196e3e8a4ec1ed37))
+* **editor:** fit the title bar at the Larger text size ([#1264](https://github.com/LorcanChinnock/shot/issues/1264)) ([f8f2424](https://github.com/LorcanChinnock/shot/commit/f8f24241bd6f4f19790df7016c00ed00283c4377)), closes [#1251](https://github.com/LorcanChinnock/shot/issues/1251)
+* **editor:** keep the text being typed on Esc or any tool change ([#1269](https://github.com/LorcanChinnock/shot/issues/1269)) ([e7cc1bd](https://github.com/LorcanChinnock/shot/commit/e7cc1bddcf5a46ccd323e16911888b95335bf2ca))
+* **editor:** open Layers and the Inspector closed in every window ([#1268](https://github.com/LorcanChinnock/shot/issues/1268)) ([6f28aea](https://github.com/LorcanChinnock/shot/commit/6f28aeabc4e54303a6a6b047b95e7f69a0639137))
+* **editor:** start a crop at the shape the crop bar shows ([#1266](https://github.com/LorcanChinnock/shot/issues/1266)) ([01b3b2e](https://github.com/LorcanChinnock/shot/commit/01b3b2e8d1738204ddb2bef94f19594d339f7f55))
+* **settings:** Tab goes down the whole sidebar before the pane ([#1265](https://github.com/LorcanChinnock/shot/issues/1265)) ([9963869](https://github.com/LorcanChinnock/shot/commit/9963869a35ae8c338fcb469a51b50bd4556dda3b)), closes [#1252](https://github.com/LorcanChinnock/shot/issues/1252)
+
+
+### Performance Improvements
+
+* **design:** time the menu, Quick Access and windows, and stop arrow keys rebuilding the selection bar ([#1240](https://github.com/LorcanChinnock/shot/issues/1240)) ([f9f43ab](https://github.com/LorcanChinnock/shot/commit/f9f43ab1a687f4a75fb4c58c4357467af9320321))
+
 ## [0.7.0-beta.84](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.83...v0.7.0-beta.84) (2026-11-05)
 
 
