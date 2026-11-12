@@ -35,6 +35,9 @@ struct SettingsSidebar: View {
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 14)
+        // With keyboard navigation on, Tab goes down the whole sidebar before the pane. Without a focus section, SwiftUI
+        // orders Tab stops across the window row by row, so it zig-zags between section rows and the pane's controls.
+        .focusSection()
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Settings sections"))
     }
