@@ -355,7 +355,12 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
                 model.addAnnotation(annotation)
             }
         } else {
+            // An unchanged label isn't a new project, so committing leaves it hidden; show it again instead.
+            let unchanged = model.project.annotationClip(annotation.id)?.annotation == annotation
             model.commitAnnotation(annotation, id: annotation.id)
+            if unchanged {
+                model.previewAnnotation(nil)
+            }
         }
     }
 
