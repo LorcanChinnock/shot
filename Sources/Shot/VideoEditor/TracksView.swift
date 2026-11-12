@@ -305,7 +305,7 @@ struct TracksView: View {
                 .background(isOn ? Theme.hover : .clear, in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo(radius: Theme.Radius.tiny))
         .themeTip(control.tip(isOn: isOn))
         .accessibilityLabel(Text(control.menuTitle(isOn: isOn)))
     }

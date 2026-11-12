@@ -518,6 +518,43 @@ private struct ThemeButtonFocus: View {
     }
 }
 
+/// A button that draws its own look, such as a sidebar row or a swatch tile, with the 4 pt accent halo for keyboard focus
+/// in place of the system ring. Use it rather than `.plain`, which shows the system ring. `radius` is the corner radius of
+/// the button's own shape; the halo follows it 4 pt outside.
+struct HaloButtonStyle: PrimitiveButtonStyle {
+    var radius: CGFloat = Theme.Radius.control
+
+    func makeBody(configuration: Configuration) -> some View {
+        HaloButtonFocus(radius: radius, configuration: configuration)
+    }
+}
+
+extension PrimitiveButtonStyle where Self == HaloButtonStyle {
+    static var halo: HaloButtonStyle { HaloButtonStyle() }
+    static func halo(radius: CGFloat) -> HaloButtonStyle { HaloButtonStyle(radius: radius) }
+}
+
+private struct HaloButtonFocus: View {
+    let radius: CGFloat
+    let configuration: PrimitiveButtonStyleConfiguration
+    @FocusState private var focused: Bool
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        Button(configuration)
+            .buttonStyle(.plain)
+            .focusEffectDisabled()
+            .focused($focused)
+            .background {
+                if focused, isEnabled {
+                    Color.clear
+                        .inkBorder(RoundedRectangle(cornerRadius: radius + 4, style: .circular), width: 4, color: Theme.focusRing)
+                        .padding(-4)
+                }
+            }
+    }
+}
+
 private struct ThemeButtonLook: ButtonStyle {
     let style: ThemeButtonStyle
     let focused: Bool

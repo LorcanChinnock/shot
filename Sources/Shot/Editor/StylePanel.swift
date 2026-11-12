@@ -208,7 +208,7 @@ private struct BackgroundTile<Swatch: View>: View {
         Button(action: action) {
             BackgroundSwatchShape(selected: selected) { swatch }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .opacity(isEnabled ? 1 : 0.35)
         .themeTip(name)
         .accessibilityLabel(Text(verbatim: name))
@@ -310,7 +310,7 @@ private struct CustomBackgroundTile: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .themeTip("Custom background colour")
         .accessibilityLabel(Text("Custom background colour"))
         .accessibilityAddTraits(custom != nil ? .isSelected : [])

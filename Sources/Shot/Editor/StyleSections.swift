@@ -176,7 +176,7 @@ private struct StylePresetTile<Model: StyleEditing>: View {
             }
             .contentShape(shape)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo(radius: Theme.Radius.group))
         .accessibilityLabel(Text(verbatim: preset.title))
         .accessibilityAddTraits(preset.selected ? .isSelected : [])
         .onHover { inside in

@@ -133,7 +133,7 @@ private struct SidebarIconButton: View {
                 .background(hovering ? Theme.hover : .clear, in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo(radius: Theme.Radius.tiny))
         .onHover { hovering = $0 }
         .themeTip(label)
         .accessibilityLabel(Text(label))
@@ -199,7 +199,7 @@ private struct GalleryLibraryRow: View {
             .contentShape(Rectangle())
             .modifier(SidebarRowBackground(selected: selected, hovering: hovering))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .onHover { hovering = $0 }
         .accessibilityLabel(Text(verbatim: filter.libraryTitle))
         .accessibilityValue(Text("\(count) captures"))
@@ -246,7 +246,7 @@ private struct GalleryTagRow: View {
             .contentShape(Rectangle())
             .modifier(SidebarRowBackground(selected: selected, hovering: hovering))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .onHover { hovering = $0 }
         .contextMenu {
             Button("Rename or Remove Tags…", action: manage)
@@ -382,7 +382,7 @@ private struct GalleryFolderRow: View {
                     .frame(width: 14, height: 20)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.halo(radius: Theme.Radius.tiny))
             .accessibilityLabel(Text(open ? "Collapse \(title)" : "Expand \(title)"))
         }
     }
@@ -395,7 +395,7 @@ private struct GalleryFolderRow: View {
                 .frame(width: 24, height: 18)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo(radius: Theme.Radius.tiny))
     }
 }
 
