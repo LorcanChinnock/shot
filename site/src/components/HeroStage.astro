@@ -44,7 +44,9 @@ import quickAccess from '../../../docs/media/quick-access.png';
     width: 100%;
     max-width: 1120px;
     margin-inline: auto;
-    padding: clamp(28px, 4.5vw, 52px) clamp(12px, 3vw, 24px) 0;
+    /* The bottom padding holds the lower half of the capture bar, so the bar stays inside the panel, clear of the tilted
+       band that overlaps the panel's square bottom. */
+    padding: clamp(28px, 4.5vw, 52px) clamp(12px, 3vw, 24px) clamp(36px, 4.5vw, 56px);
     border-radius: 32px 32px 0 0;
   }
   .scene { position: relative; width: min(820px, 100%); margin-inline: auto; }
@@ -61,8 +63,8 @@ import quickAccess from '../../../docs/media/quick-access.png';
   }
   .editor-crop :global(img) { width: calc(1600 / 1160 * 100%); left: calc(-220 / 1160 * 100%); top: calc(-39 / 821 * 100%); }
 
-  /* capture-bar.png is 1206 × 148; the bar is 1146 × 92 from (30, 28). It overlaps the editor's bottom edge. */
-  .bar-anchor { position: absolute; left: 50%; bottom: 0; width: 74%; translate: -50% 42%; }
+  /* capture-bar.png is 1206 × 148; the bar is 1146 × 92 from (30, 28). It straddles the editor's bottom edge. */
+  .bar-anchor { position: absolute; left: 50%; bottom: 0; width: 74%; translate: -50% 50%; }
   .bar-crop { aspect-ratio: 1146 / 92; border-radius: 2.6% / 32%; box-shadow: 0 14px 30px rgb(0 0 0 / 0.3); }
   .bar-crop :global(img) { width: calc(1206 / 1146 * 100%); left: calc(-30 / 1146 * 100%); top: calc(-28 / 92 * 100%); }
   /* On the Area button, which runs from 19% to 32% of the bar. */

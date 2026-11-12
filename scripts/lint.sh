@@ -66,6 +66,15 @@ if [ -n "$hits" ]; then
     exit 1
 fi
 
+# A hand-drawn arrow's head drifts off its shaft whenever either is edited (#1261). Arrow.astro computes the head from the
+# shaft's end, so every drawn arrow on the site goes through it.
+hits=$(grep -rnE 'class="arrow|class=\{?.arrow|class="[^"]* arrow( |")|class="(shaft|head)"' site/src --include='*.astro' --include='*.md' | grep -v 'site/src/components/Arrow.astro' || true)
+if [ -n "$hits" ]; then
+    echo "Draw arrows on the site with <Arrow from={[x, y]} to={[x, y]} bend={…} /> (site/src/components/Arrow.astro), not a hand-written SVG:"
+    echo "$hits"
+    exit 1
+fi
+
 # The install command pipes this script into bash, so it gets the checks a script people run unread should.
 if command -v shellcheck > /dev/null; then
     shellcheck site/public/install.sh site/public/uninstall.sh scripts/test-install.sh scripts/test-uninstall.sh

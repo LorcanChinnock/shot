@@ -38,6 +38,7 @@ const current = (href: string) => {
 const nav = [
   { label: 'Features', href: '/#features' },
   { label: 'Guide', href: '/docs/get-started/' },
+  { label: 'Changelog', href: '/changelog/' },
   { label: 'FAQ', href: '/#faq' },
   { label: 'GitHub', href: 'https://github.com/LorcanChinnock/shot' },
 ];
@@ -48,7 +49,7 @@ const footer: { title: string; links: [string, string][] }[] = [
       ['Capture', '/docs/take-a-screenshot/'],
       ['Mark up', '/docs/annotate-a-screenshot/'],
       ['Record', '/docs/record-your-screen/'],
-      ['Download', '/#install'],
+      ['Install', '/#install'],
       ['Other screenshot apps', '/screenshot-apps/'],
     ],
   },
@@ -121,7 +122,6 @@ const footer: { title: string; links: [string, string][] }[] = [
         <slot name="header" />
         <nav class="links" aria-label="Main">
           {nav.map((l) => <a href={l.href} aria-current={current(l.href)}>{l.label}</a>)}
-          <a class="button small" href="/#install">Download free</a>
         </nav>
         <details class="menu">
           <summary>
@@ -176,6 +176,50 @@ const footer: { title: string; links: [string, string][] }[] = [
         menu.addEventListener('click', (event) => {
           if ((event.target as Element).closest('nav a')) menu.open = false;
         });
+      }
+    </script>
+
+    <script>
+      // Key caps press down while the reader holds the same keys, so ⌘ ⇧ 4 on the page goes down as they press it.
+      // A cap is down when every key in its label is held: "Esc" or "Page Down" is one key, "⌘Z" is two.
+      const named: Record<string, string[]> = {
+        Meta: ['⌘'], Shift: ['⇧', 'SHIFT'], Alt: ['⌥'], Control: ['⌃'],
+        Enter: ['↩', 'RETURN'], Escape: ['ESC'], ' ': ['SPACE'], Tab: ['TAB'],
+        Backspace: ['⌫', 'DELETE'], Delete: ['⌦', 'DELETE'],
+        ArrowUp: ['↑'], ArrowDown: ['↓'], ArrowLeft: ['←'], ArrowRight: ['→'],
+        PageUp: ['PAGE UP'], PageDown: ['PAGE DOWN'], Home: ['HOME'], End: ['END'],
+      };
+      const words = new Set(Object.values(named).flat().filter((name) => name.length > 1));
+      const caps = [...document.querySelectorAll<HTMLElement>('kbd.key, .prose kbd')].map((el) => {
+        const label = (el.textContent ?? '').trim().toUpperCase();
+        return { el, keys: words.has(label) ? [label] : Array.from(label).filter((c) => c.trim()) };
+      }).filter((cap) => cap.keys.length);
+      const held = new Map<string, string[]>();
+
+      // What a key can match: its name, its character, and for letters and digits the key itself, so ⇧4 still matches 4.
+      function names(event: KeyboardEvent): string[] {
+        const out = [...(named[event.key] ?? [])];
+        if (event.key.length === 1) out.push(event.key.toUpperCase());
+        const code = /^(?:Key|Digit)(.)$/.exec(event.code);
+        if (code) out.push(code[1]);
+        if (event.code === 'Equal') out.push('+');
+        return out;
+      }
+      function update() {
+        const down = new Set([...held.values()].flat());
+        for (const { el, keys } of caps) el.classList.toggle('down', keys.every((key) => down.has(key)));
+      }
+      function clear() { held.clear(); update(); }
+
+      if (caps.length) {
+        addEventListener('keydown', (event) => { held.set(event.code, names(event)); update(); });
+        addEventListener('keyup', (event) => {
+          // macOS sends no keyup for keys released while ⌘ is held, so letting go of ⌘ lets go of everything.
+          if (event.key === 'Meta') held.clear(); else held.delete(event.code);
+          update();
+        });
+        addEventListener('blur', clear);
+        document.addEventListener('visibilitychange', clear);
       }
     </script>
   </body>

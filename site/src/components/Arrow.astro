@@ -1,0 +1,36 @@
+---
+/**
+ * A drawn arrow, as Shot's arrow tool makes one. Give it where it starts, where its tip goes and how much it bends; the
+ * head is computed from the shaft's end, so it always sits on the tip and points along the curve (src/lib/arrow.ts).
+ *
+ * Points are in px. With `placed`, the arrow is positioned absolutely so that `from` and `to` are in its offset parent's
+ * coordinates: put it in the same box as the note and the thing it points at, and the tip lands where you said.
+ * Without it, the arrow is an inline box sized to the curve, for a flex row beside a note.
+ */
+import { arrowGeometry, type Point } from '../lib/arrow';
+
+interface Props {
+  from: Point;
+  to: Point;
+  bend?: number;
+  head?: number;
+  placed?: boolean;
+  /** Extra CSS custom properties, such as `--delay: 1500ms`. */
+  style?: string;
+  class?: string;
+}
+
+const { from, to, bend, head, placed = false, style = '', class: className } = Astro.props;
+const g = arrowGeometry({ from, to, bend, head });
+const [minX, minY] = g.viewBox.split(' ').map(Number);
+const position = placed ? `position: absolute; left: ${minX}px; top: ${minY}px;` : '';
+---
+
+<svg
+  class:list={['arrow', className]}
+  width={g.width}
+  height={g.height}
+  viewBox={g.viewBox}
+  style={`--len: ${g.length}; ${position} ${style}`}
+  aria-hidden="true"
+><path class="shaft" d={g.shaft} /><path class="head" d={g.head} /></svg>
