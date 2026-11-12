@@ -69,10 +69,19 @@ private let bar = CGSize(width: 260, height: 32)
     #expect(StyleBarContent.content(showsStyle: true, tool: .crop, showsRedaction: true, showsSpotlight: true) == nil)
 }
 
-@Test func theBarOffersTheBoardsSixColours() {
-    #expect(StyleBarSwatches.colors == Array(RGBA.presets.prefix(6)))
-    #expect(StyleBarSwatches.colors.last == RGBA(0, 0, 0))
-    #expect(!StyleBarSwatches.contains(RGBA(1, 1, 1)))
+@Test func moreStyleShowsOnlyWhenItHoldsMoreThanReset() {
+    let bar = StyleBarContent.colorAndWidth
+    #expect(!bar.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
+    #expect(bar.offersMoreStyle(hasShape: true, hasFill: true, hasAlignment: false))
+    #expect(bar.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: true))
+    #expect(StyleBarContent.redaction.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
+    #expect(StyleBarContent.spotlight.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
+}
+
+@Test func theBarOffersEveryPresetColourWhiteIncluded() {
+    #expect(StyleBarSwatches.colors == RGBA.presets)
+    #expect(StyleBarSwatches.contains(RGBA(1, 1, 1)))
+    #expect(!StyleBarSwatches.contains(RGBA(0.5, 0.2, 0.9)))
 }
 
 @Test func theBarKeepsClearOfTheControlsAtTheFoot() {

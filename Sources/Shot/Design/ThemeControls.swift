@@ -38,8 +38,9 @@ struct ColorSwatches: View {
 }
 
 /// A rainbow chip that applies the last custom colour and opens the colour editor on it in a popover,
-/// so picking stays inside the app. While a custom colour is in use, it shows inside the rainbow ring.
-private struct CustomColorButton: View {
+/// so picking stays inside the app. While a custom colour is in use, it shows inside the rainbow ring. `compact` draws it
+/// as the style bar's 20 pt swatches are drawn.
+struct CustomColorButton: View {
     let custom: RGBA?
     let lastCustom: RGBA?
     /// What the colour editor starts on when no custom colour has been picked yet.
@@ -48,35 +49,72 @@ private struct CustomColorButton: View {
     let pick: (RGBA) -> Void
     let beginPicking: () -> Void
     let editorShown: (Bool) -> Void
+    var compact = false
     @State private var isOpen = false
+    @FocusState private var focused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isSelected: Bool { isOpen || custom != nil }
 
     var body: some View {
         Button(action: open) {
-            ZStack {
-                Circle()
-                    .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center))
-                if let custom {
-                    Circle().fill(custom.swiftUIColor).inkBorder(Circle(), width: 2).padding(4)
-                }
+            if compact {
+                compactLabel
+            } else {
+                label
             }
-            .inkBorder(Circle(), width: 2)
-            .background(Circle().fill(Theme.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
-            .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
-            .frame(width: 26, height: 30)
-            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .focusEffectDisabled(compact)
+        .focused($focused)
         .themeTip(help)
         .accessibilityLabel(Text(help))
         .accessibilityAddTraits(custom != nil ? .isSelected : [])
-        .animation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+        .animation(reduceMotion || compact ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
             ColorEditor(initial: lastCustom ?? fallback, pick: pick)
         }
         .onChange(of: isOpen) { editorShown(isOpen) }
+    }
+
+    private var rainbow: AngularGradient {
+        AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center)
+    }
+
+    /// The style bar's swatch: an ink ring outside a gap while chosen, and the focus halo, as `StyleBarSwatch` draws them.
+    private var compactLabel: some View {
+        ZStack {
+            Circle().fill(rainbow)
+            if let custom {
+                Circle().fill(custom.swiftUIColor).padding(4)
+            }
+        }
+        .frame(width: 20, height: 20)
+        .background {
+            if isSelected {
+                Color.clear.inkBorder(Circle(), width: 1.5, color: Theme.ink).padding(-3.5)
+            }
+        }
+        .background {
+            if focused {
+                Color.clear.inkBorder(Circle(), width: 4, color: Theme.focusRing).padding(isSelected ? -7.5 : -4)
+            }
+        }
+        .contentShape(Circle())
+    }
+
+    private var label: some View {
+        ZStack {
+            Circle().fill(rainbow)
+            if let custom {
+                Circle().fill(custom.swiftUIColor).inkBorder(Circle(), width: 2).padding(4)
+            }
+        }
+        .inkBorder(Circle(), width: 2)
+        .background(Circle().fill(Theme.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+        .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
+        .frame(width: 26, height: 30)
+        .contentShape(Rectangle())
     }
 
     private func open() {

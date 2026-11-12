@@ -44428,54 +44428,54 @@
         }
       }
     },
-    "Shows the rest of this mark's options, such as white, custom colours and Reset." : {
+    "Shows the rest of this mark's options, such as its fill, and Reset." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zeigt die übrigen Optionen dieser Markierung, etwa Weiß, eigene Farben und Zurücksetzen."
+            "value" : "Zeigt die übrigen Optionen dieser Markierung, etwa die Füllung, und Zurücksetzen."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Muestra el resto de opciones de esta marca, como el blanco, los colores personalizados y Restablecer."
+            "value" : "Muestra el resto de opciones de esta marca, como el relleno, y Restablecer."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche les autres options de cette marque, comme le blanc, les couleurs personnalisées et Réinitialiser."
+            "value" : "Affiche les autres options de cette marque, comme le remplissage, et Réinitialiser."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostra le altre opzioni di questo segno, come il bianco, i colori personalizzati e Ripristina."
+            "value" : "Mostra le altre opzioni di questo segno, come il riempimento, e Ripristina."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "白、カスタムカラー、リセットなど、このマークのほかのオプションを表示します。"
+            "value" : "塗りつぶしやリセットなど、このマークのほかのオプションを表示します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "흰색, 사용자 지정 색상, 재설정 등 이 표시의 나머지 옵션을 보여줍니다."
+            "value" : "채우기, 재설정 등 이 표시의 나머지 옵션을 보여줍니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostra as demais opções desta marcação, como branco, cores personalizadas e Redefinir."
+            "value" : "Mostra as demais opções desta marcação, como o preenchimento, e Redefinir."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示此标记的其余选项，如白色、自定颜色和还原。"
+            "value" : "显示此标记的其余选项，如填充和还原。"
           }
         }
       }

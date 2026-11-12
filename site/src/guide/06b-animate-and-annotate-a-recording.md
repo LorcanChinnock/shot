@@ -6,7 +6,7 @@ group: Edit and share
 
 ## Draw over the video
 
-1. In the video editor, click **Draw** in the title bar. The drawing tools appear in a column on the left of the video, and a small bar at the top of the video holds the tool's colours and line widths. Click **…** in that bar for the shape, the fill, white and custom colours, text alignment, a blur's amount or a spotlight's strength, and **Reset**. Clicking **Draw** again hides them.
+1. In the video editor, click **Draw** in the title bar. The drawing tools appear in a column on the left of the video, and a small bar at the top of the video holds the tool's colours, a custom colour and line widths. Click **…** in that bar, where the tool has one, for the shape, the fill, text alignment, a blur's amount or a spotlight's strength. **Edit › Reset Style** puts the tool's options back. Clicking **Draw** again hides them.
 2. Pick a tool and draw, as in the [annotation editor](#annotate-a-screenshot): arrows, shapes, text, blur and more. The hand tool isn't here, and the tools have no letter keys, since the video editor uses those for splitting and playback.
 3. To add a picture, click the image button near the bottom of the column. To crop, click **Crop video** at the bottom, or press <kbd>C</kbd>; when you apply or cancel the crop, you're back on the tool you were using. See [Crop the video](#crop-the-video).
 

@@ -4,7 +4,8 @@ import Foundation
 /// What the image editor's style bar holds, from Edit › Image editor · annotate: the small floating bar beside the
 /// selected mark, or at the top of the canvas for the tool's next mark.
 public enum StyleBarContent: Equatable, Sendable {
-    /// Colour swatches, three widths and More style, for arrows, lines, shapes, pens, text, notes, highlights and counters.
+    /// Colour swatches and three widths for arrows, lines, shapes, pens, text, notes, highlights and counters, with
+    /// More style for a shape's outline and fill or a text's alignment.
     case colorAndWidth
     /// Blur or pixelate, with the amount and Reset under More style.
     case redaction
@@ -29,12 +30,21 @@ public enum StyleBarContent: Equatable, Sendable {
         }
         return nil
     }
+
+    /// Whether the bar ends in More style: only when it has an option the bar doesn't, so it never opens on Reset alone.
+    /// Reset is in the Edit menu and the bar's context menu too.
+    public func offersMoreStyle(hasShape: Bool, hasFill: Bool, hasAlignment: Bool) -> Bool {
+        switch self {
+        case .colorAndWidth: hasShape || hasFill || hasAlignment
+        case .redaction, .spotlight: true
+        }
+    }
 }
 
-/// The colours the bar offers, the first six presets: red, orange, yellow, green, blue and black. White and custom
-/// colours are under More style.
+/// The colours the bar offers: every preset, red, orange, yellow, green, blue, black and white. The bar's rainbow swatch
+/// picks any other.
 public enum StyleBarSwatches {
-    public static let colors: [RGBA] = Array(RGBA.presets.prefix(6))
+    public static let colors: [RGBA] = RGBA.presets
 
     /// Whether `color` is one of the bar's swatches, so one shows as chosen.
     public static func contains(_ color: RGBA) -> Bool { colors.contains(color) }
