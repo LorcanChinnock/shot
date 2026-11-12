@@ -143,7 +143,7 @@ Ink is drawn with `inkBorder`, crisp on 1× displays (`inkBorder` snaps the widt
 
 | Control | Look | Code |
 | --- | --- | --- |
-| Switch | 38 × 22. On: accent, 1.5 pt ink outline, white 17 pt knob with a 1.5 pt ink edge. Off: `rgba(22,22,26,0.12)` track (dark `rgba(255,255,255,0.16)`), white 18 pt knob with a soft shadow | `ThemeToggleStyle()` |
+| Switch | 38 × 22, drawn like the system switch. On: accent track. Off: `rgba(22,22,26,0.12)` track (dark `rgba(255,255,255,0.16)`). Both: white 20 pt knob, 1 pt in, with a soft shadow | `ThemeToggleStyle()`, `SwitchPicture` |
 | Checkbox | 16 pt, radius 4. On: accent, 1.5 pt ink inner edge, ink tick. Off: secondary fill with the Rest edge | `ThemeCheckboxStyle()`, `CheckboxMark` |
 | Segmented | Field-fill track, radius 8, 2 pt padding. Selected: white thumb (dark `#4A4A50`), radius 6, `0 1px 2px`, Small type. Others: secondary text | `ThemeSegmented` |
 | Pop-up menu | The secondary button's look, tighter, with up and down chevrons. Opens a menu at the group fill with the Float edge and a system shadow; the highlighted row is accent with a 1 pt inner edge at 40% ink | `ThemePopUp`, `ThemeDropdown` for menus of commands |
@@ -152,7 +152,7 @@ Ink is drawn with `inkBorder`, crisp on 1× displays (`inkBorder` snaps the widt
 - **Focus** shows the 4 pt accent halo around the switch, the box, the segmented track or the slider's knob. The segmented control takes focus as one control, and the arrow keys move its selection.
 - **VoiceOver** reads each as its native control: a switch reads on or off, a segmented control its selected segment.
 - **Reduce Motion** moves the switch's knob and the segmented thumb at once instead of sliding them.
-- **Increase Contrast** gives the off switch, the segmented track and the slider a 60% ink edge.
+- **Increase Contrast** gives the switch and its knob, the segmented track and the slider a 60% ink edge.
 
 ### Feedback
 
