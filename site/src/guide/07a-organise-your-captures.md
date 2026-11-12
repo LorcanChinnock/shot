@@ -16,7 +16,7 @@ The gallery's sidebar has three sections. Click a row to show what's in it, and 
 - **Folders:** your save folder itself, which shows only what isn't in a folder, then your folders, with an arrow to open the folders inside each one.
 - **Tags:** each tag you've used, once a capture has one.
 
-To hide the sidebar, click the sidebar button next to the window's close, minimise and zoom buttons. Click it again to bring the sidebar back. Shot remembers whether you left it open.
+To hide the sidebar, click the sidebar button at the top left, just right of the window's coloured buttons. Click it again to bring the sidebar back. Shot remembers whether you left it open.
 
 ## Manage folders
 
@@ -29,7 +29,7 @@ You can also make a folder while moving captures: right-click one, or a selectio
 
 ## Change the sidebar's width
 
-Drag the thin strip between the sidebar and the thumbnails to change its width, or double-click it to reset. Drag it narrower than it goes to close it. The Settings window's sidebar works the same way, and its button at the bottom shrinks it to a column of icons.
+Drag the thin strip between the sidebar and the thumbnails to change its width, or double-click it to reset. Drag it narrower than it goes to close it. The Settings window's sidebar resizes and resets the same way, but it always stays open.
 
 ## See how much room your captures take
 

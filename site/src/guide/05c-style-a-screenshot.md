@@ -49,7 +49,7 @@ With something selected, the top of the panel styles that instead of the screens
 
 | Selected | The panel offers |
 |---|---|
-| Nothing: the screenshot | Shadow, border and corners. |
+| Nothing: the screenshot | Background, padding, corners, shadow, border and size. |
 | A placed image | The same as the screenshot. |
 | A shape, arrow, line, pen stroke or counter | A shadow or glow. Glow takes the mark's colour. |
 | Text | A shadow or glow, and an outline round each letter, so it reads on a busy screenshot. The outline starts black or white, whichever stands out from the text. |

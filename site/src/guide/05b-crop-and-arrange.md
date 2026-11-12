@@ -4,13 +4,13 @@ summary: "Crop a screenshot, reorder and hide your marks in Layers, and grow or 
 group: Edit and share
 ---
 
-![The annotation editor in crop mode: the area outside the crop dimmed, handles on the crop's corners and edges, and a bar under it with Aspect set to Free, the size, Reset, Cancel and Crop](../../../docs/media/editor-crop.png)
+![The annotation editor in crop mode: the area outside the crop faded into the canvas, handles on the crop's corners and edges, and a bar at the bottom of the canvas with Aspect set to Free, the size, Reset, Cancel and Crop](../../../docs/media/editor-crop.png)
 
 ## Crop
 
 1. Press <kbd>C</kbd>, click **Crop** in the toolbar, or click the **Frame** row in Layers.
 2. Drag the handles to choose what to keep. What's cropped off shows faded, and a thirds grid helps you line things up.
-3. Click **Crop** in the bar at the bottom of the canvas, or press <kbd>Return</kbd>, to apply the crop. Click **Cancel**, or press <kbd>Esc</kbd>, to leave it as it was.
+3. Click **Crop**, the yellow button in the bar at the bottom of the canvas, or press <kbd>Return</kbd>, to apply the crop. Click **Cancel**, or press <kbd>Esc</kbd>, to leave it as it was.
 
 The bar also shows the size in pixels that the crop keeps, and it changes as you drag. While you crop:
 
@@ -41,7 +41,7 @@ Click **Layers** in the title bar (<kbd>⌘L</kbd>) to list your marks, frontmos
 | Delete | Press <kbd>Delete</kbd>, or point at the row and click the bin. |
 | Rename | Double-click the name, or select the row and press <kbd>Return</kbd>. |
 
-Right-click a row to rename, duplicate, delete, lock or hide it, or to crop a placed image.
+Right-click a row to rename, duplicate, delete, lock or hide it, or to crop a placed image or reset its crop.
 
 **Names:** a layer is named after its kind, or the first words of its text. Your own name shows only in the list, never in the image, and a duplicate keeps it. <kbd>Return</kbd> or clicking elsewhere keeps a new name, <kbd>Esc</kbd> cancels, and clearing it goes back to the automatic one. Renaming is one undo step.
 

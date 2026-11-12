@@ -51,7 +51,7 @@ A GIF opens in an editor only if the video editor exported it, and then opens it
 
 Select a capture and press <kbd>Space</kbd> to see it large in the gallery window, with a details panel beside it. The toolbar shows its name and where it is in the grid, such as "3 of 248", with **Edit** and **Copy**. Recordings play, and GIFs animate.
 
-- Press <kbd>←</kbd> or <kbd>→</kbd> for the previous or next capture in the grid, and <kbd>Space</kbd> or <kbd>Esc</kbd>, or the back arrow, to go back to the grid. The capture you were on stays selected.
+- Press <kbd>←</kbd> or <kbd>→</kbd> for the previous or next capture in the grid, or <kbd>Home</kbd> and <kbd>End</kbd> for the first and last. Press <kbd>Space</kbd> or <kbd>Esc</kbd>, or the back arrow, to go back to the grid. The capture you were on stays selected.
 - <kbd>Return</kbd>, <kbd>⌘C</kbd>, <kbd>⌘R</kbd> and <kbd>⌘⌫</kbd> work on the capture shown, as they do on a selection.
 - The details panel says when it was taken, its size in pixels and on disk, its folder, and how many edits were saved beside it, such as "Original + 1 edit".
 - **Tags** lists its tags. Click **+ Add tag** to add or remove one.

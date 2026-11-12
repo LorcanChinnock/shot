@@ -15,7 +15,7 @@ group: Capture
    - **Full Screen:** click the screen, or press <kbd>Return</kbd>.
 3. Recording starts as soon as you let go.
 
-To wait first, click **Delay** (the timer) on the bar or press <kbd>D</kbd> to step through Off, 3, 5 and 10 seconds. Shot counts down on screen after you pick, then starts recording. It is back to Off the next time.
+To wait first, click **Delay** (the timer) on the bar or press <kbd>D</kbd> to step through Off, 3, 5 and 10 seconds. After you pick, a small panel in the middle of the area counts down in a yellow ring, then recording starts. It is back to Off the next time.
 
 The camera bubble, microphone and cursor are on or off as you set them in **Settings › Recording**.
 
@@ -25,8 +25,8 @@ Hold <kbd>⌥</kbd> as you finish picking an area or window. The rest of the scr
 
 - move and resize the frame with its handles, or drag the grip above it. If you picked an area with a ratio, the handles keep it, and the size shows the ratio.
 - switch between an area, a window and the full screen.
-- turn the microphone, camera bubble, Mac sound and cursor on or off, just for this recording. With the microphone on, the bars under its name move as you speak, so you can check it's working before you start.
-- pick the frame rate for this recording.
+- turn the microphone, camera bubble, **Mac sound** and **Cursor** on or off, just for this recording. One that's off has its icon struck through. With the microphone on, the bars under its name move as you speak, so you can check it's working before you start.
+- pick the frame rate for this recording from the menu that shows it, such as **60 fps**.
 
 Press <kbd>Return</kbd> or click **Record** to start, or <kbd>Esc</kbd> to cancel. To get this step every time, turn on **Adjust before recording** in **Settings › Recording**.
 
@@ -40,7 +40,7 @@ A dark bar of controls sits under the recorded area, and you can drag it out of 
 |---|---|
 | **Microphone** | The bars beside it show how loud you are. Click it to mute. Muting silences only your microphone, not the sound from your Mac. |
 | **Camera** | Shows or hides the camera bubble. Double-click the bubble to change its size. |
-| **Pause** | Pauses the recording. Two amber bars replace the red dot while it's paused, and **Resume** takes Pause's place. |
+| **Pause** | Pauses the recording. Two amber bars replace the red dot while it's paused, **Resume** takes Pause's place in yellow, and **Stop** loses its red. |
 | **Discard** | Throws the recording away. **Undo** brings it back for 5 seconds, and so does <kbd>⌘Z</kbd>, whichever app is in front. |
 | **Stop** | Stops and saves. |
 
@@ -72,7 +72,7 @@ Also in **Settings › Recording**:
 
 ## When you stop
 
-Shot saves the recording to your save folder, copies it to the clipboard, and shows it in [Quick Access](#quick-access), where **Edit** opens it in the [video editor](#edit-a-recording). It never opens the editor by itself.
+Shot saves the recording to your save folder, copies it to the clipboard, and shows it in [Quick Access](#quick-access), where **Edit Video** opens it in the [video editor](#edit-a-recording). It never opens the editor by itself.
 
 To stop copying recordings, turn off **Copy to clipboard** in **Settings › Recording**. To skip the card, turn off **Show Quick Access** in **Settings › Capture**.
 

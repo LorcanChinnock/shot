@@ -4,7 +4,7 @@ summary: "Add arrows, text, highlights and blur to a screenshot, then copy or sa
 group: Edit and share
 ---
 
-![The editor toolbar with the arrow tool picked, and a bar under it with the arrow's colours and line widths](../../../docs/media/editor-toolbar.png)
+![The editor's title bar with the arrow tool picked and Copy at the right, and the style bar floating below it with six colours, three line widths and the More style button](../../../docs/media/editor-toolbar.png)
 
 ## Open the editor
 
@@ -35,6 +35,8 @@ Press a tool's key, or click it in the group of tools in the middle of the title
 | <kbd>N</kbd> | **Counter:** numbered circles, for steps. |
 | <kbd>C</kbd> | **Crop:** see [Crop and arrange](#crop-and-arrange). |
 
+After a divider, beside **Crop**, **Add an image** (<kbd>⇧⌘I</kbd>) places another picture beside your screenshot. See [Combine images](#combine-images).
+
 The keys work whenever you aren't typing text. The editor remembers the last drawing tool, so a new window starts with it, or with the arrow.
 
 ## Draw
@@ -56,7 +58,8 @@ A small style bar floats over the screenshot with the options for the tool you p
 - **Colour and width:** six colours and three widths, thin, medium and thick. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
 - **Redact:** blur or pixelate.
 - **Spotlight:** a rectangle or an ellipse, and whether to darken or blur outside it. Every spotlight in the screenshot shares one dim, so the effect applies to all of them.
-- **Crop:** the shape to hold the crop to, and Reset to take the crop off.
+
+The bar doesn't show while you crop, since the crop has a bar of its own, or when the select tool has nothing, an image or several marks selected. Use **Style** in the title bar for those.
 
 Click **…** at the end of the bar for **More style**, which has the rest:
 
@@ -98,7 +101,7 @@ Pinch, press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, or click **−** and **+** i
 
 ## Copy or save
 
-- **Copy**, the yellow button at the right of the title bar, copies the annotated image. With nothing or several things selected, <kbd>⌘C</kbd> does the same.
+- **Copy**, the yellow button at the right end of the title bar, after **Share** and **Save**, copies the annotated image. With nothing or several things selected, <kbd>⌘C</kbd> does the same.
 - **Save** (<kbd>⌘S</kbd>) replaces the screenshot with your edited one and copies it. Shot keeps the original, so you can reopen the screenshot and undo your edits, or choose **Edit › Revert to Original**. This applies to screenshots Shot took. A picture from anywhere else saves as a new copy beside it, `name (2).png` (or `.jpg`), then `name (3).png` and so on, and the original never changes. To always save a new copy, turn off **Settings › General › Save edits over the original**.
 
 Under the file name, the title bar shows the size the image saves at, such as "1,040 × 600", with **Edited** before it while you have unsaved changes. Closing the window asks whether to save them.

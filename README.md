@@ -55,7 +55,7 @@
 
 ### Trim and export to GIF
 
-<img src="docs/media/video-editor.png" width="720" alt="The video editor with the Export panel open: a cut in the recording, a Best day label and an arrow over the video, and the GIF options with the estimated size">
+<img src="docs/media/video-editor.png" width="720" alt="The video editor with the Export panel open on the right: the drawing tools beside the video, a Best day label and an arrow over it, a cut in the timeline, and the GIF options above the estimated size and the Export GIF button">
 
 ## Install
 

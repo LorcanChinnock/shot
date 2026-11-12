@@ -1539,25 +1539,25 @@ Every page in `site/src/guide/`. #1128 updates the text, ticking **Updated** for
 
 | Page | What changes | Issue | Build issues | Updated |
 | --- | --- | --- | --- | --- |
-| 01 Get started | The stepped welcome window; the menu bar menu | #1128 | #1118, #1084 | ☐ |
-| 02 Take a screenshot | The capture bar with magnifier, crosshair and size toggles; area, window and page highlights; the countdown panel; scrolling capture; the browser permission card | #1128 | #1075, #1076, #1077, #1078, #1086, #1087 | ☐ |
-| 03 Quick Access | Copy and Save As… on hover; stacked cards; the pin bar; toasts | #1128 | #1081, #1082, #1083, #1085, #1114 | ☐ |
-| 04 Record your screen | The check-before-recording bar; recording controls and paused state; border and click rings; camera bubble; discard and recovery | #1128 | #1088, #1089, #1090, #1091, #1092 | ☐ |
-| 05a Annotate a screenshot | One tool group; Copy before Save; the Share menu; the style bar beside the selection; zoom control and hints | #1128 | #1093, #1094, #1095 | ☐ |
-| 05b Crop and arrange | The crop bar and handles; the Layers panel | #1128 | #1097, #1098 | ☐ |
-| 05c Style a screenshot | The Style side panel replaces the popover | #1128 | #1096 | ☐ |
-| 05d Combine images | The Canvas menu; crop badges; reopening saved versions | #1128 | #1099 | ☐ |
-| 06a Edit a recording | Toolbar with Export as the main button; timeline; crop and transform handles | #1128 | #1100, #1102, #1105 | ☐ |
-| 06b Animate and annotate a recording | The Draw toggle and tool column; the Inspector in the side panel | #1128 | #1101, #1104 | ☐ |
-| 06c Export a video or GIF | Export moves to a side panel | #1128 | #1103 | ☐ |
-| 07 Find your captures | The gallery in its own window; grid, search and sort; the preview's details panel; the empty gallery | #1128 | #1106, #1108, #1109, #1110 | ☐ |
-| 07a Organise your captures | Library, Folders and Tags in the sidebar; the selection bar; the Move to Trash dialog | #1128 | #1107, #1108, #1110 | ☐ |
-| 08a Share a capture with an AI assistant | "Copy path for an AI assistant" in the preview; Copy Path in the Share menu | #1128 | #1109, #1093 | ☐ |
-| 09 Keyboard shortcuts | M, C and I on the capture bar; Settings › Shortcuts; Delete asks before the Trash and ⌘Delete doesn't | #1128 | #1075, #1110, #1116 | ☐ |
-| 10 Automation reference | `shot://gallery` and `shot://settings?section=gallery` open the gallery window; `shot://welcome` | #1128 | #1106, #1118 | ☐ |
-| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder, Capture's groups and its preview of the selection aids, Quick Access's preview of the card in its corner with the countdown, Recording's groups with Mac sound and its camera card, Shortcuts' keycaps with Restore Defaults in the title bar and the list of keys for picking what to capture, About's header with the update status, link rows, Allowed and Allow… for each permission, and Clear… and Reset… | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☐ |
-| 12 Languages | Check only: no redesigned screen is described | #1128 | #1121 | ☐ |
-| 13 Updates | The restyled update prompt; Settings › About › Updates | #1128 | #1117, #1228, #1084 | ☐ |
-| 14 Privacy | Permissions in Settings › About show Allowed or Allow… | #1128 | #1117 | ☐ |
-| 15 Troubleshooting | The browser permission card; permissions in Settings › About; the recovery dialog | #1128 | #1087, #1117, #1092 | ☐ |
-| 16 Removing Shot | Settings row names (Open Shot at login, Reset all settings) | #1128 | #1112, #1117 | ☐ |
+| 01 Get started | The stepped welcome window; the menu bar menu | #1128 | #1118, #1084 | ☑ |
+| 02 Take a screenshot | The capture bar with magnifier, crosshair and size toggles; area, window and page highlights; the countdown panel; scrolling capture; the browser permission card | #1128 | #1075, #1076, #1077, #1078, #1086, #1087 | ☑ |
+| 03 Quick Access | Copy and Save As… on hover; stacked cards; the pin bar; toasts | #1128 | #1081, #1082, #1083, #1085, #1114 | ☑ |
+| 04 Record your screen | The check-before-recording bar; recording controls and paused state; border and click rings; camera bubble; discard and recovery | #1128 | #1088, #1089, #1090, #1091, #1092 | ☑ |
+| 05a Annotate a screenshot | One tool group; Copy before Save; the Share menu; the style bar beside the selection; zoom control and hints | #1128 | #1093, #1094, #1095 | ☑ |
+| 05b Crop and arrange | The crop bar and handles; the Layers panel | #1128 | #1097, #1098 | ☑ |
+| 05c Style a screenshot | The Style side panel replaces the popover | #1128 | #1096 | ☑ |
+| 05d Combine images | The Canvas menu; crop badges; reopening saved versions | #1128 | #1099 | ☑ |
+| 06a Edit a recording | Toolbar with Export as the main button; timeline; crop and transform handles | #1128 | #1100, #1102, #1105 | ☑ |
+| 06b Animate and annotate a recording | The Draw toggle and tool column; the Inspector in the side panel | #1128 | #1101, #1104 | ☑ |
+| 06c Export a video or GIF | Export moves to a side panel | #1128 | #1103 | ☑ |
+| 07 Find your captures | The gallery in its own window; grid, search and sort; the preview's details panel; the empty gallery | #1128 | #1106, #1108, #1109, #1110 | ☑ |
+| 07a Organise your captures | Library, Folders and Tags in the sidebar; the selection bar; the Move to Trash dialog | #1128 | #1107, #1108, #1110 | ☑ |
+| 08a Share a capture with an AI assistant | "Copy path for an AI assistant" in the preview; Copy Path in the Share menu | #1128 | #1109, #1093 | ☑ |
+| 09 Keyboard shortcuts | M, C and I on the capture bar; Settings › Shortcuts; Delete asks before the Trash and ⌘Delete doesn't | #1128 | #1075, #1110, #1116 | ☑ |
+| 10 Automation reference | `shot://gallery` and `shot://settings?section=gallery` open the gallery window; `shot://welcome` | #1128 | #1106, #1118 | ☑ |
+| 11 Settings | Section and row names, the sidebar search, Open Gallery, General's Text size menu and Show in Finder, Capture's groups and its preview of the selection aids, Quick Access's preview of the card in its corner with the countdown, Recording's groups with Mac sound and its camera card, Shortcuts' keycaps with Restore Defaults in the title bar and the list of keys for picking what to capture, About's header with the update status, link rows, Allowed and Allow… for each permission, and Clear… and Reset… | #1128 | #1111, #1112, #1113, #1114, #1115, #1116, #1117 | ☑ |
+| 12 Languages | Check only: no redesigned screen is described | #1128 | #1121 | ☑ |
+| 13 Updates | The restyled update prompt; Settings › About › Updates | #1128 | #1117, #1228, #1084 | ☑ |
+| 14 Privacy | Permissions in Settings › About show Allowed or Allow… | #1128 | #1117 | ☑ |
+| 15 Troubleshooting | The browser permission card; permissions in Settings › About; the recovery dialog | #1128 | #1087, #1117, #1092 | ☑ |
+| 16 Removing Shot | Settings row names (Open Shot at login, Reset all settings) | #1128 | #1112, #1117 | ☑ |
