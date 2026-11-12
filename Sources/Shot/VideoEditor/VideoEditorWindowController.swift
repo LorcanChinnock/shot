@@ -43,7 +43,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
     /// Run once the window has closed, so Flatten opens the file after any Save or Discard sheet.
     private var afterClose: (() -> Void)?
     private let window: NSWindow
-    /// How much of the window's height is the tracks panel.
+    /// How much of the window's height is the lanes past a plain recording's.
     private var appliedExtraHeight: CGFloat = 0
     private var discarding = false
     /// Set while a quit waits on this window's Save / Discard / Cancel sheet; answers true once the window may go.
@@ -83,6 +83,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             GlassWindow.present(existing.window)
             return
         }
+        let opening = Perf.begin("Window open")
         let saved = flat ? nil : VersionWriter.project(of: url, in: .app)
         let file = saved?.original ?? url
         Task {
@@ -103,6 +104,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             let controller = VideoEditorWindowController(model: model, opened: url)
             open.append(controller)
             GlassWindow.present(controller.window)
+            Perf.measureWindowOpen("video editor", since: opening)
             if let missing = saved?.missing, !missing.isEmpty {
                 Toast.error("Opened without \(missing.map(\.lastPathComponent).formatted(.list(type: .and))), which can't be found")
             }
@@ -119,7 +121,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         self.opened = opened
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
         let width = min(max(880, visible.width * 0.6), visible.width * 0.85)
-        let playerHeight = min((width - Brutal.windowInset * 2) / model.aspectRatio, visible.height * 0.55)
+        let playerHeight = min((width - VideoWell.sideInset * 2) / model.aspectRatio, visible.height * 0.55)
         let size = CGSize(width: width, height: playerHeight + VideoEditorRootView.chromeHeight)
         let editorWindow = VideoEditorWindow()
         window = editorWindow
@@ -129,7 +131,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             VideoEditorRootView(model: model)
         }
         window.delegate = self
-        // Wide enough for the export options in one row, GIF's included.
+        // Wide enough for the controls row in its compact form beside the open Inspector or Export panel.
         window.minSize = NSSize(width: 880, height: VideoEditorRootView.playerFloor + VideoEditorRootView.chromeHeight)
 
         model.onLayoutChanged = { [weak self] in
@@ -160,7 +162,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         frame.size.height = height
         frame.origin.y = min(max(frame.origin.y, visible.minY), visible.maxY - height)
         appliedExtraHeight = extra
-        window.setFrame(frame, display: true, animate: animate)
+        window.setFrame(frame, display: true, animate: animate && !Motion.reduced)
     }
 
     private func handleCommand(_ key: String, shift: Bool, option: Bool) -> Bool {
@@ -172,6 +174,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             model.copyStyle()
         case "v" where option:
             model.pasteStyle()
+        case "i" where option:
+            model.toggleInspector()
         case "c":
             Task { await model.copy() }
         case "s":
@@ -207,18 +211,19 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             }
             return true
         }
-        // Crop mode takes Return and Esc, and leaves the playhead where the picture is.
+        // Crop mode takes Return, Esc and Delete, and leaves the playhead where the picture is.
         if model.isCropping {
             switch event.keyCode {
             case 36, 76: model.applyCrop()
             case 53: model.cancelCrop()
+            case 51, 117: model.resetCrop()
             default: return false
             }
             return true
         }
         switch event.keyCode {
-        case 8: // C
-            return model.beginCrop()
+        case 8: // C, which keeps the drawing tools showing when it's pressed while drawing
+            return model.cropFromDrawTools()
         case 115: // Home
             model.seek(to: model.range.start)
         case 119: // End
@@ -235,12 +240,10 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             return model.split()
         case 40: // K
             model.toggleAllKeyframes()
-        case 17: // T
-            model.toggleTracks()
         case 45: // N
             model.toggleSnapping()
         case 53: // Escape
-            return model.cancelExport() || model.clearSelection() || model.escapeAnnotating()
+            return model.cancelExport() || model.clearSelection() || model.escapeAnnotating() || model.closeExportPanel()
         default:
             return false
         }

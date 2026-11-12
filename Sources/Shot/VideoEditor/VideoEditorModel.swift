@@ -46,14 +46,17 @@ final class VideoEditorModel {
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
     private(set) var estimatedSize: Int?
+    /// The side panel beside the video: the Inspector or Export, which take turns. Export starts closed in every window
+    /// (rule 2), while the Inspector opens again if it was open when the last window closed, as the image editor's Layers does.
+    private(set) var sidePanel: VideoSidePanel? = UserDefaults.standard.bool(forKey: VideoEditorModel.showsInspectorKey) ? .inspector : nil
+    /// How far Export has got, from 0 to 1, while it can tell; nil when it can't or nothing is exporting.
+    private(set) var exportFraction: Double?
     private(set) var history = VideoEditHistory()
     /// The project as last opened or written, so closing asks only about changes since.
     private var savedProject: Project?
     /// A saved project to open the recording with instead of the plain one, until it's loaded.
     @ObservationIgnored private var restoring: Project?
 
-    // More tools (the tracks panel): closed for each new editor, open only when the edit needs it.
-    private(set) var showsTracks = false
     /// 1 fits the project in the window; see `TimelineZoom`.
     private(set) var zoom: Double = 1
     private(set) var snapping = true
@@ -67,14 +70,19 @@ final class VideoEditorModel {
     }
     /// The time of the keyframe being worked on, in seconds from the start of the selected clip.
     private(set) var selectedKeyframe: Double?
-    private(set) var showsInspector = UserDefaults.standard.bool(forKey: VideoEditorModel.showsInspectorKey)
+    /// Whether More style, the style bar's popover of the drawing options that don't fit in it, is open.
+    var showsMoreStyle = false
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
     private(set) var annotationTool: EditorTool?
+    /// The drawing tool to pick again when a crop started from the drawing tools ends.
+    private(set) var toolAfterCrop: EditorTool?
     /// What crop mode is adjusting, or `nil` outside it.
     private(set) var cropTarget: VideoCropTarget?
     /// The crop being adjusted: in canvas pixels for the frame, or in the clip's picture's pixels, y down, for a clip.
     var cropDraft: CGRect?
+    /// How much of the well's bottom the crop bar covers in crop mode, which the video fits above.
+    var cropBarClearance: CGFloat = 0
     var cropAspect: CropAspect = CropAspect(rawValue: UserDefaults.standard.string(forKey: PreferenceKey.editorCropAspect) ?? "") ?? .free {
         didSet { UserDefaults.standard.set(cropAspect.rawValue, forKey: PreferenceKey.editorCropAspect) }
     }
@@ -83,8 +91,8 @@ final class VideoEditorModel {
     var editingText: Annotation?
     /// Called when the panel opens, closes or changes height, so the window can grow or shrink to fit.
     @ObservationIgnored var onLayoutChanged: (() -> Void)?
-    /// A style the pointer or the arrow keys are on in the Style popover, drawn on the selected annotation or clip until
-    /// they move off. It's not part of the project, so it's never an undo step.
+    /// A style the pointer is on in the Inspector's Style section, drawn on the selected annotation or clip until it
+    /// moves off. It's not part of the project, so it's never an undo step.
     var stylePreview: ObjectStyle? {
         didSet {
             if stylePreview != oldValue {
@@ -145,8 +153,6 @@ final class VideoEditorModel {
     /// Where the playhead is on the timeline, which differs from the recording's time once something's cut.
     var playhead: Double { itemIsComposite ? currentTime : project.timelinePosition(ofSource: currentTime) }
 
-    var thumbnails: [CGImage?] { thumbnailSets[fileURL] ?? [] }
-
     var selectedClip: Clip? { selectedClipID.flatMap(project.clip) }
 
     var isDirty: Bool { isComposite || !range.isFull(duration: duration) || !cuts.isEmpty }
@@ -155,14 +161,10 @@ final class VideoEditorModel {
     /// write. An edit taken back to the plain recording loses nothing.
     var hasUnsavedChanges: Bool { isDirty && project != savedProject }
 
-    /// What the panel adds to the window's height over the collapsed layout.
+    /// What the lanes past a plain recording's add to the window's height. The drawing options float over the video and
+    /// the Inspector is a side panel, so neither adds any.
     var tracksExtraHeight: CGFloat {
-        guard showsTracks else {
-            return 0
-        }
-        let palette = isAnnotating ? AnnotationPalette.height + Brutal.sectionGap : 0
-        let inspector = showsInspector ? ClipInspector.height + Brutal.sectionGap : 0
-        return TracksView.extraHeight(for: project) + palette + inspector
+        TracksView.extraHeight(for: project)
     }
 
     var edit: VideoEdit { VideoEdit(project: project, options: options) }
@@ -189,8 +191,6 @@ final class VideoEditorModel {
             project = restoring ?? Project(source: fileURL, duration: duration, canvasSize: CGSize(width: abs(size.width), height: abs(size.height)), hasAudio: hasAudio)
             restoring = nil
             savedProject = project
-            // A saved edit with imports or transforms has no trim strip to go back to.
-            if isComposite { showsTracks = true }
         } catch let failure as LoadFailure {
             throw failure
         } catch {
@@ -300,23 +300,19 @@ final class VideoEditorModel {
 
     // MARK: Tracks
 
-    /// A project with more than a trim in it has no strip to go back to.
-    var canHideTracks: Bool { !(showsTracks && isComposite) }
-
-    func toggleTracks() {
-        guard canHideTracks else {
-            Toast.error("Delete the imported clips and transforms to hide the tracks")
+    /// The title bar's Draw: shows the drawing tools beside the video with the last tool picked, or stops drawing. A crop
+    /// started from the tools is kept, as picking another tool keeps it.
+    func toggleDrawing() {
+        if toolAfterCrop != nil {
+            toolAfterCrop = nil
+            applyCrop()
             return
         }
-        setShowsTracks(!showsTracks)
-    }
-
-    private func setShowsTracks(_ shown: Bool) {
-        guard shown != showsTracks else {
+        guard !isAnnotating else {
+            setAnnotationTool(nil)
             return
         }
-        showsTracks = shown
-        onLayoutChanged?()
+        setAnnotationTool(annotationStyle.tool == .crop || annotationStyle.tool == .hand ? .arrow : annotationStyle.tool)
     }
 
     func toggleSnapping() {
@@ -454,7 +450,6 @@ final class VideoEditorModel {
             }
             replaceProject(with: changed)
             selectedClipID = added
-            setShowsTracks(true)
             log.notice("Imported \(urls.count, privacy: .public) files")
         }
     }
@@ -748,11 +743,6 @@ final class VideoEditorModel {
         seekTimeline(to: min(max(0, playhead + seconds), keptLength))
     }
 
-    /// Thumbnails of the recording for the strip.
-    func loadThumbnails(count: Int, height: CGFloat) async {
-        await loadThumbnails(of: fileURL, duration: duration, aspectRatio: aspectRatio, count: count, height: height)
-    }
-
     /// `count` frames from equal slots of `source`, `height` points tall, into `thumbnailSets`. Frames fetched before are reused.
     func loadThumbnails(of source: URL, duration: Double, aspectRatio: CGFloat, count: Int, height: CGFloat) async {
         let times = TrimTimeline(duration: duration, minX: 0, width: 0).thumbnailTimes(count: count)
@@ -805,7 +795,7 @@ final class VideoEditorModel {
     func copy() async {
         guard isDirty else {
             Clipboard.copy(fileURL: fileURL)
-            Toast.show("Copied")
+            Toast.done("Copied")
             return
         }
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/\(UUID().uuidString)")
@@ -815,7 +805,7 @@ final class VideoEditorModel {
             return
         }
         Clipboard.copy(fileURL: output)
-        Toast.show("Copied")
+        Toast.done("Copied")
     }
 
     /// Replaces the file with the trimmed range, less the cuts, and copies it, like Save in the image editor.
@@ -856,7 +846,7 @@ final class VideoEditorModel {
         version = nil
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
-        Toast.show("Saved and copied.\(TemporaryCaptures.toastNote(for: fileURL))")
+        Toast.done("Saved and copied.\(TemporaryCaptures.toastNote(for: fileURL))")
         do {
             try await load()
         } catch {
@@ -877,7 +867,7 @@ final class VideoEditorModel {
         }
         log.notice("Saved a copy of the edited video: \(output.path)")
         Clipboard.copy(fileURL: output)
-        Toast.show("Saved a copy and copied \(output.lastPathComponent).\(TemporaryCaptures.toastNote(for: output))", duration: .seconds(3))
+        Toast.done("Saved a copy and copied \(output.lastPathComponent).\(TemporaryCaptures.toastNote(for: output))", duration: .seconds(3))
         return true
     }
 
@@ -890,11 +880,17 @@ final class VideoEditorModel {
         let options = options, project = project, plan = VideoExportPlan(project: project, options: options), fileURL = fileURL
         let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var truncated = false
-        let progress = PercentProgress { percent in
+        let progress = PercentProgress { [weak self] percent in
             Task { @MainActor in
-                Toast.progress("Exporting… \(percent)%")
+                // The task may run on after the export ended, so a late report can't bring the bar back.
+                guard self?.isExporting == true else {
+                    return
+                }
+                self?.exportFraction = Double(percent) / 100
+                Toast.progress("Exporting…", fraction: Double(percent) / 100)
             }
         }
+        defer { exportFraction = nil }
         let exported = await exporting {
             let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: .app, progress: progress.report)
             truncated = outcome.truncated
@@ -981,6 +977,41 @@ final class VideoEditorModel {
         return await task.value
     }
 
+    /// Whether the Export panel shows beside the video.
+    var showsExportPanel: Bool { sidePanel == .export }
+
+    /// Whether the Inspector shows beside the video.
+    var showsInspector: Bool { sidePanel == .inspector }
+
+    /// Shows or hides the Export panel, which closes the Inspector.
+    func toggleExportPanel() {
+        setSidePanel(VideoSidePanel.toggling(.export, from: sidePanel))
+    }
+
+    /// Hides the Export panel; false when it wasn't showing.
+    @discardableResult
+    func closeExportPanel() -> Bool {
+        guard showsExportPanel else {
+            return false
+        }
+        setSidePanel(nil)
+        return true
+    }
+
+    /// Shows or hides the Inspector, which closes the Export panel.
+    func toggleInspector() {
+        setSidePanel(VideoSidePanel.toggling(.inspector, from: sidePanel))
+    }
+
+    /// Remembers whether the Inspector is open for the next window, as the image editor's Layers panel does.
+    private func setSidePanel(_ panel: VideoSidePanel?) {
+        sidePanel = panel
+        UserDefaults.standard.set(panel == .inspector, forKey: Self.showsInspectorKey)
+        if panel != .inspector {
+            stylePreview = nil
+        }
+    }
+
     /// Stops the export in progress; false when there isn't one.
     @discardableResult
     func cancelExport() -> Bool {
@@ -998,6 +1029,44 @@ final class VideoEditorModel {
 
 extension VideoEditorModel {
     var isAnnotating: Bool { annotationTool != nil }
+
+    /// Whether the drawing tools show beside the video: while a tool is picked, and while a crop started from them runs.
+    var showsDrawTools: Bool { isAnnotating || toolAfterCrop != nil }
+
+    /// A tool in the drawing tools: keeps a crop started from them, then picks the tool.
+    func pickDrawTool(_ tool: EditorTool) {
+        if isCropping {
+            toolAfterCrop = nil
+            applyCrop()
+        }
+        annotationStyle.tool = tool
+        setAnnotationTool(tool)
+    }
+
+    /// Crop video in the drawing tools, or C while drawing: leaves the tool for crop mode, and picks it again when the
+    /// crop is applied or cancelled. Outside drawing it's C as before.
+    @discardableResult
+    func cropFromDrawTools() -> Bool {
+        guard let tool = annotationTool else {
+            return beginCrop()
+        }
+        setAnnotationTool(nil)
+        guard beginCrop() else {
+            setAnnotationTool(tool)
+            return false
+        }
+        toolAfterCrop = tool
+        return true
+    }
+
+    /// Back to the drawing tool a crop from the drawing tools left.
+    private func resumeDrawingAfterCrop() {
+        guard let tool = toolAfterCrop else {
+            return
+        }
+        toolAfterCrop = nil
+        setAnnotationTool(tool)
+    }
 
     var selectedAnnotation: AnnotationClip? { selectedClipID.flatMap(project.annotationClip) }
 
@@ -1022,11 +1091,11 @@ extension VideoEditorModel {
         }
         player.pause()
         endCropSilently()
+        toolAfterCrop = nil
         annotationTool = tool
         if tool != nil, tool != .select {
             selectedClipID = selectedAnnotation == nil ? selectedClipID : nil
         }
-        onLayoutChanged?()
         refreshPlayer()
     }
 
@@ -1190,6 +1259,25 @@ extension VideoEditorModel {
     /// The colour or fill palette's last custom colour.
     func lastCustom(forFill: Bool) -> RGBA? {
         palette.lastCustom(forFill: forFill)
+    }
+
+    /// True when the drawing options aren't the defaults, so More style's Reset has something to do.
+    var canResetToolOptions: Bool { palette.canReset }
+
+    /// More style's Reset: puts the drawing options back to how a new install starts, for the selected annotation, the
+    /// text being typed and the next annotation. A spotlight's dim goes back for every spotlight, since they share it.
+    func resetToolOptions() {
+        let before = palette
+        var changed = before
+        changed.reset()
+        guard changed != before else {
+            return
+        }
+        history.stopCoalescing()
+        adopt(changed)
+        if let look = changed.sharedSpotlight, look != before.sharedSpotlight {
+            setSpotlightLook(effect: look.effect, strength: look.strength)
+        }
     }
 
     /// Shows the compositor `annotation` at the playhead, in place of the clip `id` when it has one, before it's committed.
@@ -1373,6 +1461,7 @@ extension VideoEditorModel {
         let changed = project.applying(cropDraft: draft, bounds: bounds, to: target)
         cropTarget = nil
         cropDraft = nil
+        defer { resumeDrawingAfterCrop() }
         guard let changed, replaceProject(with: changed) else {
             refreshPlayer()
             return
@@ -1386,6 +1475,7 @@ extension VideoEditorModel {
         }
         endCropSilently()
         refreshPlayer()
+        resumeDrawingAfterCrop()
     }
 
     private func endCropSilently() {
@@ -1401,14 +1491,15 @@ extension VideoEditorModel {
         }
         endCropSilently()
         refreshPlayer()
+        resumeDrawingAfterCrop()
     }
 
-    /// Reset in crop mode: the crop shows everything again, until it's applied.
-    func resetCropDraft() {
+    /// Reset in crop mode, or Delete: the crop shows everything again, until it's applied.
+    func resetCrop() {
         cropDraft = cropBounds
     }
 
-    func setCropAspect(_ aspect: CropAspect) {
+    func chooseCropAspect(_ aspect: CropAspect) {
         cropAspect = aspect
         if let draft = cropDraft {
             cropDraft = CropEditing.draft(draft, holding: aspect)
@@ -1431,12 +1522,6 @@ extension VideoEditorModel {
 // MARK: Keyframes
 
 extension VideoEditorModel {
-    func toggleInspector() {
-        showsInspector.toggle()
-        UserDefaults.standard.set(showsInspector, forKey: Self.showsInspectorKey)
-        onLayoutChanged?()
-    }
-
     /// The selected clip's properties at the playhead, with its keyframes applied.
     var selectedValues: PropertyValues? {
         selectedClipID.flatMap { project.values(ofClip: $0, at: playhead) }
@@ -1558,7 +1643,7 @@ extension VideoEditorModel {
 // MARK: Style
 
 extension VideoEditorModel: StyleEditing {
-    /// What the Style popover offers: the selected annotation's kind, or an image's for a clip's picture, which can have
+    /// What the Inspector's Style section offers: the selected annotation's kind, or an image's for a clip's picture, which can have
     /// rounded corners, a hairline and a solid border. `nil` for sound, and for annotations that can't be styled.
     var targetStyleKind: StyleKind? {
         if let note = selectedAnnotation {
@@ -1570,10 +1655,6 @@ extension VideoEditorModel: StyleEditing {
         return .image
     }
 
-    var targetStyleTitle: String {
-        selectedAnnotation == nil && targetStyleKind != nil ? String(localized: "CLIP STYLE") : targetStyleKind?.title ?? ""
-    }
-
     var targetHasTransparency: Bool {
         selectedAnnotation?.annotation.hasTransparency ?? false
     }
@@ -1582,30 +1663,12 @@ extension VideoEditorModel: StyleEditing {
         selectedAnnotation?.annotation.style ?? selectedClip?.style ?? ObjectStyle()
     }
 
-    /// What the Style popover's tiles draw: a placed image, mark or text, or a frame of a clip once its thumbnails load.
-    var targetThumbnail: StyleThumbnail.Subject? {
-        if let annotation = selectedAnnotation?.annotation {
-            if case let .image(image, _) = annotation.kind {
-                return .image(image.cropped(annotation.imageCrop))
-            }
-            return .annotation(annotation)
-        }
-        guard targetStyleKind != nil, let clip = selectedClip, let frame = thumbnailSets[clip.source]?.lazy.compactMap(\.self).first else {
-            return nil
-        }
-        // A thumbnail is the whole picture, so it's cut as the clip is.
-        guard let crop = clip.crop else {
-            return .image(frame)
-        }
-        return .image(frame.cropping(to: crop.sourceRect(width: frame.width, height: frame.height)) ?? frame)
-    }
-
     /// In points.
     var targetCornerRadius: CGFloat {
         (selectedAnnotation.map { $0.annotation.cornerRadius ?? 0 } ?? selectedClip?.cornerRadius ?? 0) / scale
     }
 
-    /// Canvas pixels per point of the Style popover's sizes, as annotations are sized.
+    /// Canvas pixels per point of the Style section's sizes, as annotations are sized.
     var scale: CGFloat { styleScale }
 
     /// A new `kind` border for the target, at the middle width, in the colour of the border it has, else white, or for
@@ -1729,7 +1792,7 @@ extension VideoEditorModel: StyleEditing {
             return
         }
         StyleClipboard.copied = CopiedStyle(style: targetStyle.scaled(by: 1 / scale), cornerRadius: targetCornerRadius, source: kind, fromShape: selectedAnnotation?.annotation.roundsShape == true)
-        Toast.show("Copied style")
+        Toast.done("Copied style")
     }
 
     var canPasteStyle: Bool { StyleClipboard.copied != nil && targetStyleKind != nil && editingText == nil }

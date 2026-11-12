@@ -6,15 +6,33 @@ private let log = Logger.shot("color-sampler")
 
 @MainActor
 enum ColorSampler {
-    /// Held while the loupe shows, so only one shows at a time.
+    /// Held while the system loupe shows, so only one shows at a time.
     private static var showing: NSColorSampler?
+    /// Whether Shot's own loupe is showing.
+    private static var picking = false
 
-    /// Shows the system loupe and returns the colour clicked, in sRGB, or `nil` when Esc cancels or a loupe is
-    /// already showing. Needs no permission.
-    static func sample() async -> RGBA? {
-        guard showing == nil else {
+    /// The colour clicked on screen, in sRGB, or `nil` when Esc cancels or a loupe is already showing. With Screen
+    /// Recording allowed it's Shot's loupe from the redesign board, over a still of every display; without it, the system
+    /// loupe, which needs no permission. `purpose` says in the hint whether a click copies the colour or picks it.
+    static func sample(for purpose: ColorPickerOverlay.Purpose) async -> RGBA? {
+        guard showing == nil, !picking else {
             return nil
         }
+        if Permissions.hasScreenCapture {
+            picking = true
+            defer { picking = false }
+            do {
+                let frozen = try await DisplayCapturer.captureForColorPicking()
+                let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
+                return await ColorPickerOverlay.pick(displays: displays, purpose: purpose)
+            } catch {
+                log.error("Couldn't freeze the screen for Pick Colour, so the system loupe shows: \(error.localizedDescription)")
+            }
+        }
+        return await systemSample()
+    }
+
+    private static func systemSample() async -> RGBA? {
         let sampler = NSColorSampler()
         showing = sampler
         defer { showing = nil }
@@ -25,10 +43,10 @@ enum ColorSampler {
         }
     }
 
-    /// Whether a loupe of ours is showing.
+    /// Whether the system loupe is showing.
     static var isShowing: Bool { showing != nil }
 
-    /// Ends any loupe still on screen. `NSColorSampler` can't be cancelled, and its loupe lives in a system process
+    /// Ends any system loupe still on screen. `NSColorSampler` can't be cancelled, and its loupe lives in a system process
     /// that outlives a client that quits or dies mid-pick, so it keeps swallowing every click on the desktop until
     /// it's killed. The system starts the process again on the next pick.
     nonisolated static func endLoupe() {

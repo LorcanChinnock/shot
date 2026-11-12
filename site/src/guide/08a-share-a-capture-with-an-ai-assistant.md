@@ -18,6 +18,6 @@ That's all most people need. Your marks show the assistant where to look.
 
 ## Give the assistant the file
 
-Right-click a Quick Access card and choose **Copy Path**. An assistant that can open files, such as a coding tool running on your Mac, can read the image from its path. Copies are always the image alone.
+Right-click a Quick Access card and choose **Copy Path**, in the annotation editor choose **Share › Copy Path**, or in the [gallery](#find-your-captures) press <kbd>Space</kbd> to preview a capture and click **Copy path for an AI assistant** at the bottom of its details. The editor saves your marks first, so the file has them. An assistant that can open files, such as a coding tool running on your Mac, can read the image from its path. Copies are always the image alone.
 
 The `shot://copy-path` link copies the newest capture's path without opening the card. See [Automation reference](#url-scheme).

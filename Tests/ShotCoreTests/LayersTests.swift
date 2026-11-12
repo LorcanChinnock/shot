@@ -302,12 +302,12 @@ private func clip(on track: UUID, of project: Project) -> UUID {
 
 @Test func whereADraggedClipLandsDependsOnHowNearALaneEdgeItIs() {
     let (project, _, _, _) = overlayProject()
-    // Lanes top down: the top track (3) at 0–28, the middle (2) at 32–60, the bottom (1) at 64–92, then the main track.
+    // Lanes top down: the top track (3) at 0–22, the middle (2) at 27–49, the bottom (1) at 54–76, then the main track.
     let layout = LaneLayout(project, top: 0)
     #expect(layout.laneDrop(at: 2, in: project) == .insert(4))
     #expect(layout.laneDrop(at: 14, in: project) == .onto(3))
     #expect(layout.laneDrop(at: 27, in: project) == .insert(3))
-    #expect(layout.laneDrop(at: 46, in: project) == .onto(2))
+    #expect(layout.laneDrop(at: 38, in: project) == .onto(2))
     #expect(layout.laneDrop(at: 90, in: project) == .insert(1))
     #expect(layout.laneDrop(at: 120, in: project) == .insert(1))
 }
@@ -405,10 +405,10 @@ private func mixedProject() throws -> (project: Project, below: UUID, picture: U
     let layout = LaneLayout(project, top: 0)
     #expect(layout.lanes.map(\.track) == [3, 2, 1, 0])
     #expect(layout.lanes.map(\.height) == [LaneLayout.annotationHeight, LaneLayout.pictureHeight, LaneLayout.annotationHeight, LaneLayout.mainHeight])
-    // Lanes top down: the arrow (3) at 0–28, the picture (2) at 32–72, the blur (1) at 76–104, then the main track.
+    // Lanes top down: the arrow (3) at 0–22, the picture (2) at 27–61, the blur (1) at 66–88, then the main track.
     #expect(layout.laneDrop(at: 50, in: project) == .onto(2))
     #expect(layout.laneDrop(at: 30, in: project) == .insert(3))
-    #expect(layout.laneDrop(at: 74, in: project) == .insert(2))
+    #expect(layout.laneDrop(at: 63, in: project) == .insert(2))
     #expect(layout.laneDrop(at: 120, in: project) == .insert(1))
 }
 
@@ -486,4 +486,26 @@ private func mixedProject() throws -> (project: Project, below: UUID, picture: U
     for shape in BoxShape.allCases {
         #expect(annotation(.shape(shape, rect: rect)).layerSymbol == shape.symbol)
     }
+}
+
+@Test func frameRowDetailNamesTheCropToolsShapes() {
+    #expect(FrameRowDetail.label(for: CGSize(width: 1600, height: 900)) == "16:9")
+    #expect(FrameRowDetail.label(for: CGSize(width: 900, height: 1600)) == "9:16")
+    #expect(FrameRowDetail.label(for: CGSize(width: 800, height: 600)) == "4:3")
+    #expect(FrameRowDetail.label(for: CGSize(width: 600, height: 800)) == "3:4")
+    #expect(FrameRowDetail.label(for: CGSize(width: 512, height: 512)) == "1:1")
+}
+
+@Test func frameRowDetailAllowsAPixelOfRounding() {
+    // 1,480 wide at 16:9 is 832.5 tall, which a crop rounds to whole pixels.
+    #expect(FrameRowDetail.label(for: CGSize(width: 1480, height: 833)) == "16:9")
+    #expect(FrameRowDetail.label(for: CGSize(width: 1480, height: 832)) == "16:9")
+    #expect(FrameRowDetail.label(for: CGSize(width: 1480, height: 835)) != "16:9")
+}
+
+@Test func frameRowDetailFallsBackToThePixelsKept() {
+    let english = Locale(identifier: "en_US")
+    #expect(FrameRowDetail.label(for: CGSize(width: 1480, height: 560), locale: english) == "1,480 × 560")
+    #expect(FrameRowDetail.label(for: CGSize(width: 300, height: 200), locale: english) == "300 × 200")
+    #expect(FrameRowDetail.label(for: .zero) == "")
 }

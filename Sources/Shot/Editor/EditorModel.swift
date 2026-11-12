@@ -147,8 +147,9 @@ final class EditorModel {
     var showsLayers = UserDefaults.standard.bool(forKey: EditorModel.showsLayersKey)
     /// Whether the picker of images to place on the canvas is open.
     var showsImagePicker = false
-    /// Whether the Style popover is open.
-    var showsStylePopover = false
+    /// Whether the Style panel shows beside the canvas. It starts closed in every window, and it and the Layers panel
+    /// take turns, so the canvas keeps its room at the window's minimum width.
+    private(set) var showsStylePanel = false
     private static let showsLayersKey = PreferenceKey.editorShowsLayers
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
@@ -156,11 +157,25 @@ final class EditorModel {
     @ObservationIgnored private var isSaving = false
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
-    /// The canvas's zoom, where 1 is actual size, for the zoom menu; the canvas view keeps it current.
+    /// The canvas's zoom, where 1 is actual size, for the zoom control; the canvas view keeps it current.
     /// Zoom is view state, not part of the document, so it isn't undoable.
     var zoom: CGFloat = 1
+    /// The mark the style bar sits beside, in the canvas's view points with its selection handles: the text being typed,
+    /// else the selection. `nil` when the bar styles the tool's next mark. The canvas keeps it current.
+    var styleBarMark: CGRect?
+    /// True while a drag on the canvas draws, moves, resizes or crops, when the style bar steps out of the way.
+    var isCanvasDragging = false
+    /// How much of the canvas's foot the zoom control and hint take, with their inset, which the style bar keeps clear of.
+    var canvasFootHeight: CGFloat = 0
+    /// The size of the zoom control and Canvas menu at the canvas's bottom left, which the crop bar keeps clear of.
+    var canvasFootLeading: CGSize = .zero
+    /// How much of the canvas's bottom the crop bar covers in crop mode, which the fitted image keeps clear of; 0 otherwise.
+    var cropBarClearance: CGFloat = 0
+    /// Whether More style, the style bar's popover of the options that don't fit in it, is open.
+    var showsMoreStyle = false
     private(set) var history: EditHistory
     private var isDraggingStyle = false
+    @ObservationIgnored private var isLoadingDesktopPicture = false
 
     /// `newCaptureStyle` is put on the screenshot as where the document starts, so it's no unsaved change. `windowShadow`
     /// says the image is a window captured with the macOS shadow. `layers` are the live layers and canvas of `version`,
@@ -197,9 +212,10 @@ final class EditorModel {
         widthIndex = style.widthIndex
         objectStyles = style.objectStyles
         if let newCaptureStyle {
-            self.document.pasteStyle(newCaptureStyle, to: [.capture], scale: scale, margin: canvasMargin)
+            self.document.applyNewCaptureStyle(newCaptureStyle, scale: scale, margin: canvasMargin)
             history.setSaved(self.document.snapshot)
         }
+        loadDesktopPictureIfNeeded()
     }
 
     /// Saves only the value that changed, so another open editor's choices aren't overwritten with this
@@ -210,6 +226,12 @@ final class EditorModel {
 
     var selection: Annotation? {
         selectedID.flatMap { id in document.annotations.first { $0.id == id } }
+    }
+
+    /// The hint at the canvas's bottom right: what's selected or what the tool does, and its keys. `nil` in crop mode,
+    /// where the crop bar takes the foot.
+    var canvasHint: CanvasHint? {
+        CanvasHint.hint(tool: tool, selection: document.annotations.filter { selectedIDs.contains($0.id) }, isTyping: editingText != nil)
     }
 
     // MARK: Layers
@@ -223,14 +245,40 @@ final class EditorModel {
         }
     }
 
-    /// The Frame row of the layers panel: there while the image has a crop.
+    /// The Frame row of the layers panel: there while the image has a crop. Its detail follows the crop being dragged
+    /// while the crop tool adjusts it.
     var frameRow: FrameRow? {
-        document.frameCrop.map { _ in FrameRow(isHidden: document.isFrameCropHidden, isSelected: tool == .crop && cropImageID == nil) }
+        document.frameCrop.map { crop in
+            let isSelected = tool == .crop && cropImageID == nil
+            let size = isSelected && cropDraft != nil ? cropKeptSize : crop.integral.intersection(document.contentRect).size
+            return FrameRow(isHidden: document.isFrameCropHidden, isSelected: isSelected, detail: FrameRowDetail.label(for: size))
+        }
     }
 
     func toggleLayers() {
         showsLayers.toggle()
         UserDefaults.standard.set(showsLayers, forKey: Self.showsLayersKey)
+        if showsLayers {
+            showsStylePanel = false
+        }
+    }
+
+    /// Opens the Style panel if it's closed, as the Canvas menu's Background… does.
+    func showStylePanel() {
+        if !showsStylePanel {
+            toggleStylePanel()
+        }
+    }
+
+    /// Opens or closes the Style panel. Opening it closes the Layers panel, which ⌘L brings back in its place.
+    func toggleStylePanel() {
+        showsStylePanel.toggle()
+        if showsStylePanel, showsLayers {
+            toggleLayers()
+        }
+        if !showsStylePanel {
+            stylePreview = nil
+        }
     }
 
     /// Picks layers from the panel, which also switches to the select tool, as picking one on the canvas does.
@@ -364,6 +412,11 @@ final class EditorModel {
     /// True when the toolbar offers a colour and width: the text being typed or the selection takes them, or else the tool does.
     var showsStyle: Bool { palette.showsStyle }
 
+    /// What the style bar shows; `nil` hides it.
+    var styleBarContent: StyleBarContent? {
+        StyleBarContent.content(showsStyle: showsStyle, tool: tool, showsRedaction: paletteRedaction != nil, showsSpotlight: paletteSpotlight != nil)
+    }
+
     /// True when the width sets a text size, so the toolbar offers sizes rather than line widths.
     var sizesText: Bool { palette.sizesText }
 
@@ -456,7 +509,7 @@ final class EditorModel {
 
     // MARK: Object style
 
-    /// What the Style popover changes: the selected image, mark or text, else the capture when nothing is selected. `nil`
+    /// What the Style panel changes: the selected image, mark or text, else the capture when nothing is selected. `nil`
     /// while text is typed or the selection can't take a style.
     var styleTarget: StyleTarget? {
         guard editingText == nil else {
@@ -471,52 +524,32 @@ final class EditorModel {
         return .annotation(selection.id)
     }
 
-    /// What the Style popover's target is, which decides what it offers.
+    /// What the Style panel's target is, which decides what it offers.
     var targetStyleKind: StyleKind? {
         styleTarget.flatMap { document.styleKind(of: $0) }
     }
 
-    /// Whether the target has see-through pixels, so the Style popover offers an outline.
+    /// Whether the target has see-through pixels, so the Style panel offers an outline.
     var targetHasTransparency: Bool {
         styleTarget.map { document.hasTransparency(of: $0) } ?? false
     }
 
-    /// Whether the Style popover's target is a window captured with the macOS shadow.
+    /// Whether the Style panel's target is a window captured with the macOS shadow.
     var targetHasWindowShadow: Bool {
         styleTarget == .capture && document.hasWindowShadow
     }
 
-    /// What the Style popover's tiles draw: the screenshot or placed image itself, or the mark or text.
-    var targetThumbnail: StyleThumbnail.Subject? {
-        switch styleTarget {
-        case .capture:
-            return .image(document.base)
-        case let .annotation(id):
-            guard let annotation = document.annotations.first(where: { $0.id == id }) else {
-                return nil
-            }
-            if case let .image(image, _) = annotation.kind {
-                return .image(image.cropped(annotation.imageCrop))
-            }
-            return .annotation(annotation)
-        case nil:
-            return nil
-        }
-    }
-
-    var thumbnailBackground: RGBA? { document.background }
-
-    /// The style the Style popover shows: its target's.
+    /// The style the Style panel shows: its target's.
     var targetStyle: ObjectStyle {
         styleTarget.map { document.style(of: $0) } ?? ObjectStyle()
     }
 
-    /// The corner radius the Style popover shows, in points.
+    /// The corner radius the Style panel shows, in points.
     var targetCornerRadius: CGFloat {
         styleTarget.map { document.cornerRadius(of: $0) / scale } ?? 0
     }
 
-    /// A style the pointer is over in the Style popover, shown on the canvas in place of the target's until it moves off.
+    /// A style the pointer is over in the Style panel, shown on the canvas in place of the target's until it moves off.
     /// It's not part of the document, so it's never an undo step.
     var stylePreview: ObjectStyle?
 
@@ -537,23 +570,32 @@ final class EditorModel {
     }
 
     /// Puts the target's shadow, border and corners back to how a new one of its kind starts, as one undo step, and
-    /// remembers that style for the next one. The screenshot's "use for new captures" setting stays as it is.
+    /// remembers that style for the next one. The screenshot's background, padding and size go back to how a new
+    /// capture starts too. The screenshot's "use for new captures" setting stays as it is.
     func resetTargetStyle() {
         guard let styleTarget, let kind = targetStyleKind else {
             return
         }
         stylePreview = nil
-        let style = kind.defaultStyle.scaled(by: scale)
+        let style = kind.editorDefaultStyle.scaled(by: scale)
         let radius = kind.defaultCornerRadius * scale
+        let background = EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension))
         edit {
             $0.setStyle(style, of: styleTarget, margin: canvasMargin)
             if kind.takesCorners {
                 $0.setCornerRadius(radius, of: styleTarget)
             }
+            if kind == .capture {
+                $0.background = background
+                $0.backgroundFill = nil
+                $0.frame = .none
+            }
         }
+        // Forgetting the kind's style, rather than saving its default, lets each editor start the next one with its own:
+        // the Soft shadow on an image here, and none on a video clip, which reads the same preference.
         if kind != .capture {
-            objectStyles[kind] = kind.defaultStyle
-            rememberStyle { $0.objectStyles[kind] = kind.defaultStyle }
+            objectStyles[kind] = nil
+            rememberStyle { $0.objectStyles[kind] = nil }
         }
     }
 
@@ -639,13 +681,14 @@ final class EditorModel {
 
     /// Saves the screenshot's style for new captures to open and copy with, or turns that off.
     func setUsesStyleForNewCaptures(_ on: Bool) {
-        Preferences.styleNewCaptures(with: on ? document.copyStyle(of: .capture, scale: scale) : nil)
+        Preferences.styleNewCaptures(with: on ? document.newCaptureStyle(scale: scale) : nil)
         newCaptureSettingChanges += 1
     }
 
-    /// The style a new annotation of `kind` starts with: the last one given to that kind, else none.
+    /// The style a new annotation of `kind` starts with: the last one given to that kind, else the Soft shadow for a
+    /// placed image and none for anything else.
     private func startingStyle(for kind: StyleKind) -> ObjectStyle {
-        EditorStyle(objectStyles: objectStyles).objectStyle(for: kind, scale: scale)
+        EditorStyle(objectStyles: objectStyles).editorObjectStyle(for: kind, scale: scale)
     }
 
     /// Copies the style of the selection, or of the screenshot when nothing is selected, for Paste Style.
@@ -655,7 +698,7 @@ final class EditorModel {
             return
         }
         StyleClipboard.copied = copied
-        Toast.show("Copied style")
+        Toast.done("Copied style")
     }
 
     var canPasteStyle: Bool { StyleClipboard.copied != nil }
@@ -876,6 +919,11 @@ final class EditorModel {
         }
     }
 
+    /// The pixels applying the crop being adjusted keeps, which the crop bar shows.
+    var cropKeptSize: CGSize {
+        cropDraft.map { CropBar.keptSize(draft: $0, croppingImage: cropImageID != nil, contentRect: document.contentRect) } ?? .zero
+    }
+
     /// Whether there's a crop to take off, which Reset offers.
     var canResetCrop: Bool {
         CropEditing.canReset(draft: cropDraft, fullRect: cropImageFullRect, contentRect: document.contentRect, hasFrameCrop: document.frameCrop != nil)
@@ -986,8 +1034,62 @@ final class EditorModel {
         edit { $0.trimToImage() }
     }
 
+    /// Sets the background to one colour, or none, in place of any gradient.
     func setBackground(_ background: RGBA?) {
-        edit { $0.background = background }
+        edit {
+            $0.background = background
+            $0.backgroundFill = nil
+        }
+    }
+
+    /// Fills the canvas with a gradient or the desktop picture, over a colour close to it that tints shadows.
+    func setBackgroundFill(_ fill: BackgroundFill) {
+        edit {
+            $0.background = fill.average
+            $0.backgroundFill = fill
+        }
+        loadDesktopPictureIfNeeded()
+    }
+
+    /// Whether the Style panel's Reset has anything to put back.
+    var isTargetStyleDefault: Bool {
+        guard let kind = targetStyleKind else {
+            return true
+        }
+        let style = kind.isEditorDefault(style: targetStyle, cornerRadius: targetCornerRadius, scale: scale)
+        guard kind == .capture else {
+            return style
+        }
+        return style && document.frame.isNone && document.backgroundFill == nil
+            && document.background == EditorDocument.defaultBackground(for: ImageFormat(fileExtension: fileURL.pathExtension))
+    }
+
+    /// The padding the Style panel shows, in points.
+    var canvasPadding: CGFloat { document.frame.padding / scale }
+
+    /// Sets the padding round the screenshot, in points. A drag of its slider is one undo step.
+    func setCanvasPadding(_ points: CGFloat) {
+        edit(coalescing: isDraggingStyle ? "canvas-padding" : nil) { $0.frame.padding = (points * scale).rounded() }
+    }
+
+    func setCanvasAspect(_ aspect: CanvasAspect) {
+        edit { $0.frame.aspect = aspect }
+    }
+
+    /// Loads the desktop picture for a Desktop fill, off the main actor, the first time the document needs it.
+    private func loadDesktopPictureIfNeeded() {
+        guard document.backgroundFill == .desktop, document.desktopPicture == nil, !isLoadingDesktopPicture else {
+            return
+        }
+        isLoadingDesktopPicture = true
+        Task { [weak self] in
+            let picture = await DesktopPicture.current()
+            guard let self else {
+                return
+            }
+            isLoadingDesktopPicture = false
+            document.desktopPicture = picture
+        }
     }
 
     /// The background picked last from the custom colour editor, which its rainbow swatch applies again; `nil` until one
@@ -1002,7 +1104,10 @@ final class EditorModel {
             color.a = 1
         }
         lastBackgroundColor = color
-        edit(coalescing: "background") { $0.background = color }
+        edit(coalescing: "background") {
+            $0.background = color
+            $0.backgroundFill = nil
+        }
     }
 
     /// Applies `change` as one undoable step, or does nothing if it leaves the document as it was.
@@ -1077,7 +1182,8 @@ final class EditorModel {
             for (index, (image, imageScale)) in decoded.enumerated() {
                 let center = point.map { CGPoint(x: $0.x + pasteStep * CGFloat(index), y: $0.y + pasteStep * CGFloat(index)) }
                 let id = doc.addImage(image, scale: imageScale, documentScale: scale, centeredAt: center, margin: canvasMargin)
-                // It starts with the last style given to an image, but for an outline it has no see-through pixels for.
+                // It starts with the last style given to an image, else the Soft shadow, but for an outline it has no
+                // see-through pixels for.
                 if !style.isEmpty {
                     doc.setStyle(style, of: .annotation(id), margin: canvasMargin)
                 }
@@ -1112,7 +1218,7 @@ final class EditorModel {
         Task {
             do {
                 try await Clipboard.copy(annotation: selection)
-                Toast.show("Copied annotation")
+                Toast.done("Copied annotation")
             } catch {
                 Toast.error("Couldn't copy: \(error.localizedDescription)")
             }
@@ -1129,12 +1235,13 @@ final class EditorModel {
             return
         }
         Clipboard.copy(png: png)
-        Toast.show("Copied")
+        Toast.done("Copied")
     }
 
-    /// Returns false if the save failed or another is still running.
+    /// Returns false if the save failed or another is still running. Without `announce`, it shows no toast of its own,
+    /// for a Share action that says what it did.
     @discardableResult
-    func save() async -> Bool {
+    func save(announce: Bool = true) async -> Bool {
         guard !isSaving else {
             return false
         }
@@ -1159,6 +1266,9 @@ final class EditorModel {
             self.pristine = version.original
             canRevert = overwrote
             history.didSave(snapshot, document: self.document)
+            guard announce else {
+                return true
+            }
             let note = TemporaryCaptures.toastNote(for: version.url)
             Toast.show(overwrote ? "Saved over \(version.url.lastPathComponent) and copied.\(note)" : "Saved as \(version.url.lastPathComponent) and copied.\(note)", duration: .seconds(3))
             return true
@@ -1168,6 +1278,100 @@ final class EditorModel {
         case let .failure(.write(error)):
             Toast.error("Couldn't save: \(error.localizedDescription)")
             return false
+        }
+    }
+
+    // MARK: Share menu
+
+    /// The file on disk the editor shows: the version last opened or saved, or the image itself.
+    var savedFile: URL { version ?? fileURL }
+
+    /// Runs one of the Share menu's actions. Copy Path and Show in Finder save unsaved changes first, so the file they
+    /// point at has them.
+    func share(_ action: EditorShareAction) async {
+        let saved = action.savesFirst(isDirty: isDirty)
+        if saved {
+            guard await save(announce: false) else {
+                return
+            }
+        }
+        switch action {
+        case .copyImage:
+            await copy()
+        case .copyPath:
+            Clipboard.copy(string: savedFile.path)
+            if saved {
+                Toast.done("Saved as \(savedFile.lastPathComponent) and copied its path", duration: .seconds(3))
+            } else {
+                Toast.done("Copied path")
+            }
+        case .saveAs:
+            await saveAs()
+        case .showInFinder:
+            NSWorkspace.shared.activateFileViewerSelecting([savedFile])
+        case .pin:
+            await pin()
+        }
+    }
+
+    /// Writes the image with its changes to a file the user picks, in PNG or JPEG by the name's extension. The editor
+    /// stays on its own file, so Save still makes its next version.
+    private func saveAs() async {
+        commitPendingText?()
+        applyCropIfCropping()
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png, .jpeg]
+        panel.nameFieldStringValue = VersionNaming.nextVersionURL(of: savedFile).lastPathComponent
+        panel.directoryURL = savedFile.deletingLastPathComponent()
+        NSApp.activate()
+        guard panel.runModal() == .OK, let destination = panel.url else {
+            return
+        }
+        let same = { (url: URL) in url.resolvingSymlinksInPath().standardizedFileURL }
+        guard same(destination) != same(savedFile), same(destination) != same(fileURL) else {
+            Toast.error("Save As can't replace the file you're editing. Use Save, or pick another name.")
+            return
+        }
+        let format = ImageFormat(fileExtension: destination.pathExtension)
+        var document = document
+        // JPEG has no alpha, so transparent padding would come out black.
+        if format == .jpeg, document.background == nil, document.hasPadding {
+            document.background = EditorDocument.defaultBackground(for: .jpeg)
+        }
+        let scale = scale
+        let written = await Task.detached { () -> String? in
+            do {
+                let file = try VersionWriter.render(document, scale: scale, as: format).file
+                try file.write(to: destination, options: .atomic)
+                return nil
+            } catch {
+                return error.localizedDescription
+            }
+        }.value
+        if let written {
+            Toast.error("Couldn't save: \(written)")
+        } else {
+            Toast.show("Saved \(destination.lastPathComponent)", duration: .seconds(4), reveal: destination)
+        }
+    }
+
+    /// Floats the image with its changes above other windows, as Quick Access's Pin does.
+    private func pin() async {
+        commitPendingText?()
+        applyCropIfCropping()
+        guard let png = await renderedPNG() else {
+            Toast.error("Couldn't pin the image")
+            return
+        }
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString)-\(fileURL.deletingPathExtension().lastPathComponent).png")
+        do {
+            try png.write(to: file)
+        } catch {
+            Toast.error("Couldn't pin the image")
+            return
+        }
+        PinController.shared.pin(file) {
+            try? FileManager.default.removeItem(at: file)
         }
     }
 }

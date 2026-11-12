@@ -32,6 +32,9 @@ final class CaptureCoordinator {
             self?.state.isRecording = phase == .recording || phase == .paused
             self?.state.isPaused = phase == .paused
         }
+        recorder.onSecond = { [weak self] seconds in
+            self?.state.recordingSeconds = seconds
+        }
         recorder.onStopRequested = { [weak self] discard in
             self?.stopRecording(discard: discard)
         }
@@ -130,16 +133,16 @@ final class CaptureCoordinator {
             return
         }
         Clipboard.copy(string: latest.path)
-        Toast.show("Copied the path of \(latest.lastPathComponent)")
+        Toast.done("Copied the path of \(latest.lastPathComponent)")
     }
 
     /// Copies the hex of the colour clicked on screen. Esc copies nothing.
     private func pickColor() async {
-        guard let color = await ColorSampler.sample() else {
+        guard let color = await ColorSampler.sample(for: .copy) else {
             return
         }
         Clipboard.copy(string: color.hex)
-        Toast.show("Copied \(color.hex)")
+        Toast.done("Copied \(color.hex)")
     }
 
     /// Opens a capture in the editor that suits it.
@@ -367,7 +370,7 @@ final class CaptureCoordinator {
                 QuickAccessController.shared.add(videoURL: url, thumbnail: thumbnail)
             }
         case let .toast(message):
-            Toast.show(message)
+            Toast.done(message)
         case .editor, .nothing:
             break
         }
@@ -389,7 +392,7 @@ final class CaptureCoordinator {
                 guard let export = self?.gifExports[videoURL], !export.isCancelled else {
                     return
                 }
-                Toast.progress("Exporting GIF… \(percent)%")
+                Toast.progress("Exporting GIF…", fraction: Double(percent) / 100)
             }
         }
         gifExports[videoURL] = Task {
@@ -397,9 +400,9 @@ final class CaptureCoordinator {
             do {
                 let result = try await GIFExporter.export(videoURL: videoURL, to: gifURL, fps: Double(options.gifFrameRate), maxWidth: options.gifMaxWidth, progress: progress.report)
                 if result.truncated {
-                    Toast.show("Saved \(gifURL.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only).\(TemporaryCaptures.toastNote(for: gifURL))", duration: .seconds(3))
+                    Toast.done("Saved \(gifURL.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only).\(TemporaryCaptures.toastNote(for: gifURL))", duration: .seconds(3))
                 } else {
-                    Toast.show("Saved \(gifURL.lastPathComponent).\(TemporaryCaptures.toastNote(for: gifURL))", duration: .seconds(3))
+                    Toast.done("Saved \(gifURL.lastPathComponent).\(TemporaryCaptures.toastNote(for: gifURL))", duration: .seconds(3))
                 }
             } catch where Task.isCancelled {
                 try? FileManager.default.removeItem(at: gifURL)
@@ -430,6 +433,8 @@ final class CaptureCoordinator {
             Clipboard.copy(png: png)
             endCaptureInterval("copied")
         }
+        // Plays once this function next waits, on the file write, so the snap never holds up the copy or the save.
+        Task { ViewfinderSnap.play(over: frame) }
         var savedURL: URL?
         var thumbnail: CGImage?
         if plan.writesFile {
@@ -452,7 +457,8 @@ final class CaptureCoordinator {
                 card = savedURL
             }
         case let .toast(message):
-            Toast.show(message)
+            // The viewfinder has just snapped in over the capture, so the tick shows already drawn.
+            Toast.done(message, drawsTick: false)
         case .nothing:
             break
         }
@@ -530,8 +536,10 @@ final class CaptureCoordinator {
         let source = SendableImage(image)
         Task {
             let start = ContinuousClock.now
+            // Read only for a saved Desktop background, so other styles wait for nothing.
+            let desktop = style.canvas?.fill == .desktop ? await DesktopPicture.current().map(SendableImage.init) : nil
             let styled = await Task.detached { () -> (png: Data, thumbnail: SendableImage?, size: CGSize)? in
-                guard let styled = style.styledCapture(source.image, scale: scale, background: background, windowShadow: windowShadow),
+                guard let styled = style.styledCapture(source.image, scale: scale, background: background, windowShadow: windowShadow, desktopPicture: desktop?.image),
                       let png = ImageCodec.data(from: styled, scale: scale)
                 else {
                     return nil

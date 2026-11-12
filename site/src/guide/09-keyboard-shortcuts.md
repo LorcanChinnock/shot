@@ -20,10 +20,12 @@ Shot takes these keys over from macOS while it runs, once it has Screen Recordin
 ## Change a shortcut
 
 1. Open **Settings › Shortcuts**.
-2. Click a shortcut, then press the new keys. They must include <kbd>⌘</kbd>, <kbd>⌥</kbd> or <kbd>⌃</kbd>.
-3. <kbd>Esc</kbd> cancels, and <kbd>Delete</kbd> clears the shortcut.
+2. Under **Global**, click a shortcut. It says **Press keys…** while it waits.
+3. Press the new keys. They must include <kbd>⌘</kbd>, <kbd>⌥</kbd> or <kbd>⌃</kbd>. <kbd>Esc</kbd> cancels, and <kbd>Delete</kbd> clears the shortcut, which then says **Record Shortcut**.
 
-Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults** puts them all back, and turns **Use Shot for ⌘⇧4 and ⌘⇧5** back on.
+Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults**, at the top right of the window, puts them all back and turns **Use Shot for ⌘⇧4 and ⌘⇧5** back on.
+
+Under **While picking what to capture**, the same pane lists the main keys from [While selecting](#while-selecting).
 
 ## Keep the macOS screenshot tool
 
@@ -36,7 +38,7 @@ Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. mac
 
 **Pick Colour** is in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
 
-- **Pick Colour** shows a loupe. Click any pixel on screen to copy its hex, such as `#1E90FF`.
+- **Pick Colour** shows a loupe with the colour under the pointer and its hex. Click any pixel on screen to copy the hex, such as `#1E90FF`. To land on an exact pixel, move with the arrow keys and press Return. Esc cancels.
 
 ## Scrolling capture
 
@@ -54,14 +56,15 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | Tab | Switch between picking an area, a window and the full screen. <kbd>⇧Tab</kbd> goes back. |
 | D | Step the delay through Off, 3, 5 and 10 seconds. |
 | R | Step the area's ratio. |
-| B | With a window picked, capture just the page of a browser window, or the whole window, for this capture. |
+| B | Switch to Browser, which captures just the page of a browser window, or back to Window, for this capture. |
 | M | Turn the magnifier on or off for this capture. |
 | C | Turn the crosshair guide lines on or off for this capture. |
-| I | Turn the size readout (the area's width and height in pixels) on or off for this capture. |
-| Arrow keys | Move an area. In window mode, step through the windows. |
-| Space | While dragging an area, hold it to move the area. |
+| I | Turn the size label (the area's width and height in pixels) on or off for this capture. |
+| Arrow keys | Make an area at the pointer, then move it. <kbd>⌥</kbd> and the arrow keys resize it. In window mode, step through the windows. |
+| Space | Switch between picking an area and a window. While dragging an area, hold it to move the area. |
 | S | Turn scrolling on or off, to build one screenshot of a long page. |
 | Return | Take the highlighted window or screen, or the area you made with the keys. |
+| ⌥ | Hold it as you finish picking what to record, to [check the frame and options](#record-your-screen) before recording starts. |
 | Esc | Cancel |
 
 ## Recording setup
@@ -117,11 +120,11 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | S | Split the clips under the playhead |
 | K | Key everything the selected clip or annotation can animate at the playhead, or take those keyframes away |
 | N | Turn snapping on or off |
-| T | Show or hide more tools (the tracks) |
+| ⌥⌘I | Show or hide the Inspector |
 | C | Crop the selected clip, or the frame with nothing selected |
 | Return | Apply the crop |
-| Delete | Take away the selected keyframe, section, or clip or annotation |
-| Esc | Cancel a crop or an export, clear the selected section, deselect, or stop annotating |
+| Delete | Take away the selected keyframe, section, or clip or annotation; in crop mode, show everything again |
+| Esc | Cancel a crop or an export, clear the selected section, deselect, stop annotating, or close the Export panel |
 | ⌘] / ⌘[ | Move the selected annotation or clip a lane up / down |
 | ⌥⌘] / ⌥⌘[ | Move the selected annotation or clip to the top / bottom lane |
 | ⌘+ / ⌘− / ⌘0 | Zoom the timeline in / out / to fit |
@@ -137,15 +140,17 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 |---|---|
 | Arrow keys, Home, End | Move the selection (⇧ extends it) |
 | Return | Edit the selection |
-| Space | Quick Look |
+| Space | Preview the selection, or go back to the grid |
+| ← / → in the preview | Previous / next capture |
 | ⌘A, ⌘⇧A | Select all, deselect all |
 | ⌘C | Copy |
 | ⌘R | Show in Finder |
-| Delete or ⌘Delete | Move to the Trash |
+| Delete | Move to the Trash, after asking |
+| ⌘Delete | Move to the Trash without asking |
 | ⌘Z | Put back what you last moved to the Trash |
 | ⌘F | Search |
 | ⌘+, ⌘− | Thumbnail size |
-| Esc | Clear the selection |
+| Esc | Clear the selection, or go back to the grid from the preview |
 
 ## Any Shot window
 

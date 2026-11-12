@@ -60,13 +60,12 @@ public enum PreferenceKey {
     public static let galleryTileSize = "galleryTileSize"
     /// The folder in the save folder new captures go to, by name; empty for the save folder itself.
     public static let captureSubfolder = "captureSubfolder"
-    /// Whether the gallery shows its sidebar of folders; off until someone opens it.
+    /// Whether the gallery shows its sidebar of Library, Folders and Tags; on until someone hides it.
     public static let galleryShowsSidebar = "galleryShowsSidebar"
     /// How wide the gallery's folder sidebar is, in points.
     public static let galleryFolderSidebarWidth = "galleryFolderSidebarWidth"
-    /// How wide the window's sidebar of sections is, in points, and whether it's shrunk to icons.
+    /// How wide the Settings sidebar is, in points.
     public static let appSidebarWidth = "appSidebarWidth"
-    public static let appSidebarCollapsed = "appSidebarCollapsed"
     /// How large Shot draws its own text, a `TextSize`.
     public static let textSize = "textSize"
     /// Whether Shot follows the system appearance, an `AppearanceMode`.
@@ -164,10 +163,9 @@ public struct Preferences {
             PreferenceKey.newCaptureStyle: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
             PreferenceKey.captureSubfolder: "",
-            PreferenceKey.galleryShowsSidebar: false,
-            PreferenceKey.galleryFolderSidebarWidth: 200.0,
-            PreferenceKey.appSidebarWidth: 196.0,
-            PreferenceKey.appSidebarCollapsed: false,
+            PreferenceKey.galleryShowsSidebar: true,
+            PreferenceKey.galleryFolderSidebarWidth: 220.0,
+            PreferenceKey.appSidebarWidth: 228.0,
             PreferenceKey.editorShowsLayers: false,
             PreferenceKey.videoEditorShowsInspector: false,
         ]

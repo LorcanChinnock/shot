@@ -74,12 +74,12 @@ public enum StyleKind: String, CaseIterable, Codable, CodingKeyRepresentable, Se
         }
     }
 
-    /// True for the kinds whose corners the Style popover rounds.
+    /// True for the kinds whose corners the style sections round.
     public var takesCorners: Bool {
         self == .capture || self == .image
     }
 
-    /// The shadow and border a new object of this kind starts with, which the Style popover's Reset puts back: none.
+    /// The shadow and border a new object of this kind starts with, which the style sections' Reset puts back: none.
     public var defaultStyle: ObjectStyle { ObjectStyle() }
 
     /// The corner radius a new object of this kind starts with, in points.
@@ -89,6 +89,19 @@ public enum StyleKind: String, CaseIterable, Codable, CodingKeyRepresentable, Se
     /// no corners ignores the radius.
     public func isDefault(style: ObjectStyle, cornerRadius: CGFloat) -> Bool {
         style == defaultStyle && (!takesCorners || cornerRadius == defaultCornerRadius)
+    }
+
+    /// What the image editor starts a new object of this kind with and its Reset puts back, in points: the Soft shadow
+    /// on a placed image, from Edit › Image editor · crop and combine, and `defaultStyle` on anything else. The video
+    /// editor's clips are images too, and keep the plain `defaultStyle`.
+    public var editorDefaultStyle: ObjectStyle {
+        self == .image ? ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 1)) : defaultStyle
+    }
+
+    /// Whether `style`, in pixels of a document of `scale` pixels per point, and `cornerRadius` are what the image editor
+    /// starts a new object of this kind with.
+    public func isEditorDefault(style: ObjectStyle, cornerRadius: CGFloat, scale: CGFloat) -> Bool {
+        style == editorDefaultStyle.scaled(by: scale) && (!takesCorners || cornerRadius == defaultCornerRadius)
     }
 }
 
@@ -163,7 +176,7 @@ public struct Shadow: Equatable, Hashable, Sendable, Codable {
     }
 }
 
-/// The named shadows the Style popover offers.
+/// The named shadows the style sections offer.
 public enum ShadowPreset: String, CaseIterable, Sendable {
     case soft, float, contact, glow
 
@@ -246,14 +259,14 @@ public struct Border: Equatable, Hashable, Sendable, Codable {
     }
 }
 
-/// What the Style popover changes: the capture, or one annotation.
+/// What the Style panel changes: the capture, or one annotation.
 public enum StyleTarget: Equatable, Hashable, Sendable {
     case capture
     case annotation(UUID)
 }
 
 extension Annotation {
-    /// What its style is on, which decides what the Style popover offers; `nil` for the kinds it can't style: blurs,
+    /// What its style is on, which decides what the Style panel offers; `nil` for the kinds it can't style: blurs,
     /// pixelates, spotlights, the highlighter and notes, which have a shadow of their own.
     public var styleKind: StyleKind? {
         switch kind {
@@ -264,7 +277,7 @@ extension Annotation {
         }
     }
 
-    /// True for the kinds the Style popover can give a shadow or border.
+    /// True for the kinds the style sections can give a shadow or border.
     public var takesObjectStyle: Bool { styleKind != nil }
 
     /// Whether it's a placed image with see-through pixels, which can take an outline.
@@ -301,6 +314,9 @@ public struct CopiedStyle: Equatable, Sendable, Codable {
     /// styles saved before it still decode.
     private var fromShape: Bool?
     public var isFromShape: Bool { fromShape ?? false }
+    /// The screenshot's background, padding and size, saved only by Use for new captures and only when it has them.
+    /// Paste Style leaves it out. Styles saved before it decode without one.
+    public var canvas: CanvasStyle?
 
     public init(style: ObjectStyle, cornerRadius: CGFloat = 0, source: StyleKind, fromShape: Bool = false) {
         self.style = style
@@ -354,6 +370,16 @@ public extension CopiedStyle {
             }
         }
         guard source == other.source, same(cornerRadius, other.cornerRadius) else {
+            return false
+        }
+        switch (canvas, other.canvas) {
+        case (nil, nil):
+            break
+        case let (a?, b?):
+            guard a.isSame(as: b) else {
+                return false
+            }
+        default:
             return false
         }
         switch (style.shadow, other.style.shadow) {

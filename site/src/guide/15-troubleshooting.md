@@ -13,16 +13,16 @@ Apple hasn't notarized Shot, and macOS checks apps you download in a browser. Cl
 macOS applies the access only after Shot relaunches.
 
 1. Quit Shot and open it again.
-2. Check **Settings › About**: it shows **GRANTED** or **MISSING** beside **Screen & System Audio Recording**. **Grant** asks for access, and once macOS has asked, **Open** goes to that list in System Settings.
-3. If it still says MISSING, run this in Terminal, then open Shot and grant access again:
+2. Check **Settings › About**: **Screen & System Audio Recording** shows **Allowed**, or an **Allow…** button. The first click of **Allow…** asks macOS for access, and after that it opens that list in System Settings. Once Shot has asked, **Relaunch** appears beside it.
+3. If it still shows **Allow…**, run this in Terminal, then open Shot and grant access again:
 
 ```sh
 tccutil reset ScreenCapture dev.lorcan.Shot
 ```
 
-## Microphone or Camera says NOT ASKED, but System Settings shows Shot allowed
+## Microphone or Camera shows Allow…, but System Settings shows Shot allowed
 
-The allowed entry belongs to a differently signed copy of Shot, such as one you built yourself. Clear it, then click **Grant** in **Settings › About**:
+The allowed entry belongs to a differently signed copy of Shot, such as one you built yourself. Clear it, then click **Allow…** in **Settings › About**:
 
 ```sh
 tccutil reset Microphone dev.lorcan.Shot
@@ -36,6 +36,10 @@ Shot takes over <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> only once it has Scree
 - If you turned the macOS shortcuts back on in System Settings, turn that setting on again.
 - A **Shortcut unavailable** message means another app already uses that shortcut. Pick another in **Settings › Shortcuts**.
 
+## Browser needs Accessibility
+
+Picking **Browser** on the capture bar, or pressing <kbd>B</kbd>, shows this card until Shot has Accessibility access. Shot needs it to find where a browser shows its page, so it can leave out the tabs and address bar. Click **Grant Access**, then in the macOS prompt click **Open System Settings** and turn on Shot under **Privacy & Security › Accessibility**. Your next capture can use Browser. Until then, **Use Window** captures the whole browser window, and Esc closes the card.
+
 ## Scrolling capture shows a warning
 
 The panel beside the area names the problem and what to do:
@@ -46,6 +50,16 @@ The panel beside the area names the problem and what to do:
 - **Full size:** the picture is as big as Shot can make it: 30,000 pixels on a side, or less for a very wide area. Press <kbd>Return</kbd> to save what you have.
 
 A capture can still have a thin gap or repeat after a fast scroll past the end of a page. Scroll back over that part, or take it again.
+
+## Shot asks to recover your last recording
+
+Shot shows this dialog when it opens after stopping in the middle of a recording, for example after a crash or a restart. The dialog says how much was recorded and how many parts it was saved in.
+
+1. **Recover** joins the parts and saves the video to your save folder as `… (recovered).mp4`. If they can't be joined, each part is saved as its own `(recovered, part N)` file.
+2. **Show Parts** opens the parts in Finder, so you can look at them before you choose. The dialog stays open. When there's only one part, the button says **Show File**.
+3. **Discard recording** deletes the parts. For 5 seconds afterwards, **Undo** in the message in the corner of the screen brings the dialog back.
+
+Press <kbd>Esc</kbd> to close the dialog without choosing. The parts stay where they are, and Shot asks again the next time it opens.
 
 ## Something else is wrong
 

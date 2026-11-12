@@ -1,7 +1,6 @@
 import AppKit
 import Observation
 import os
-import QuickLookUI
 import ShotCore
 
 private let log = Logger.shot("gallery")
@@ -9,17 +8,22 @@ private let log = Logger.shot("gallery")
 @MainActor
 @Observable
 final class GalleryModel {
-    private(set) var items: [GalleryItem] = [] { didSet { refilter() } }
+    private(set) var items: [GalleryItem] = [] { didSet { recount(); refilter() } }
     /// The text read from the screenshots so far, folded for search, which `TextIndexer` hands over as it reads more.
     /// Only a search uses it, and more text usually finds nothing new, so the grid redraws only when the matches change.
     @ObservationIgnored private var texts: [URL: String] = [:] {
         didSet {
+            textRevision += 1
             if !query.trimmingCharacters(in: .whitespaces).isEmpty, matching() != visible {
                 refilter()
             }
         }
     }
-    var filter = GalleryFilter.all { didSet { measure("Gallery filter"); refilter() } }
+    /// The sidebar row picked, which sets the kind, folder or tag the grid shows.
+    var source = GallerySource.all { didSet { measure("Gallery filter"); refilter() } }
+    var filter: GalleryFilter { source.filter }
+    /// The folder shown, by path, empty for the save folder itself, or `nil` for everything in all of them.
+    var shownFolder: String? { source.folder }
     var sort = GallerySort.newest { didSet { measure("Gallery filter"); refilter() } }
     var query = "" {
         didSet {
@@ -28,13 +32,9 @@ final class GalleryModel {
             readTextIfSearching()
         }
     }
-    /// The folder shown, by path, empty for the save folder itself, or `nil` for everything in all of them.
-    var shownFolder: String? = nil { didSet { measure("Gallery filter"); refilter() } }
-    /// The tags picked in the tag row; an item has to carry all of them.
-    var tagFilter: Set<String> = [] { didSet { measure("Gallery filter"); refilter() } }
     /// Every folder in the save folder at any depth, by path, each before the folders in it.
     private(set) var folders: [String] = []
-    /// Whether the sidebar of folders is open, which stays off until someone opens it.
+    /// Whether the sidebar of Library, Folders and Tags is open, which it is until someone hides it.
     var showsSidebar: Bool {
         get { storedShowsSidebar }
         set { storedShowsSidebar = newValue }
@@ -42,7 +42,7 @@ final class GalleryModel {
     @ObservationIgnored @Setting(PreferenceKey.galleryShowsSidebar) private var storedShowsSidebar: Bool
     /// How wide the folder sidebar is, kept between the narrowest and widest it can be dragged to.
     static let sidebarWidths = 150.0...360.0
-    static let defaultSidebarWidth = 200.0
+    static let defaultSidebarWidth = 220.0
     var sidebarWidth: Double {
         get { min(max(storedSidebarWidth, Self.sidebarWidths.lowerBound), Self.sidebarWidths.upperBound) }
         set { storedSidebarWidth = newValue }
@@ -76,13 +76,28 @@ final class GalleryModel {
     private(set) var tags: [URL: [String]] = [:] {
         didSet {
             allTags = GalleryTags.all(tags)
-            if !tagFilter.isEmpty || !GalleryQuery(query).tags.isEmpty {
+            recount()
+            if case let .tag(name) = source {
+                // A tag no capture carries any more leaves nothing to show; one that's left takes the spelling the sidebar shows.
+                if let shown = shownSpelling(name) {
+                    if shown != name {
+                        source = .tag(shown)
+                    }
+                } else if !tags.isEmpty {
+                    source = .all
+                }
+                refilter()
+            } else if !GalleryQuery(query).tags.isEmpty {
                 refilter()
             }
         }
     }
-    /// Every tag on the items, which the tag row and the Tag menu offer.
+    /// Every tag on the items, which the sidebar and the Tag menu offer.
     private(set) var allTags: [String] = []
+    /// How many captures each sidebar row shows, and their size together.
+    private(set) var counts = GalleryCounts.empty
+    /// The size of the disk the save folder is on, in bytes, which the sidebar's storage bar measures against.
+    private(set) var diskCapacity: Int?
     /// The item whose Tag popover is open.
     var taggingItem: URL?
     /// The files the open Tag popover tags, fixed when it opens.
@@ -95,7 +110,14 @@ final class GalleryModel {
         set { storedCaptureSubfolder = newValue }
     }
     @ObservationIgnored @Setting(PreferenceKey.captureSubfolder) private var storedCaptureSubfolder: String
+    @ObservationIgnored @Setting(PreferenceKey.saveFolder) private var storedSaveFolder: String
     private(set) var visible: [GalleryItem] = []
+    /// The capture the preview shows over the grid, or `nil` while the grid shows.
+    private(set) var previewing: URL?
+    /// The captures the Move to Trash dialog asks about, or `nil` while it's closed.
+    var trashRequest: TrashRequest?
+    /// Counts each time `TextIndexer` hands over more text, so the preview reads the index again for its text panel.
+    private(set) var textRevision = 0
     private(set) var sections: [GallerySection] = []
     private(set) var hasLoaded = false
     private(set) var folder = Preferences().saveFolder
@@ -106,6 +128,9 @@ final class GalleryModel {
     /// Set by the grid as it lays out, so the up and down arrows know a row's width.
     var columns = 1
     var searchFocusRequest = 0
+    /// Counts each request to leave the search field. Clearing the window's first responder alone isn't enough: the
+    /// field's focus state takes it back, and the next Space types into the field instead of opening the preview.
+    var searchBlurRequest = 0
     /// Read through `SettingsStore`, so Reset All in Settings shows here while the gallery is open.
     var tileSize: Double {
         get { Gallery.tileSizes.contains(storedTileSize) ? storedTileSize : Gallery.defaultTileSize }
@@ -133,13 +158,30 @@ final class GalleryModel {
     var allSelected: Bool { Gallery.allSelected(selection, in: visible) }
 
     private func matching() -> [GalleryItem] {
-        Gallery.visible(items, filter: filter, sort: sort, query: query, texts: texts, folder: shownFolder, tags: tagFilter, tagsOf: tags)
+        Gallery.visible(items, filter: source.filter, sort: sort, query: query, texts: texts, folder: source.folder, tags: source.tags, tagsOf: tags)
+    }
+
+    private func recount() {
+        let next = GalleryCounts(items, tagsOf: tags)
+        if next != counts {
+            counts = next
+        }
+    }
+
+    /// Shows every capture, largest first, so the ones taking the most room are at the top to trash.
+    func makeRoom() {
+        query = ""
+        source = .all
+        sort = .size
     }
 
     private func refilter() {
         visible = matching()
         sections = Gallery.sections(visible, sort: sort)
         selection.formIntersection(visible.map(\.url))
+        if let previewing, !visible.contains(where: { $0.url == previewing }) {
+            self.previewing = nil
+        }
     }
 
     // MARK: Loading
@@ -156,6 +198,8 @@ final class GalleryModel {
     }
 
     func stop() {
+        previewing = nil
+        trashRequest = nil
         TextIndexer.shared.onTexts = nil
         texts = [:]
         watchers.values.forEach { $0.cancel() }
@@ -180,12 +224,14 @@ final class GalleryModel {
         let root = Preferences().saveFolder
         if root != folder {
             folder = root
-            shownFolder = nil
+            source = .all
         }
         let folder = folder
         loadTask?.cancel()
         loadTask = Task {
-            let (found, names) = await Task.detached { (Gallery.items(in: folder), Gallery.folders(in: folder)) }.value
+            let (found, names, capacity) = await Task.detached {
+                (Gallery.items(in: folder), Gallery.folders(in: folder), (try? folder.resourceValues(forKeys: [.volumeTotalCapacityKey]))?.volumeTotalCapacity)
+            }.value
             guard !Task.isCancelled else {
                 return
             }
@@ -193,8 +239,11 @@ final class GalleryModel {
             if names != folders {
                 folders = names
             }
-            if let shownFolder, !shownFolder.isEmpty, !names.contains(shownFolder) {
-                self.shownFolder = nil
+            if capacity != diskCapacity {
+                diskCapacity = capacity
+            }
+            if let shown = shownFolder, !shown.isEmpty, !names.contains(shown) {
+                source = .all
             }
             if found != items {
                 items = found
@@ -319,6 +368,48 @@ final class GalleryModel {
         click(visible[next], command: false, shift: extending)
     }
 
+    // MARK: Preview
+
+    /// The capture the preview shows, while it's open.
+    var previewItem: GalleryItem? {
+        previewing.flatMap { url in visible.first { $0.url == url } }
+    }
+
+    /// Previews `item` over the grid, selecting it alone, so Copy, Edit and the other shortcuts act on what's shown.
+    func preview(_ item: GalleryItem) {
+        click(item, command: false, shift: false)
+        previewing = item.url
+    }
+
+    /// Previews the item the keyboard last moved to, or the first selected.
+    func previewSelection() {
+        let item = lead.flatMap { url in selectedItems.first { $0.url == url } } ?? selectedItems.first
+        if let item {
+            preview(item)
+        }
+    }
+
+    /// Back to the grid, which keeps the previewed capture selected and in view.
+    func closePreview() {
+        previewing = nil
+    }
+
+    /// Shows the capture `step` places before or after the one previewed, in the grid's order. Stops at either end.
+    func stepPreview(by step: Int) {
+        guard let current = previewing.flatMap({ url in visible.firstIndex { $0.url == url } }),
+              let next = Gallery.stepped(from: current, by: step, count: visible.count) else {
+            return
+        }
+        preview(visible[next])
+    }
+
+    /// Shows the first or last capture in the grid's order.
+    func previewEnd(last: Bool) {
+        if let item = last ? visible.last : visible.first {
+            preview(item)
+        }
+    }
+
     /// What an action on `item` applies to: the whole selection when `item` is in it, otherwise just `item`.
     func targets(for item: GalleryItem) -> [GalleryItem] {
         selection.contains(item.url) ? selectedItems : [item]
@@ -364,7 +455,7 @@ final class GalleryModel {
         } else {
             Clipboard.copy(fileURLs: items.map(\.url))
         }
-        Toast.show("Copied \(items.count) files")
+        Toast.done("Copied \(items.count) files")
     }
 
     func exportGIF(_ item: GalleryItem) {
@@ -414,6 +505,32 @@ final class GalleryModel {
 
     /// The name the save folder itself goes by in menus.
     var rootName: String { folder.lastPathComponent }
+
+    /// The save folder as the empty gallery and the Trash dialog name it, "Pictures/Shot", in the names Finder shows.
+    var folderPath: String {
+        Gallery.folderPath(folder, home: FileManager.default.homeDirectoryForCurrentUser) { FileManager.default.displayName(atPath: $0) }
+    }
+
+    /// Lets you pick another save folder, as Settings › General does, then lists it. The panel opens on the gallery window.
+    func chooseFolder(in window: NSWindow?) {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.directoryURL = folder
+        let picked: (NSApplication.ModalResponse) -> Void = { [weak self, weak panel] response in
+            guard response == .OK, let url = panel?.url else {
+                return
+            }
+            self?.storedSaveFolder = url.path
+            self?.reload()
+        }
+        if let window {
+            panel.beginSheetModal(for: window, completionHandler: picked)
+        } else {
+            picked(panel.runModal())
+        }
+    }
 
     /// Moves `items` into the folder `name`, or out of folders into the save folder itself when it's empty.
     func move(_ items: [GalleryItem], to name: String) {
@@ -562,7 +679,7 @@ final class GalleryModel {
         let url = Gallery.folderURL(path, in: folder).standardizedFileURL.path + "/"
         selection = selection.filter { !$0.standardizedFileURL.path.hasPrefix(url) }
         if let shown = shownFolder, Gallery.folder(shown, isIn: path) {
-            shownFolder = Gallery.parentFolder(of: path)
+            source = .folder(Gallery.parentFolder(of: path))
         }
         if Gallery.folder(storedCaptureSubfolder, isIn: path) {
             storedCaptureSubfolder = ""
@@ -583,7 +700,7 @@ final class GalleryModel {
     /// Points everything that referred to the folder at `old` at `new`, where it is now.
     private func relocated(_ old: String, to new: String) {
         if let shown = shownFolder {
-            shownFolder = Gallery.relocated(shown, from: old, to: new)
+            source = .folder(Gallery.relocated(shown, from: old, to: new))
         }
         storedCaptureSubfolder = Gallery.relocated(storedCaptureSubfolder, from: old, to: new)
         expandedFolders = Set(expandedFolders.map { Gallery.relocated($0, from: old, to: new) })
@@ -656,9 +773,10 @@ final class GalleryModel {
         if failed > 0 {
             Toast.error("Couldn't tag \(failed) files")
         }
-        // A filter on a tag that's gone is dropped, and each one that's left takes the spelling the chips show, so two
-        // spellings of one tag are a single entry the chip can switch off.
-        tagFilter = Set(tagFilter.compactMap(shownSpelling))
+        // Showing a tag that's gone shows everything instead, and a tag that's left takes the spelling the sidebar shows.
+        if case let .tag(name) = source {
+            source = shownSpelling(name).map(GallerySource.tag) ?? .all
+        }
     }
 
     /// Calls `tag` `typed` on every file that has it, or merges it into a tag of that name that's there already.
@@ -668,10 +786,10 @@ final class GalleryModel {
         }
         Task {
             await refreshAllTags()
-            let filtered = isFiltering(on: tag)
+            let showing = isShowing(tag)
             apply(GalleryTags.renaming(tag, to: name, tagsOf: tags))
-            if filtered, let shown = shownSpelling(name) {
-                tagFilter.insert(shown)
+            if showing, let shown = shownSpelling(name) {
+                source = .tag(shown)
             }
         }
     }
@@ -709,22 +827,35 @@ final class GalleryModel {
         }
     }
 
-    /// `tag` as the chips spell it, or `nil` when no capture has it. Tags ignore case, as in Finder.
+    /// `tag` as the sidebar spells it, or `nil` when no capture has it. Tags ignore case, as in Finder.
     private func shownSpelling(_ tag: String) -> String? {
         allTags.first { $0.caseInsensitiveCompare(tag) == .orderedSame }
     }
 
-    /// Whether the grid is narrowed to `tag`, in whatever case it was picked.
-    func isFiltering(on tag: String) -> Bool {
-        tagFilter.contains { $0.caseInsensitiveCompare(tag) == .orderedSame }
+    /// Whether the sidebar's row for `tag` is picked, in whatever case it was picked.
+    func isShowing(_ tag: String) -> Bool {
+        if case let .tag(name) = source {
+            name.caseInsensitiveCompare(tag) == .orderedSame
+        } else {
+            false
+        }
     }
 
-    func toggleTagFilter(_ tag: String) {
-        if isFiltering(on: tag) {
-            tagFilter = tagFilter.filter { $0.caseInsensitiveCompare(tag) != .orderedSame }
-        } else {
-            tagFilter.insert(tag)
+    /// Opens the Move to Trash dialog for `items`, which trashes them only if you confirm. ⌘⌫ skips it, as in Photos.
+    func askToTrash(_ items: [GalleryItem]) {
+        guard !items.isEmpty else {
+            return
         }
+        trashRequest = TrashRequest(items: items)
+    }
+
+    /// The Move to Trash dialog's button: trashes what it asked about and closes it.
+    func confirmTrash() {
+        guard let request = trashRequest else {
+            return
+        }
+        trashRequest = nil
+        trash(request.items)
     }
 
     /// Moves the files to the Trash, where Finder can put them back, then selects the item that takes the first one's place.
@@ -733,6 +864,7 @@ final class GalleryModel {
             return
         }
         let position = visible.firstIndex { $0.url == first.url } ?? 0
+        let wasPreviewing = previewing != nil
         var trashed: Set<URL> = []
         var moves: [(trashed: URL, original: URL)] = []
         for item in items {
@@ -761,6 +893,10 @@ final class GalleryModel {
         if selection.isEmpty, !visible.isEmpty {
             click(visible[min(position, visible.count - 1)], command: false, shift: false)
         }
+        // The preview moves on to the capture that took the trashed one's place, or closes when none is left.
+        if wasPreviewing {
+            previewing = selection.isEmpty ? nil : lead
+        }
     }
 
     var canUndoTrash: Bool { !trashHistory.isEmpty }
@@ -782,4 +918,10 @@ final class GalleryModel {
     func zoom(by step: Double) {
         tileSize = min(max(tileSize + step, Gallery.tileSizes.lowerBound), Gallery.tileSizes.upperBound)
     }
+}
+
+/// What the Move to Trash dialog asks about. Each request is new, so the sheet opens afresh for each.
+struct TrashRequest: Identifiable {
+    let id = UUID()
+    let items: [GalleryItem]
 }

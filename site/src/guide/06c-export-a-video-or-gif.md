@@ -4,28 +4,28 @@ summary: "Export an MP4 or a GIF at the size, frame rate and speed you want, and
 group: Edit and share
 ---
 
-![The video editor with More tools open: a cut in the recording, a Best day label and an arrow over the video, the annotation tools, and the GIF export options](../../../docs/media/video-editor.png)
+![The video editor with the Export panel open on the right: the drawing tools beside the video, a Best day label and an arrow over it, a cut in the timeline, and the GIF options above the estimated size and the Export GIF button](../../../docs/media/video-editor.png)
 
 ## Export
 
-In the video editor, **Export** writes a new file next to the recording and copies it. Choose:
+In the video editor, click **Export** at the right of the title bar to open the Export panel beside the video. Click **Export** again, or press <kbd>Esc</kbd>, to close it. The Export panel and the Inspector share the space beside the video, so opening one closes the other. In the panel, choose:
 
 - **MP4** or **GIF**.
 - **Speed:** 1×, 1.5× or 2×. For an MP4, speed is available only while the edit is trims and cuts, when Save reads **Save**, not **Save Copy**.
 - **For a GIF:** 10, 15 or 24 frames per second, and 480, 720 or 1080 pixels wide, or the recording's own width (**Full**). It's never wider than the recording.
 - **For an MP4:** **Mute** to leave the sound out.
 
-Click **Reset** at the end of the bar to put all of these back to how new exports start. It's greyed out when they already are, and **Undo** brings your choices back.
+Click **Reset** at the top of the panel to put all of these back to how new exports start. It's greyed out when they already are, and **Undo** brings your choices back.
 
 Annotations show in both. A text box's fill is solid, so in a GIF it adds to the size only when its words change.
 
-The estimated file size shows before you export. **Cancel**, or <kbd>Esc</kbd>, stops an export that's under way.
+The card at the foot of the panel shows the estimated file size and how long the export plays for. Click **Export GIF** or **Export MP4** under them to write a new file next to the recording and copy it. While it exports, the card shows how far it's got, and **Cancel**, or <kbd>Esc</kbd>, stops it.
 
 > [!NOTE]
 > A GIF keeps the first 60 seconds of what plays, so 120 seconds of video at 2×. An MP4 that's re-encoded is H.264, or HEVC when H.264 would drop frames: a 120 fps recording, or one above 30 fps that's larger than 2560 × 1600, such as a full Retina screen.
 
 > [!TIP]
-> For a quick GIF without opening the editor, click **Export GIF** on the recording's [Quick Access](#quick-access) card. It uses the frame rate and width you last chose here.
+> For a quick GIF without opening the editor, click the **Export GIF** button on the recording's [Quick Access](#quick-access) card. It uses the frame rate and width you last chose here.
 
 ## Reopen an edit later
 

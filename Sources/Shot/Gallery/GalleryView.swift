@@ -6,124 +6,135 @@ import UniformTypeIdentifiers
 struct GalleryRootView: View {
     let model: GalleryModel
     @FocusState private var searchFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Room after the traffic lights for the sidebar button, which the toolbar keeps clear of while the sidebar is hidden.
+    private static let sidebarButtonEnd = GlassWindow.trafficLightsWidth + 34
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            if !model.allTags.isEmpty {
-                GalleryTagRow(model: model)
+        // The preview covers the grid rather than replacing it, so the grid keeps its scroll position for the way back.
+        let previewing = model.previewing != nil
+        ZStack {
+            browser
+                .opacity(previewing ? 0 : 1)
+                .allowsHitTesting(!previewing)
+                .accessibilityHidden(previewing)
+            if previewing {
+                GalleryPreviewView(model: model)
             }
-            HStack(alignment: .top, spacing: 14) {
-                // Folders stay out of the way until someone opens the sidebar.
-                if model.showsSidebar {
-                    GallerySidebar(model: model)
-                        .frame(width: model.sidebarWidth)
-                        .overlay(alignment: .trailing) {
-                            // Centred in the gap before the grid.
-                            PanelResizeHandle(width: Bindable(model).sidebarWidth, range: GalleryModel.sidebarWidths, defaultWidth: GalleryModel.defaultSidebarWidth) {
-                                model.showsSidebar = false
-                            }
-                            .offset(x: 14)
-                        }
-                }
-                content
-            }
-            GalleryFooter(model: model)
+        }
+        .sheet(item: Bindable(model).trashRequest) { request in
+            TrashConfirmation(model: model, request: request)
         }
         .onChange(of: model.searchFocusRequest) {
             searchFocused = true
+        }
+        .onChange(of: model.searchBlurRequest) {
+            searchFocused = false
+        }
+    }
+
+    /// The sidebar, the toolbar and the grid.
+    private var browser: some View {
+        HStack(spacing: 0) {
+            if model.showsSidebar {
+                // The see-through sidebar runs the window's full height, under the traffic lights.
+                GallerySidebar(model: model)
+                    .padding(.top, GlassWindow.titlebarHeight)
+                    .frame(width: model.sidebarWidth)
+                    .frame(maxHeight: .infinity)
+                    .background { SidebarMaterial() }
+                    .overlay(alignment: .trailing) {
+                        Brutal.separator.frame(width: 1)
+                    }
+                    .overlay(alignment: .trailing) {
+                        PanelResizeHandle(width: Bindable(model).sidebarWidth, range: GalleryModel.sidebarWidths, defaultWidth: GalleryModel.defaultSidebarWidth) {
+                            setSidebar(shown: false)
+                        }
+                        .offset(x: 4)
+                    }
+                    .transition(reduceMotion ? .opacity : .move(edge: .leading))
+                    .zIndex(1)
+            }
+            VStack(spacing: 0) {
+                header
+                content
+                    .overlay(alignment: .bottom) {
+                        GallerySelectionBar(model: model)
+                            .padding(.bottom, 20)
+                            .padding(.horizontal, 16)
+                    }
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            sidebarToggle
+                .frame(height: GlassWindow.titlebarHeight)
+                .padding(.leading, GlassWindow.trafficLightsWidth)
+        }
+    }
+
+    private func setSidebar(shown: Bool) {
+        withAnimation(Motion.animation(.panelArrive, reduceMotion: reduceMotion)) {
+            model.showsSidebar = shown
         }
     }
 
     // MARK: Header
 
+    /// The toolbar, in the title bar beside the sidebar: what's shown and how many, then search, sort and thumbnail size.
     private var header: some View {
         HStack(spacing: 12) {
-            sidebarToggle
-            BrutalSegmented(selection: Bindable(model).filter, options: GalleryFilter.allCases.map { ($0, $0.title) }, color: Brutal.violet)
+            GalleryHeading(model: model)
             Spacer(minLength: 8)
             searchField
             sortMenu
-            Image(systemName: "photo")
-                .font(.scaled(10, weight: .bold))
-                .foregroundStyle(Brutal.faded(0.6))
-            Slider(value: Bindable(model).tileSize, in: Gallery.tileSizes)
-                .frame(minWidth: 40, idealWidth: 80, maxWidth: 80)
-                .tint(Brutal.ink)
-                .brutalTip("Thumbnail size (⌘+ and ⌘−)")
-                .accessibilityLabel(Text("Thumbnail size"))
-            Image(systemName: "photo")
-                .font(.scaled(15, weight: .bold))
-                .foregroundStyle(Brutal.faded(0.6))
+            HStack(spacing: 6) {
+                Image(systemName: "square")
+                    .font(.scaled(10, weight: .medium))
+                    .accessibilityHidden(true)
+                BrutalSlider(value: Bindable(model).tileSize, range: Gallery.tileSizes, width: 70)
+                    .brutalTip("Thumbnail size (⌘+ and ⌘−)")
+                    .accessibilityLabel(Text("Thumbnail size"))
+                Image(systemName: "square")
+                    .font(.scaled(14, weight: .medium))
+                    .accessibilityHidden(true)
+            }
+            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
         }
-        .padding(.horizontal, 3)
+        .padding(.leading, model.showsSidebar ? 22 : Self.sidebarButtonEnd)
+        .padding(.trailing, 16)
         .frame(minWidth: 0, maxWidth: .infinity)
-        .frame(height: 36)
+        .frame(height: GlassWindow.titlebarHeight)
+        .overlay(alignment: .bottom) {
+            Brutal.separator.frame(height: 1)
+        }
     }
 
-    private var sidebarTip: LocalizedStringResource { model.showsSidebar ? "Hide folders" : "Show folders" }
+    private var sidebarTip: LocalizedStringResource { model.showsSidebar ? "Hide sidebar" : "Show sidebar" }
 
     private var sidebarToggle: some View {
-        let on = model.showsSidebar
-        return Button {
-            model.showsSidebar.toggle()
+        Button {
+            setSidebar(shown: !model.showsSidebar)
         } label: {
             Image(systemName: "sidebar.left")
-                .font(.scaled(13, weight: .bold))
-                .foregroundStyle(Brutal.ink)
-                .inkOnFill(on ? Brutal.violet : nil)
-                .frame(width: 30, height: 30)
-                .brutalSurface(on ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: on ? 0 : 2)
+                .font(.scaled(13, weight: .medium))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(BrutalButtonStyle(.toolbar))
         .brutalTip(sidebarTip)
-        .accessibilityLabel(Text("Folders"))
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityLabel(Text("Sidebar"))
+        .accessibilityAddTraits(model.showsSidebar ? .isSelected : [])
     }
 
     private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.scaled(11, weight: .bold))
-                .foregroundStyle(Brutal.faded(0.6))
-            TextField("Search", text: Bindable(model).query)
-                .textFieldStyle(.plain)
-                .font(.scaled(13, weight: .semibold))
-                .focused($searchFocused)
-            if !model.query.isEmpty {
-                Button {
-                    model.query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Brutal.faded(0.5))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Clear search"))
-            }
-        }
-        .padding(.horizontal, 10)
-        .frame(minWidth: 90, idealWidth: 170, maxWidth: 170, minHeight: 30, maxHeight: 30)
-        .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
-        .brutalTip("Search by file name or by text in screenshots (⌘F)")
+        BrutalSearchField(prompt: "Search names and text in screenshots", text: Bindable(model).query, focus: $searchFocused)
+            .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
+            .brutalTip("Search by file name or by text in screenshots (⌘F)")
     }
 
     private var sortMenu: some View {
-        BrutalDropdown(title: "Sort", entries: GallerySort.allCases.map { sort in
+        BrutalPopUp(title: "Sort", entries: GallerySort.allCases.map { sort in
             .item(sort.title, selected: sort == model.sort) { model.sort = sort }
-        }) {
-            HStack(spacing: 5) {
-                Text(model.sort.title)
-                Image(systemName: "chevron.down")
-                    .font(.scaled(9, weight: .black))
-            }
-            .font(.scaled(12, weight: .bold))
-            .foregroundStyle(Brutal.ink)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
-        }
-        .buttonStyle(.plain)
-        .fixedSize()
+        }, value: model.sort.title)
         .brutalTip("Sort")
     }
 
@@ -131,52 +142,29 @@ struct GalleryRootView: View {
 
     @ViewBuilder
     private var content: some View {
-        if model.sections.isEmpty {
+        if model.hasLoaded, model.items.isEmpty {
+            // Nothing saved yet: the empty library runs edge to edge, under its dot grid.
+            GalleryEmptyLibrary(model: model)
+        } else if model.sections.isEmpty {
             emptyState
+                .padding(.horizontal, 15)
         } else {
             GalleryGrid(model: model)
+                .padding(.horizontal, 15)
         }
     }
 
+    @ViewBuilder
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        Group {
             if !model.hasLoaded {
                 ProgressView().controlSize(.small)
-            } else if model.items.isEmpty {
-                Image(systemName: "photo.on.rectangle.angled")
-                    .font(.scaled(34, weight: .bold))
-                    .foregroundStyle(Brutal.faded(0.55))
-                Text("No captures yet")
-                    .font(Brutal.title(17))
-                    .foregroundStyle(Brutal.ink)
-                Text("Screenshots and recordings saved to \((model.folder.path as NSString).abbreviatingWithTildeInPath) show up here.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.7))
-                Button("Open Folder") { NSWorkspace.shared.open(model.folder) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
             } else if let shown = model.shownFolder, !model.items.contains(where: { $0.folder == shown }) {
-                Image(systemName: "folder")
-                    .font(.scaled(34, weight: .bold))
-                    .foregroundStyle(Brutal.faded(0.55))
-                Text("This folder is empty")
-                    .font(Brutal.title(17))
-                    .foregroundStyle(Brutal.ink)
-                Text("Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.7))
+                EmptyState(symbol: "folder", title: "This folder is empty", message: "Drag captures onto this folder in the sidebar, or use Move to in a capture's menu. Captures in the folders inside it show when you open them.")
             } else {
-                Image(systemName: "magnifyingglass")
-                    .font(.scaled(34, weight: .bold))
-                    .foregroundStyle(Brutal.faded(0.55))
-                Text("Nothing matches")
-                    .font(Brutal.title(17))
-                    .foregroundStyle(Brutal.ink)
-                Text("Try another search, or show All.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.7))
+                EmptyState(symbol: "magnifyingglass", title: "Nothing matches", message: "Try another search, or show All.")
             }
         }
-        .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -185,7 +173,9 @@ struct GalleryRootView: View {
 /// It builds only the headers and tiles near the view, at the places `GalleryGridLayout` gives them. A lazy grid
 /// estimates the height of rows it hasn't built, and as that estimate changes the scroll bar jumps.
 private struct GalleryGrid: View {
-    static let spacing: CGFloat = 20
+    static let spacing: CGFloat = 16
+    /// Room under the last row for the selection bar, which floats over the grid's foot.
+    static let barClearance: CGFloat = 64
     /// Room above the first section and below the last.
     static let margin: CGFloat = 8
     /// How far past the view headers and tiles are built. The built range moves in steps this size, so scrolling
@@ -215,11 +205,14 @@ private struct GalleryGrid: View {
                     ForEach(placed(layout.blocks(in: built), cell: cell)) { place in
                         switch place {
                         case let .header(section, top):
-                            HStack(spacing: 8) {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
                                 Text(section.title)
-                                    .font(Brutal.title(15))
+                                    .font(.scaled(13, weight: .bold))
                                     .foregroundStyle(Brutal.ink)
-                                BrutalChip(text: "\(section.items.count)")
+                                    .accessibilityAddTraits(.isHeader)
+                                Text(section.items.count, format: .number)
+                                    .font(.scaled(12, tabular: true))
+                                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
                                 Spacer()
                             }
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
@@ -227,7 +220,8 @@ private struct GalleryGrid: View {
                         case let .tile(item, x, y):
                             GalleryTile(item: item, model: model, slot: model.thumbnails.slot(for: item), width: cell,
                                         selected: model.selection.contains(item.url), selectionActive: !model.selection.isEmpty,
-                                        tagging: model.taggingItem == item.url)
+                                        tagging: model.taggingItem == item.url, tag: model.tags[item.url]?.first,
+                                        detail: Gallery.tileDetail(for: item, sort: model.sort))
                                 .equatable()
                                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { captionHeight = $0 - GalleryTile.thumbnailHeight(width: cell) }
                                 .offset(x: x, y: y)
@@ -238,7 +232,8 @@ private struct GalleryGrid: View {
                 .frame(height: layout.height, alignment: .top)
                 .padding(.leading, Brutal.groupInset)
                 .padding(.trailing, Brutal.groupInset + SystemScroller.shared.overlayRoom)
-                .padding(.vertical, Self.margin)
+                .padding(.top, Self.margin)
+                .padding(.bottom, Self.margin + Self.barClearance)
                 .background {
                     Color.clear
                         .contentShape(Rectangle())
@@ -289,58 +284,126 @@ private struct GalleryGrid: View {
     }
 }
 
-private struct GalleryFooter: View {
+/// The name of the sidebar row picked and how many captures it holds. It's its own view, so only it re-evaluates when they
+/// change.
+private struct GalleryHeading: View {
     let model: GalleryModel
 
     var body: some View {
-        let selected = model.selectedItems
-        return HStack(spacing: 10) {
-            GalleryStatus(model: model)
-                .font(Brutal.mono)
-                .foregroundStyle(Brutal.faded(0.7))
+        let count = model.counts.count(of: model.source)
+        VStack(alignment: .leading, spacing: 0) {
+            Text(verbatim: title)
+                .font(.scaled(15, weight: .bold))
+                .foregroundStyle(Brutal.ink)
                 .lineLimit(1)
-            if model.allSelected {
-                Button("Deselect All") { model.clearSelection() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-                    .brutalTip("Deselect all (⇧⌘A)")
-            } else {
-                Button("Select All") { model.selectAll() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-                    .disabled(model.visible.isEmpty)
-                    .brutalTip("Select all (⌘A)")
-            }
-            Spacer()
-            Group {
-                Button("Edit") { model.edit(selected) }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                    // Whether a GIF has a project is read from the store only on a click, so one never greys it out.
-                    .disabled(!Gallery.canEdit(selected) { _ in true })
-                    .brutalTip("Open in the editor (Return)")
-                Button("Copy") { model.copy(selected) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-                    .brutalTip("Copy (⌘C)")
-                Button("Show in Finder") { model.reveal(selected) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-                    .brutalTip("Show in Finder (⌘R)")
-                Button("Move to Trash") { model.trash(selected) }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
-                    .brutalTip("Move to the Trash (⌘⌫)")
-            }
-            .disabled(selected.isEmpty)
+                .truncationMode(.middle)
+            Text("\(count) items")
+                .font(.scaled(11, tabular: true))
+                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
         }
-        .padding(.horizontal, 3)
-        .frame(height: 34)
-        .padding(.top, 6)
+        // The title bar behind it moves the window.
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    private var title: String {
+        switch model.source {
+        case let .library(filter): filter.libraryTitle
+        case let .folder(path): path.isEmpty ? model.rootName : Gallery.folderLeaf(of: path)
+        case let .tag(name): name
+        }
     }
 }
 
-private struct GalleryStatus: View {
+/// Floats over the grid's foot while something is selected: how many, what can be done to them, and Copy as the one ink
+/// button. It's its own view, so only it re-evaluates when the selection changes, not the grid around it.
+private struct GallerySelectionBar: View {
     let model: GalleryModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let total = model.visible.count
-        let count = model.selection.count
-        Text(count > 0 ? String(localized: "\(count) of \(total) selected") : String(localized: "\(total) items"))
+        let summary = Gallery.SelectionSummary(model.selectedItems)
+        ZStack {
+            if summary.count > 0 {
+                GallerySelectionBarContent(model: model, summary: summary, folders: model.folders, rootName: model.rootName)
+                    .equatable()
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: summary.count == 0)
+    }
+}
+
+/// The selection bar's buttons. It takes the selection's summary rather than the items, and its actions read the selection
+/// when clicked, so moving through the grid with the arrow keys doesn't rebuild its buttons, tips and menu.
+private struct GallerySelectionBarContent: View, Equatable {
+    let model: GalleryModel
+    let summary: Gallery.SelectionSummary
+    let folders: [String]
+    let rootName: String
+    @State private var tagging = false
+
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.summary == rhs.summary && lhs.folders == rhs.folders && lhs.rootName == rhs.rootName
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("\(summary.count) selected")
+                .font(.scaled(13, weight: .semibold, tabular: true))
+                .foregroundStyle(Brutal.ink)
+                .padding(.trailing, 6)
+                .lineLimit(1)
+            Button("Edit") { model.edit(model.selectedItems) }
+                .buttonStyle(BrutalButtonStyle(.toolbar))
+                // Whether a GIF has a project is read from the store only on a click, so one never greys it out.
+                .disabled(!summary.canEdit)
+                .brutalTip("Open in the editor (Return)")
+            BrutalDropdown(title: "Move to", entries: moveEntries) {
+                Text("Move to…")
+            }
+            .buttonStyle(BrutalButtonStyle(.toolbar))
+            Button("Tag") { tagging = true }
+                .buttonStyle(BrutalButtonStyle(.toolbar))
+                .popover(isPresented: $tagging, arrowEdge: .top) {
+                    GalleryTagPopover(model: model, targets: model.selectedItems.map(\.url))
+                }
+            Button("Show in Finder") { model.reveal(model.selectedItems) }
+                .buttonStyle(BrutalButtonStyle(.toolbar))
+                .brutalTip("Show in Finder (⌘R)")
+            Button {
+                model.askToTrash(model.selectedItems)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.scaled(13, weight: .medium))
+                    .foregroundStyle(Brutal.destructiveText)
+            }
+            .buttonStyle(BrutalButtonStyle(.toolbar))
+            .brutalTip("Move to the Trash (⌘⌫)")
+            .accessibilityLabel(Text("Move to Trash"))
+            Button("Copy") { model.copy(model.selectedItems) }
+                .buttonStyle(BrutalButtonStyle(.main))
+                .brutalTip("Copy (⌘C)")
+        }
+        .padding(.vertical, 6)
+        .padding(.leading, 14)
+        .padding(.trailing, 6)
+        .fixedSize()
+        .depth(.float, fill: Brutal.group, radius: Brutal.Radius.panel)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Selection"))
+    }
+
+    private var moveEntries: [BrutalMenuEntry] {
+        var entries: [BrutalMenuEntry] = ([""] + folders).map { path in
+            // A folder inside another reads as its path, such as Clients › Acme.
+            let title = path.isEmpty ? rootName : path.replacingOccurrences(of: "/", with: " › ")
+            return .item(title, symbol: "folder", enabled: path != summary.sharedFolder) { [model] in model.move(model.selectedItems, to: path) }
+        }
+        entries.append(.divider)
+        entries.append(.item("New Folder…", symbol: "folder.badge.plus") { [model] in model.newFolder(moving: model.selectedItems) })
+        return entries
     }
 }
 
@@ -361,8 +424,9 @@ private struct LeadScroller: View {
             let view = model.viewport
             if top < view.minY {
                 position.scrollTo(y: top)
-            } else if bottom > view.maxY {
-                position.scrollTo(y: bottom - view.height)
+            } else if bottom > view.maxY - GalleryGrid.barClearance {
+                // Clear of the selection bar, which floats over the grid's foot while something is selected.
+                position.scrollTo(y: bottom - view.height + GalleryGrid.barClearance)
             }
         }
     }
@@ -380,11 +444,17 @@ private struct GalleryTile: View, Equatable {
     let selectionActive: Bool
     /// Whether the Tag popover is open on this tile.
     let tagging: Bool
+    /// The capture's first tag, which shows as a dot before its detail.
+    let tag: String?
+    /// The file's type and the time, size or date, as `Gallery.tileDetail` gives it.
+    let detail: String
     @State private var hovering = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     nonisolated static func == (lhs: GalleryTile, rhs: GalleryTile) -> Bool {
         lhs.item == rhs.item && lhs.model === rhs.model && lhs.slot === rhs.slot && lhs.width == rhs.width
             && lhs.selected == rhs.selected && lhs.selectionActive == rhs.selectionActive && lhs.tagging == rhs.tagging
+            && lhs.tag == rhs.tag && lhs.detail == rhs.detail
     }
 
     private var thumbnail: Thumbnail? { slot.thumbnail }
@@ -395,7 +465,8 @@ private struct GalleryTile: View, Equatable {
     }
 
     var body: some View {
-        VStack(spacing: 7) {
+        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        VStack(alignment: .leading, spacing: 7) {
             ZStack {
                 if let thumbnail {
                     Image(nsImage: thumbnail.image)
@@ -406,49 +477,58 @@ private struct GalleryTile: View, Equatable {
                         .clipped()
                 } else {
                     Image(systemName: item.kind == .video ? "film" : "photo")
-                        .font(.scaled(22, weight: .bold))
-                        .foregroundStyle(Brutal.ink.opacity(0.35))
+                        .font(.scaled(22, weight: .medium))
+                        .foregroundStyle(Brutal.tertiaryText)
                 }
-                badges
-                if hovering || selectionActive {
-                    VStack {
-                        HStack {
-                            SelectionCheckbox(checked: selected) {
-                                model.click(item, command: true, shift: false)
-                            }
-                            Spacer()
-                        }
-                        Spacer()
+                badge
+                if selected || hovering || selectionActive {
+                    SelectionCheckbox(checked: selected) {
+                        model.click(item, command: true, shift: false)
                     }
-                    .padding(8)
+                    .padding(4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .transition(.opacity)
                 }
                 if hovering, item.kind.isEditable {
-                    VStack {
-                        HStack {
-                            Spacer()
-                            CornerButton(symbol: item.kind == .video ? "scissors" : "pencil", help: item.kind == .video ? "Edit video" : "Annotate") {
-                                model.edit([item])
-                            }
-                        }
-                        Spacer()
+                    CornerButton(symbol: item.kind == .video ? "scissors" : "pencil", help: item.kind == .video ? "Edit video" : "Annotate") {
+                        model.edit([item])
                     }
-                    .padding(8)
+                    .padding(7)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .transition(.opacity)
                 }
             }
             .frame(width: width, height: height)
-            .background(Brutal.paper.opacity(0.6))
-            .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: selected ? 3 : 2, color: selected ? Brutal.violet : Brutal.line)
-            Text(item.name)
-                .font(.scaled(11, weight: .semibold))
-                .foregroundStyle(Brutal.ink)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .inkOnFill(selected ? Brutal.violet : nil)
-                .background(selected ? Brutal.violet : Color.clear, in: RoundedRectangle(cornerRadius: 5, style: .circular))
+            .background(Brutal.well)
+            .clipShape(shape)
+            .overlay {
+                if selected {
+                    // A 2.5 pt ring in selection blue with a soft halo outside it.
+                    shape.inset(by: -1.25).stroke(Brutal.selection, lineWidth: 2.5)
+                    shape.inset(by: -3.5).stroke(Brutal.selection.opacity(0.2), lineWidth: 2)
+                } else {
+                    Color.clear.inkBorder(shape, width: 1, color: Brutal.hairline)
+                }
+            }
+            // Dark takes black at 30%, as the dark board does; 6% vanishes on the dark window.
+            .shadow(color: selected ? .clear : Color(light: .black.opacity(0.06), dark: .black.opacity(0.3)), radius: 1.5, y: 1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(item.name)
+                    .font(.scaled(12.5, weight: .medium))
+                    .foregroundStyle(Brutal.ink)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                HStack(spacing: 5) {
+                    if let tag {
+                        TagDot(tag: tag, size: 7)
+                    }
+                    Text(verbatim: detail)
+                        .lineLimit(1)
+                }
+                .font(.scaled(11, tabular: true))
+                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            }
+            .padding(.horizontal, 2)
         }
         .frame(width: width)
         .contentShape(Rectangle())
@@ -460,6 +540,10 @@ private struct GalleryTile: View, Equatable {
         // One gesture, so a click selects at once instead of waiting out the double-click interval; the second click opens.
         .onTapGesture {
             let event = NSApp.currentEvent
+            // A click in the grid leaves the search field, so the keys after it act on the grid.
+            if NSApp.keyWindow?.firstResponder is NSText {
+                model.searchBlurRequest += 1
+            }
             if event?.clickCount == 2 {
                 model.edit([item])
                 return
@@ -481,38 +565,48 @@ private struct GalleryTile: View, Equatable {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(item.name))
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityValue(Text(verbatim: spokenDetail))
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        // Pressing selects, as a click does. Its own action, since the tap gesture reads a mouse event's click count.
+        .accessibilityAction {
+            model.click(item, command: false, shift: false)
+        }
         // The checkbox shows only on hover and sits inside this one element, so its ⌘-click toggle is an action here.
         .accessibilityAction(named: Text(selected ? "Deselect" : "Select")) {
             model.click(item, command: true, shift: false)
         }
+        .accessibilityAction(named: Text(item.kind == .video ? "Edit video" : "Annotate")) {
+            model.edit([item])
+        }
     }
 
-    @ViewBuilder
-    private var badges: some View {
-        VStack {
-            Spacer()
-            HStack {
-                switch item.kind {
-                case .video:
-                    Image(systemName: "play.fill")
-                        .font(.scaled(10, weight: .black))
-                        .foregroundStyle(Brutal.ink)
-                        .frame(width: 26, height: 26)
-                        .brutalCircle(Brutal.yellow, shadow: 2)
-                    Spacer()
-                    if let duration = thumbnail?.duration {
-                        BrutalChip(text: Gallery.duration(duration), color: Brutal.paper)
-                    }
-                case .gif:
-                    BrutalChip(text: "GIF", color: Brutal.mint)
-                    Spacer()
-                case .image:
-                    Spacer()
-                }
-            }
+    /// What the caption and badge show, for VoiceOver: the tag, the kind, date and size, and a recording's length.
+    private var spokenDetail: String {
+        var parts = [tag, detail].compactMap(\.self)
+        if item.kind == .video, let length = thumbnail?.duration.map(Gallery.duration) {
+            parts.append(length)
         }
-        .padding(8)
+        return parts.joined(separator: ", ")
+    }
+
+    /// A recording's length or "GIF", in white on a dark tab in the thumbnail's corner.
+    @ViewBuilder
+    private var badge: some View {
+        let text: String? = switch item.kind {
+        case .video: thumbnail?.duration.map(Gallery.duration)
+        case .gif: "GIF"
+        case .image: nil
+        }
+        if let text {
+            Text(verbatim: text)
+                .font(.scaled(10.5, weight: .bold, design: .monospaced, tabular: true))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 1)
+                .background(Color(hex: 0x16161A).opacity(reduceTransparency ? 1 : 0.78), in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .padding(7)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        }
     }
 }
 
@@ -531,7 +625,7 @@ private struct GalleryTileMenu: View {
         }
         Divider()
         Button("Copy") { model.copy(targets) }
-        Button("Quick Look") { GalleryPreview.shared.show(targets.map(\.url)) }
+        Button("Preview") { model.preview(item) }
         if targets.count == 1, item.kind == .image {
             Button("Pin") { PinController.shared.pin(item.url) }
         }
@@ -550,7 +644,7 @@ private struct GalleryTileMenu: View {
         Button("Tag…") { model.startTagging(item) }
         Button("Show in Finder") { model.reveal(targets) }
         Divider()
-        Button("Move to Trash") { model.trash(targets) }
+        Button("Move to Trash") { model.askToTrash(targets) }
     }
 }
 
@@ -558,15 +652,28 @@ private struct GalleryTileMenu: View {
 private struct SelectionCheckbox: View {
     let checked: Bool
     let action: () -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "checkmark")
-                .font(.scaled(10, weight: .black))
-                .foregroundStyle(Brutal.ink)
-                .opacity(checked ? 1 : 0)
-                .frame(width: 22, height: 22)
-                .brutalSurface(checked ? Brutal.violet : Brutal.paper, radius: Brutal.Radius.chip, shadow: 2)
+            ZStack {
+                if checked {
+                    Circle().fill(Brutal.selection)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .heavy))
+                        .foregroundStyle(.white)
+                } else {
+                    // Increase Contrast makes the empty circle solid with a darker edge, so it holds 3:1 over a light capture.
+                    Circle().fill(.white.opacity(contrast == .increased ? 1 : 0.85))
+                    Circle().strokeBorder(Color(hex: 0x16161A).opacity(contrast == .increased ? 0.7 : 0.25), lineWidth: 1)
+                }
+            }
+            .frame(width: 20, height: 20)
+            .overlay {
+                Circle().strokeBorder(.white, lineWidth: 2).padding(-2)
+            }
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         // Focus stays on the grid, so the keyboard shortcuts keep working after a click.
@@ -579,66 +686,11 @@ private struct SelectionCheckbox: View {
 
 // MARK: Tags
 
-/// The tags on the captures, as chips that narrow the grid to those carrying every one picked. It shows only once a
-/// file has a tag.
-private struct GalleryTagRow: View {
-    let model: GalleryModel
-    @State private var managing = false
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Button {
-                    managing.toggle()
-                } label: {
-                    Image(systemName: "tag")
-                        .font(.scaled(12, weight: .bold))
-                        .foregroundStyle(Brutal.ink)
-                        .frame(width: 26, height: 26)
-                        .brutalSurface(managing ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.chip, shadow: managing ? 0 : 2)
-                }
-                .buttonStyle(.plain)
-                .brutalTip("Rename or remove tags")
-                .accessibilityLabel(Text("Manage tags"))
-                .popover(isPresented: $managing, arrowEdge: .bottom) {
-                    GalleryTagManager(model: model)
-                }
-                ForEach(model.allTags, id: \.self) { tag in
-                    let on = model.isFiltering(on: tag)
-                    Button {
-                        model.toggleTagFilter(tag)
-                    } label: {
-                        HStack(spacing: 5) {
-                            TagDot(tag: tag)
-                            Text(verbatim: tag)
-                                .lineLimit(1)
-                        }
-                        .font(.scaled(12, weight: .bold))
-                        .foregroundStyle(Brutal.ink)
-                        .inkOnFill(on ? Brutal.violet : nil)
-                        .padding(.horizontal, 9)
-                        .frame(height: 26)
-                        .brutalSurface(on ? Brutal.violet : Brutal.paper.opacity(0.85), radius: Brutal.Radius.chip, shadow: on ? 0 : 2)
-                    }
-                    .buttonStyle(.plain)
-                    .brutalTip("Show only captures with this tag")
-                    .contextMenu {
-                        Button("Rename or Remove Tags…") { managing = true }
-                        Button("Remove “\(tag)”…") { model.deleteTag(tag) }
-                    }
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
-            .padding(.horizontal, 3)
-            .padding(.vertical, 6)
-        }
-    }
-}
-
 /// Every tag in use, each with a field to rename it and a button to remove it from all the captures that have it.
 /// Renaming one to the name of another merges them.
-private struct GalleryTagManager: View {
+struct GalleryTagManager: View {
     let model: GalleryModel
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -665,7 +717,7 @@ private struct GalleryTagManager: View {
             }
         }
         .padding(12)
-        .frame(width: 260)
+        .frame(width: (260 * textSize.scale).rounded())
     }
 }
 
@@ -673,6 +725,7 @@ private struct GalleryTagManagerRow: View {
     let model: GalleryModel
     let tag: String
     @State private var name: String
+    @FocusState private var focused: Bool
 
     init(model: GalleryModel, tag: String) {
         self.model = model
@@ -684,11 +737,9 @@ private struct GalleryTagManagerRow: View {
         HStack(spacing: 6) {
             TagDot(tag: tag)
             TextField("Tag name", text: $name)
-                .textFieldStyle(.plain)
-                .font(.scaled(13, weight: .semibold))
-                .padding(.horizontal, 8)
-                .frame(height: 28)
-                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .font(Brutal.body)
+                .focused($focused)
+                .brutalField(focused: focused)
                 .onSubmit { model.renameTag(tag, to: name) }
                 .accessibilityLabel(Text("Tag name"))
             Button {
@@ -707,16 +758,15 @@ private struct GalleryTagManagerRow: View {
     }
 }
 
-/// A Finder tag's colour, for the tags named like Finder's coloured ones; other tags have none.
-private struct TagDot: View {
+/// A Finder tag's colour, for the tags named like Finder's coloured ones; other tags are grey.
+struct TagDot: View {
     let tag: String
+    var size: CGFloat = 9
 
     var body: some View {
-        if let color = Self.color(of: tag) {
-            Circle()
-                .fill(Color(nsColor: color))
-                .frame(width: 9, height: 9)
-        }
+        Circle()
+            .fill(Self.color(of: tag).map { Color(nsColor: $0) } ?? Brutal.tertiaryText)
+            .frame(width: size, height: size)
     }
 
     static func color(of tag: String) -> NSColor? {
@@ -730,21 +780,19 @@ private struct TagDot: View {
 }
 
 /// Adds a tag to the files it opened on, or takes one off them, from the tags already used.
-private struct GalleryTagPopover: View {
+struct GalleryTagPopover: View {
     let model: GalleryModel
     let targets: [URL]
     @State private var name = ""
     @FocusState private var focused: Bool
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             TextField("Add a tag", text: $name)
-                .textFieldStyle(.plain)
-                .font(.scaled(13, weight: .semibold))
+                .font(Brutal.body)
                 .focused($focused)
-                .padding(.horizontal, 8)
-                .frame(height: 28)
-                .brutalSurface(Brutal.paper.opacity(0.85), radius: Brutal.Radius.button, shadow: 2)
+                .brutalField(focused: focused)
                 .onSubmit {
                     model.addTag(name, to: targets)
                     name = ""
@@ -766,8 +814,10 @@ private struct GalleryTagPopover: View {
             }
         }
         .padding(12)
-        .frame(width: 230)
-        .onAppear { focused = true }
+        .frame(width: (230 * textSize.scale).rounded())
+        // A turn after it appears: taking focus at once loses it while the popover is still opening, and the keys
+        // typed next reach the gallery instead.
+        .onAppear { DispatchQueue.main.async { focused = true } }
     }
 
     private func row(_ tag: String) -> some View {
@@ -778,6 +828,7 @@ private struct GalleryTagPopover: View {
             HStack(spacing: 7) {
                 Image(systemName: coverage == .all ? "checkmark.square.fill" : coverage == .some ? "minus.square" : "square")
                     .font(.scaled(12, weight: .bold))
+                    .accessibilityHidden(true)
                 TagDot(tag: tag)
                 Text(verbatim: tag)
                     .lineLimit(1)
@@ -791,5 +842,7 @@ private struct GalleryTagPopover: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(coverage == .all ? .isSelected : [])
+        // The minus box shows a tag on only some of the captures, which the selected trait can't say.
+        .accessibilityValue(coverage == .some ? Text("On some") : Text(verbatim: ""))
     }
 }

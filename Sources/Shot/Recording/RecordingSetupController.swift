@@ -15,6 +15,16 @@ final class RecordingSetupModel {
     var cameraOn: Bool
     var microphoneOn: Bool
     var cursorOn: Bool
+    /// Sound from other apps on the Mac.
+    var systemAudioOn: Bool
+    /// The frame rate this recording asks for, one of `frameRates`.
+    var fps: Int
+    /// The rates the screen being recorded can offer.
+    var frameRates: [Int] = RecordingFrameRate.all
+    /// The microphone picked in Settings, or the system default's name.
+    let microphoneName: String
+    /// The size and ratio chip's text above the frame.
+    var frameLabel = ""
     /// Set when recording a single window rather than a screen area.
     var windowID: CGWindowID?
     /// Set with `windowID` when recording just a browser window's page.
@@ -34,9 +44,21 @@ final class RecordingSetupModel {
         cameraOn = prefs.recordCamera
         microphoneOn = prefs.recordMicrophone
         cursorOn = prefs.recordShowsCursor
+        systemAudioOn = prefs.recordSystemAudio
+        fps = prefs.recordingFPS
+        microphoneName = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.localizedName ?? String(localized: "Microphone")
     }
 
-    var options: Recorder.Options { .init(camera: cameraOn, microphone: microphoneOn, showsCursor: cursorOn, windowID: windowID, pageInsets: pageInsets) }
+    /// Offers the rates `screen` can refresh at, and steps the chosen one down to the fastest of them when it can't.
+    func fitFrameRate(to screen: NSScreen) {
+        let display = screen.maximumFramesPerSecond
+        frameRates = RecordingFrameRate.offered(maximumDisplayRate: display)
+        fps = RecordingFrameRate.effective(setting: fps, displayRate: display)
+    }
+
+    var options: Recorder.Options {
+        .init(camera: cameraOn, microphone: microphoneOn, showsCursor: cursorOn, systemAudio: systemAudioOn, fps: fps, windowID: windowID, pageInsets: pageInsets)
+    }
 }
 
 /// Starts a recording of a picked area, first showing the setup panel and counting down when `RecordingStart` asks for them.
@@ -54,7 +76,7 @@ final class RecordingSetupController {
     private var region: CGRect
     /// The width over height the frame's handles keep, when the area was picked with one.
     private var ratio: CGFloat?
-    private var frame: RecordingBorderPanel?
+    private var frame: SetupFramePanel?
     private var handles: [RegionHandle: HandlePanel] = [:]
     private var bar: SetupBarPanel?
     private var countdownPanel: CountdownPanel?
@@ -73,6 +95,7 @@ final class RecordingSetupController {
         self.ratio = ratio
         model.windowID = windowID
         model.pageInsets = pageInsets
+        model.fitFrameRate(to: screen)
     }
 
     /// What `pickRegion` picked; `optionHeld` is whether ⌥ was held as the pick ended.
@@ -100,7 +123,7 @@ final class RecordingSetupController {
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = WindowCapturer.onScreenWindows()
-        let result = await SelectionOverlayController.select(displays: displays, target: mode, offersDelay: offersDelay, windows: windows, isLive: true)
+        let result = await SelectionOverlayController.select(displays: displays, target: mode, offersDelay: offersDelay, recording: true, windows: windows, isLive: true)
         if remembering {
             Preferences().recordTarget = result.target
         }
@@ -162,7 +185,7 @@ final class RecordingSetupController {
             return
         }
         model.countdown = model.countdownSeconds
-        let panel = CountdownPanel(center: CGPoint(x: region.midX, y: region.midY), remaining: { [model] in model.countdown }) { [weak self] in
+        let panel = CountdownPanel(kind: .recording, total: model.countdownSeconds, center: CGPoint(x: region.midX, y: region.midY), remaining: { [model] in model.countdown }) { [weak self] in
             self?.cancelCountdown()
         }
         panel.orderFrontRegardless()
@@ -218,6 +241,7 @@ final class RecordingSetupController {
             model.mode = picked.target
             model.countdownSeconds = RecordingStart.after(adjustBeforeRecording: false, countdown: picked.delay, optionHeld: false).countdown
             screen = picked.screen
+            model.fitFrameRate(to: picked.screen)
             region = picked.region
             model.windowID = picked.windowID
             model.pageInsets = picked.pageInsets
@@ -238,40 +262,74 @@ final class RecordingSetupController {
         }
     }
 
-    func toggleMicrophone() {
+    func toggleMicrophone() async {
         model.microphoneOn.toggle()
+        await updateMicrophonePreview()
     }
 
     func toggleCursor() {
         model.cursorOn.toggle()
     }
 
+    func toggleSystemAudio() {
+        model.systemAudioOn.toggle()
+    }
+
+    func setFrameRate(_ fps: Int) {
+        model.fps = fps
+    }
+
+    /// Runs the microphone while the bar shows it on, so its level meter moves as you speak. It stops before a countdown
+    /// or the recording, which opens the microphone itself. Turning it on is also when macOS asks for permission; without
+    /// it, the microphone turns off here rather than when the recording starts.
+    private func updateMicrophonePreview() async {
+        let preview = DevicePreview.microphone
+        guard model.microphoneOn, bar?.isVisible == true else {
+            preview.stop()
+            return
+        }
+        await preview.start(deviceID: Preferences().microphoneDeviceID)
+        if AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
+            model.microphoneOn = false
+        }
+    }
+
     // MARK: Panels
 
     private func showSetup(placeCamera: Bool) async {
-        let frame = RecordingBorderPanel(region: region, style: .setup)
+        CameraBubble.shared.showsHandle = true
+        let frame = SetupFramePanel(screen: screen.frame, visible: screen.visibleFrame)
         frame.orderFrontRegardless()
         self.frame = frame
         for handle in RegionHandle.allCases {
             let panel = HandlePanel(handle: handle) { [weak self] delta in
                 self?.drag(handle, by: delta)
             }
-            panel.place(at: handle.anchor(in: region), within: screen.frame)
+            panel.place(at: handle.anchor(in: region), within: handle == .move ? screen.visibleFrame : screen.frame)
             panel.orderFrontRegardless()
             handles[handle] = panel
         }
         let bar = SetupBarPanel(model: model, actions: .init(
             switchMode: { [weak self] mode in Task { await self?.switchMode(mode) } },
             toggleCamera: { [weak self] in Task { await self?.toggleCamera() } },
-            toggleMicrophone: { [weak self] in self?.toggleMicrophone() },
+            toggleMicrophone: { [weak self] in Task { await self?.toggleMicrophone() } },
             toggleCursor: { [weak self] in self?.toggleCursor() },
+            toggleSystemAudio: { [weak self] in self?.toggleSystemAudio() },
+            setFrameRate: { [weak self] in self?.setFrameRate($0) },
+            resizeCamera: { [weak self] step in
+                if self?.model.cameraOn == true {
+                    CameraBubble.shared.step(by: step)
+                }
+            },
             record: { [weak self] in self?.confirm() },
             cancel: { [weak self] in self?.cancel() }
         ))
+        bar.onResize = { [weak self] in self?.updateGeometry() }
         self.bar = bar
         updateGeometry()
         bar.orderFrontRegardless()
         bar.makeKey()
+        Task { await updateMicrophonePreview() }
         if placeCamera, model.cameraOn {
             await showCamera()
         }
@@ -304,15 +362,19 @@ final class RecordingSetupController {
     }
 
     private func updateGeometry() {
-        frame?.setRegion(region)
         for (handle, panel) in handles {
-            panel.place(at: handle.anchor(in: region), within: screen.frame)
+            panel.place(at: handle.anchor(in: region), within: handle == .move ? screen.visibleFrame : screen.frame)
         }
         bar?.place(below: region, on: screen)
         model.pixelSize = CGSize(width: Geometry.evenFloor(region.width * screen.backingScaleFactor), height: Geometry.evenFloor(region.height * screen.backingScaleFactor))
+        model.frameLabel = RecordSetupFrame.label(pixels: model.pixelSize, ratio: ratio)
+        let avoiding = [handles[.move]?.frame, bar?.frame].compactMap(\.self)
+        frame?.update(region: region, label: model.frameLabel, avoiding: avoiding)
     }
 
     private func setSetupVisible(_ visible: Bool) {
+        // The handle is for checking before recording, so the countdown and the recording show the bubble without it.
+        CameraBubble.shared.showsHandle = visible
         for panel in [frame as NSWindow?, bar] + handles.values.map({ $0 as NSWindow? }) {
             if visible {
                 panel?.orderFrontRegardless()
@@ -321,7 +383,12 @@ final class RecordingSetupController {
             }
         }
         if visible {
+            // Behind the camera bubble, which shares its level and stays up through a countdown.
+            frame?.order(.below, relativeTo: 0)
             bar?.makeKey()
+            Task { await updateMicrophonePreview() }
+        } else {
+            DevicePreview.microphone.stop()
         }
     }
 
@@ -423,141 +490,457 @@ private final class HandleView: NSView {
         }
     }
 
+    /// The board's round handle, a 10 pt white circle with a 1.5 pt ink edge, in the middle of a 20 pt panel so it's easier
+    /// to grab than it looks. The move grip, which the board doesn't draw, is a small dark pill with two rows of dots, in
+    /// the size chip's colours.
     override func draw(_ dirtyRect: NSRect) {
-        // Square knob with a hard shadow; leaves 2 pt on the right and bottom for the shadow.
-        let body = CGRect(x: 0, y: 2, width: bounds.width - 2, height: bounds.height - 2)
-        let radius: CGFloat = handle == .move ? 8 : 4
-        Self.line.setFill()
-        // Starts under the border stroke so no background shows between knob and shadow.
-        NSBezierPath(roundedRect: body.insetBy(dx: 1, dy: 1).offsetBy(dx: 2, dy: -2), xRadius: radius, yRadius: radius).fill()
-        NSColor(Brutal.paper).setFill()
-        let shape = NSBezierPath(roundedRect: body.insetBy(dx: 1, dy: 1), xRadius: radius, yRadius: radius)
-        shape.fill()
-        Self.line.setStroke()
-        shape.lineWidth = 2
-        shape.stroke()
         if handle == .move {
-            NSColor(Brutal.ink).setFill()
+            let pill = NSBezierPath(roundedRect: bounds.insetBy(dx: 4, dy: 3), xRadius: (bounds.height - 6) / 2, yRadius: (bounds.height - 6) / 2)
+            FloatingPanel.fillNS(SetupFrameChip.opacity, solid: FloatingPanel.solidNS).setFill()
+            pill.fill()
+            FloatingPanel.edgeNS(increased: NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast).setStroke()
+            pill.lineWidth = 1
+            pill.stroke()
+            NSColor.white.withAlphaComponent(0.85).setFill()
             for row in 0..<2 {
                 for column in 0..<4 {
-                    let dot = CGRect(x: body.midX - 13 + CGFloat(column) * 8, y: body.midY - 4 + CGFloat(row) * 6, width: 3, height: 3)
+                    let dot = CGRect(x: bounds.midX - 11.5 + CGFloat(column) * 6.5, y: bounds.midY - 3.5 + CGFloat(row) * 5, width: 2.5, height: 2.5)
                     NSBezierPath(ovalIn: dot).fill()
                 }
             }
+            return
         }
+        let side = AreaHandles.diameter
+        let circle = NSBezierPath(ovalIn: CGRect(x: bounds.midX - side / 2, y: bounds.midY - side / 2, width: side, height: side))
+        NSColor.white.setFill()
+        circle.fill()
+        Self.line.setStroke()
+        circle.lineWidth = 1.5
+        circle.stroke()
+    }
+}
+
+// MARK: Frame
+
+/// The dim around the frame, its white and dark edges, and the size and ratio chip above it, across the screen the area is
+/// on. The dim and edges are plain layer colours, so they cost no bitmap however large the screen. It ignores the mouse,
+/// so the apps under it still take clicks while you set the recording up.
+private final class SetupFramePanel: NSPanel {
+    /// `rgba(12,12,16,0.46)`, from the board.
+    private static let dimColor = CGColor(srgbRed: 12 / 255, green: 12 / 255, blue: 16 / 255, alpha: 0.46)
+    private let screenFrame: CGRect
+    /// Where the chip may go, in the panel's space: the screen less the menu bar and Dock, so it never covers either.
+    private let chipBounds: CGRect
+    private let dim = (0..<4).map { _ in CALayer() }
+    private let innerEdge = CALayer()
+    private let outerEdge = CALayer()
+    private let chip = SetupFrameChip.Model()
+    private let chipView: NSView
+    private var region = CGRect.zero
+    private var avoiding: [CGRect] = []
+
+    init(screen: CGRect, visible: CGRect) {
+        screenFrame = screen
+        chipBounds = visible.offsetBy(dx: -screen.minX, dy: -screen.minY)
+        chipView = NSView(hosting: SetupFrameChip(model: chip), movesWindow: false)
+        super.init(contentRect: screen, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        level = .statusBar
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        ignoresMouseEvents = true
+        isReleasedWhenClosed = false
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        let content = NSView(frame: CGRect(origin: .zero, size: screen.size))
+        content.wantsLayer = true
+        for layer in dim {
+            layer.backgroundColor = Self.dimColor
+            content.layer?.addSublayer(layer)
+        }
+        // 1 pt white just outside the area, then 1 pt black at 35% outside that, as the area overlay draws it.
+        innerEdge.borderColor = NSColor.white.withAlphaComponent(0.95).cgColor
+        innerEdge.borderWidth = 1
+        outerEdge.borderColor = NSColor.black.withAlphaComponent(0.35).cgColor
+        outerEdge.borderWidth = 1
+        content.layer?.addSublayer(outerEdge)
+        content.layer?.addSublayer(innerEdge)
+        content.addSubview(chipView)
+        contentView = content
+        setFrame(screen, display: false)
+        chip.onSize = { [weak self] _ in self?.placeChip() }
+    }
+
+    /// `region` and `avoiding` are AppKit global rects; the chip keeps off `avoiding`, such as the bar and the move grip.
+    func update(region: CGRect, label: String, avoiding: [CGRect]) {
+        let origin = screenFrame.origin
+        self.region = region.offsetBy(dx: -origin.x, dy: -origin.y)
+        self.avoiding = avoiding.map { $0.offsetBy(dx: -origin.x, dy: -origin.y) }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        let rects = RecordSetupFrame.dimRects(around: self.region, in: CGRect(origin: .zero, size: screenFrame.size))
+        for (index, layer) in dim.enumerated() {
+            layer.isHidden = index >= rects.count
+            if index < rects.count {
+                layer.frame = rects[index]
+            }
+        }
+        innerEdge.frame = self.region.insetBy(dx: -1, dy: -1)
+        outerEdge.frame = self.region.insetBy(dx: -2, dy: -2)
+        CATransaction.commit()
+        chip.text = label
+        placeChip()
+    }
+
+    private func placeChip() {
+        let size = chip.size
+        guard size.width > 0 else {
+            return
+        }
+        chipView.frame = AreaLabelPlacement.frame(of: size, for: region, in: chipBounds, avoiding: avoiding).integral
+    }
+}
+
+/// The frame's chip: the size in pixels and any ratio, in 12 pt bold SF Mono, white on the floating fill at 88%, as the
+/// area overlay's chips are. Increase Contrast and Reduce Transparency make it solid.
+private struct SetupFrameChip: View {
+    @MainActor @Observable
+    final class Model {
+        var text = ""
+        var size = CGSize.zero
+        @ObservationIgnored var onSize: (CGSize) -> Void = { _ in }
+    }
+
+    static let opacity = 0.88
+    let model: Model
+
+    var body: some View {
+        Text(verbatim: model.text)
+            .font(.scaled(12, weight: .bold, design: .monospaced, tabular: true))
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .padding(.vertical, 3)
+            .padding(.horizontal, 9)
+            .floatingPanel(RoundedRectangle(cornerRadius: 8, style: .circular), opacity: Self.opacity)
+            .fixedSize()
+            // The panel sizes the chip's view from this, so the view never clips the chip or catches more than it.
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
+                model.size = CGSize(width: size.width.rounded(.up), height: size.height.rounded(.up))
+                model.onSize(model.size)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .accessibilityHidden(true)
     }
 }
 
 // MARK: Setup bar
 
-private final class SetupBarPanel: NSPanel {
+/// The dark bar under the frame (Record › Check before recording): what to record, the microphone with its level, the
+/// camera, Mac sound and cursor toggles, the frame rate, Cancel, and Record as the one ink button. It grows to fit its
+/// labels at the chosen text size and stays centred under the frame.
+private final class SetupBarPanel: FloatingPanelWindow {
     struct Actions {
         let switchMode: @MainActor (CaptureTarget) -> Void
         let toggleCamera: @MainActor () -> Void
         let toggleMicrophone: @MainActor () -> Void
         let toggleCursor: @MainActor () -> Void
+        let toggleSystemAudio: @MainActor () -> Void
+        let setFrameRate: @MainActor (Int) -> Void
+        /// Steps the camera bubble one size larger (1) or smaller (-1), from ⌘+ and ⌘−.
+        let resizeCamera: @MainActor (Int) -> Void
         let record: @MainActor () -> Void
         let cancel: @MainActor () -> Void
     }
 
-    static let size = NSSize(width: 660, height: 66)
+    /// From the frame's bottom edge to the bar.
+    static let gap: CGFloat = 22
+    private let actions: Actions
+    private var region = CGRect.zero
+    private var visibleFrame = CGRect.zero
+    /// Called after the bar changes size, so the size chip can keep clear of it.
+    var onResize: () -> Void = {}
 
     override var canBecomeKey: Bool { true }
 
     init(model: RecordingSetupModel, actions: Actions) {
-        super.init(contentRect: NSRect(origin: .zero, size: Self.size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        self.actions = actions
+        super.init(contentRect: NSRect(origin: .zero, size: NSSize(width: 860, height: 52)))
         level = .statusBar
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = false
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        contentView = NSView(hosting: SetupBarView(model: model, actions: actions))
+        contentView = NSView(hosting: SetupBarView(model: model, preview: DevicePreview.microphone, actions: actions) { [weak self] size in
+            self?.fit(size)
+        })
+        contentView?.layoutSubtreeIfNeeded()
+    }
+
+    override func cancelOperation(_ sender: Any?) {
+        actions.cancel()
+    }
+
+    /// ⌘+ (or ⌘=) and ⌘− change the camera bubble's size, since its own panel never takes the keyboard.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.shift) == .command {
+            switch event.charactersIgnoringModifiers {
+            case "=", "+":
+                actions.resizeCamera(1)
+                return true
+            case "-":
+                actions.resizeCamera(-1)
+                return true
+            default:
+                break
+            }
+        }
+        return super.performKeyEquivalent(with: event)
     }
 
     func place(below region: CGRect, on screen: NSScreen) {
-        setFrameOrigin(ControlPlacement.origin(for: Self.size, region: region, visible: screen.visibleFrame, gap: 22))
+        self.region = region
+        visibleFrame = screen.visibleFrame
+        setFrameOrigin(ControlPlacement.origin(for: frame.size, region: region, visible: visibleFrame, gap: Self.gap))
+    }
+
+    private func fit(_ size: CGSize) {
+        let wanted = NSSize(width: size.width.rounded(.up), height: size.height.rounded(.up))
+        guard wanted != frame.size, wanted.width > 0, wanted.height > 0 else {
+            return
+        }
+        let origin = visibleFrame.isEmpty ? frame.origin : ControlPlacement.origin(for: wanted, region: region, visible: visibleFrame, gap: Self.gap)
+        setFrame(NSRect(origin: origin, size: wanted), display: true)
+        onResize()
     }
 }
 
 private struct SetupBarView: View {
     @Bindable var model: RecordingSetupModel
+    let preview: DevicePreview
     let actions: SetupBarPanel.Actions
+    let onSize: (CGSize) -> Void
+    @Environment(\.textSize) private var textSize
+
+    /// Buttons are 38 pt tall on the board: a toolbar button's 5 pt padding either side of this.
+    static let toolbarContent: CGFloat = 28
+    /// The same height for Cancel and Record, inside their 8 pt padding.
+    static let buttonContent: CGFloat = 22
 
     var body: some View {
-        HStack(spacing: 10) {
-            BrutalSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: CaptureTarget.allCases.map { ($0, $0.title) }, color: Brutal.sky)
+        HStack(spacing: 6) {
+            BrutalSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: CaptureTarget.allCases.map { ($0, $0.title) })
                 .brutalTip("Switch what to record")
-            BrutalChip(text: "\(Int(model.pixelSize.width)) × \(Int(model.pixelSize.height))")
-                .fixedSize()
-            Rectangle().fill(Brutal.faint(0.2)).frame(width: 2, height: 28)
-            OptionToggle(on: model.cameraOn, symbol: model.cameraOn ? "video.fill" : "video.slash.fill", help: model.cameraOn ? "Hide camera bubble" : "Show camera bubble", action: actions.toggleCamera)
-            OptionToggle(on: model.microphoneOn, symbol: model.microphoneOn ? "mic.fill" : "mic.slash.fill", help: model.microphoneOn ? "Turn off microphone" : "Turn on microphone", action: actions.toggleMicrophone)
-            OptionToggle(on: model.cursorOn, symbol: model.cursorOn ? "cursorarrow" : "cursorarrow.slash", help: model.cursorOn ? "Hide cursor" : "Show cursor", action: actions.toggleCursor)
-            Spacer(minLength: 0)
+                .accessibilityLabel(Text("What to record"))
+            FloatingDivider().padding(.horizontal, 4)
+            microphone
+            SetupToggle(on: model.cameraOn, title: "Camera", symbol: "video", offSymbol: "video.slash", help: cameraTip, detail: cameraDetail, action: actions.toggleCamera)
+                .disabled(model.windowID != nil)
+            SetupToggle(on: model.systemAudioOn, title: "Mac sound", symbol: "speaker.wave.2", offSymbol: "speaker.slash", help: "Record the sound other apps on your Mac play", action: actions.toggleSystemAudio)
+            SetupToggle(on: model.cursorOn, title: "Cursor", symbol: "cursorarrow", offSymbol: "cursorarrow.slash", help: "Show the pointer in the recording", action: actions.toggleCursor)
+            frameRate
+            FloatingDivider().padding(.horizontal, 4)
             Button {
                 actions.cancel()
             } label: {
-                Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
+                Text("Cancel").frame(minHeight: Self.buttonContent)
             }
-            .buttonStyle(BrutalButtonStyle(compact: true))
+            .buttonStyle(BrutalButtonStyle(floating: true))
             .keyboardShortcut(.cancelAction)
-            .brutalTip("Cancel (Esc)")
-            .accessibilityLabel(Text("Cancel"))
+            .brutalTip("Cancel", key: "Esc")
             Button {
                 actions.record()
             } label: {
-                Label("Record", systemImage: "record.circle.fill").labelStyle(.titleAndIcon).fixedSize()
+                HStack(spacing: 8) {
+                    RecordDot()
+                    Text("Record")
+                    Text(verbatim: "↩").font(.scaled(11)).opacity(0.6).accessibilityHidden(true)
+                }
+                .frame(minHeight: Self.buttonContent)
             }
-            .buttonStyle(BrutalButtonStyle(color: Brutal.red, compact: true))
+            .buttonStyle(BrutalButtonStyle(.main, floating: true))
             .keyboardShortcut(.defaultAction)
-            .brutalTip(model.countdownSeconds > 0 ? "Start recording after a \(model.countdownSeconds)-second countdown (Return)" : "Start recording (Return)")
+            .brutalTip(recordTip, key: "↩")
+            .accessibilityLabel(Text("Record"))
         }
-        .padding(.horizontal, 14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
-        .padding(.trailing, 4)
-        .padding(.bottom, 4)
+        .padding(7)
+        .fixedSize()
+        .floatingPanel(RoundedRectangle(cornerRadius: 16, style: .circular))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Check before recording"))
+        .accessibilityValue(Text(verbatim: model.frameLabel))
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { onSize($0) }
+    }
+
+    private var microphone: some View {
+        let on = model.microphoneOn
+        return Button(action: actions.toggleMicrophone) {
+            HStack(spacing: 8) {
+                Image(systemName: on ? "mic" : "mic.slash")
+                    .font(.scaled(13, weight: .semibold))
+                    .frame(width: (16 * CGFloat(textSize.scale)).rounded())
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(verbatim: model.microphoneName)
+                        .font(Brutal.small)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: (150 * CGFloat(textSize.scale)).rounded(), alignment: .leading)
+                        .fixedSize()
+                    MicLevelBars(meter: preview.meter, active: on && preview.isRunning)
+                }
+            }
+            .foregroundStyle(SetupToggle.foreground(on: on))
+            .frame(minHeight: Self.toolbarContent)
+            .padding(.horizontal, 5)
+        }
+        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on, floating: true))
+        .brutalTip(microphoneTip, detail: microphoneDetail)
+        .accessibilityLabel(Text("Microphone"))
+        .accessibilityValue((on ? Text("On") : Text("Off")) + Text(verbatim: ", \(model.microphoneName)"))
+        .accessibilityAddTraits(.isToggle)
+    }
+
+    private var frameRate: some View {
+        BrutalDropdown(title: "Frame rate", entries: model.frameRates.map { fps in
+            .item("\(fps) fps", selected: fps == model.fps) { actions.setFrameRate(fps) }
+        }) {
+            HStack(spacing: 4) {
+                Text("\(model.fps) fps")
+                    .font(.scaled(12, weight: .bold, design: .monospaced, tabular: true))
+                Image(systemName: "chevron.down")
+                    .font(.scaled(9, weight: .bold))
+                    .opacity(0.7)
+            }
+            .frame(minHeight: Self.toolbarContent)
+            .padding(.horizontal, 3)
+        }
+        .buttonStyle(BrutalButtonStyle(.toolbar, floating: true))
+        .brutalTip("Frame rate", detail: "Just for this recording. Settings › Recording sets the one each recording starts with.")
+    }
+
+    private var microphoneTip: LocalizedStringResource {
+        if model.microphoneOn {
+            return "Turn off the microphone"
+        }
+        return "Record your voice with the microphone"
+    }
+
+    private var microphoneDetail: LocalizedStringResource {
+        "Settings › Recording picks which microphone."
+    }
+
+    private var cameraTip: LocalizedStringResource {
+        if model.windowID != nil {
+            return "A window recording has no camera bubble"
+        }
+        return model.cameraOn ? "Hide the camera bubble" : "Show your camera in a bubble"
+    }
+
+    private var cameraDetail: LocalizedStringResource? {
+        guard model.cameraOn, model.windowID == nil else {
+            return nil
+        }
+        return "Drag the bubble's handle, or press ⌘+ and ⌘−, to change its size."
+    }
+
+    private var recordTip: LocalizedStringResource {
+        if model.countdownSeconds > 0 {
+            return "Start recording after a \(model.countdownSeconds)-second countdown"
+        }
+        return "Start recording"
     }
 }
 
-private struct OptionToggle: View {
+/// A toggle on the setup bar: its symbol and name, on the 16% white fill while on. Off, the name is lighter and the
+/// symbol is struck through, so on and off differ by more than the fill.
+private struct SetupToggle: View {
     let on: Bool
+    let title: LocalizedStringResource
     let symbol: String
+    let offSymbol: String
     let help: LocalizedStringResource
+    var detail: LocalizedStringResource?
     let action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.textSize) private var textSize
+
+    /// White while on, and 70% while off as on the board (90% with Increase Contrast). Disabled is left to the button style.
+    static func foreground(on: Bool) -> some ShapeStyle {
+        on ? AnyShapeStyle(Color.white) : AnyShapeStyle(ContrastAware(standard: .white.opacity(0.7), increased: .white.opacity(0.9)))
+    }
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 11, weight: .bold)).frame(width: 16, height: 16)
+            HStack(spacing: 7) {
+                Image(systemName: on ? symbol : offSymbol)
+                    .font(.scaled(13, weight: .semibold))
+                    .frame(width: (16 * CGFloat(textSize.scale)).rounded())
+                // The semibold name holds the button at its on width, so turning it on doesn't shift the bar.
+                ZStack {
+                    Text(title).font(Brutal.small).hidden()
+                    Text(title).font(on ? Brutal.small : .scaled(12))
+                }
+            }
+            .modifier(SetupToggleForeground(on: on, enabled: isEnabled))
+            .frame(minHeight: SetupBarView.toolbarContent)
+            .padding(.horizontal, 5)
         }
-        .buttonStyle(BrutalButtonStyle(color: on ? Brutal.mint : Brutal.paper, compact: true))
-        .brutalTip(help)
-        .accessibilityLabel(Text(help))
+        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on, floating: true))
+        .brutalTip(help, detail: detail)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(on ? Text("On") : Text("Off"))
+        .accessibilityAddTraits(.isToggle)
+    }
+}
+
+/// Sets the toggle's colour unless it's disabled, when `BrutalButtonStyle`'s disabled colour shows through.
+private struct SetupToggleForeground: ViewModifier {
+    let on: Bool
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content.foregroundStyle(SetupToggle.foreground(on: on))
+        } else {
+            content
+        }
+    }
+}
+
+/// Record's red dot with an ink ring, as on the board.
+private struct RecordDot: View {
+    @Environment(\.textSize) private var textSize
+
+    var body: some View {
+        let side = (13 * CGFloat(textSize.scale)).rounded()
+        Circle()
+            .fill(Brutal.record)
+            .inkBorder(Circle(), width: 1.5, color: Color(hex: 0x16161A))
+            .frame(width: side, height: side)
+            .accessibilityHidden(true)
     }
 }
 
 // MARK: Countdown
 
-/// The countdown a recording and a timed screenshot share. `remaining` is read while the view draws, so reading an
-/// observable property in it keeps the number current.
-final class CountdownPanel: NSPanel {
-    private static let size = NSSize(width: 220, height: 250)
+/// The countdown a recording and a timed screenshot share (#1078): a dark floating panel with an accent ring that empties
+/// as the seconds run out, the seconds in large tabular figures, and Cancel. `remaining` is read while the view draws, so
+/// reading an observable property in it keeps the number current.
+final class CountdownPanel: FloatingPanelWindow {
+    /// What the countdown is for, which sets its hint and what VoiceOver says.
+    enum Kind {
+        case screenshot, recording
+    }
+
     private let onCancel: () -> Void
 
     override var canBecomeKey: Bool { true }
 
-    init(center: CGPoint, remaining: @escaping () -> Int?, onCancel: @escaping () -> Void) {
+    init(kind: Kind, total: Int, center: CGPoint, remaining: @escaping () -> Int?, onCancel: @escaping () -> Void) {
         self.onCancel = onCancel
-        let origin = CGPoint(x: center.x - Self.size.width / 2, y: center.y - Self.size.height / 2)
-        super.init(contentRect: NSRect(origin: origin, size: Self.size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        let size = CountdownView.size(kind: kind, textSize: Preferences().textSize)
+        let origin = CGPoint(x: (center.x - size.width / 2).rounded(), y: (center.y - size.height / 2).rounded())
+        super.init(contentRect: NSRect(origin: origin, size: size))
         level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = false
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        contentView = NSView(hosting: CountdownView(remaining: remaining, onCancel: onCancel))
+        contentView = NSView(hosting: CountdownView(kind: kind, total: total, remaining: remaining, onCancel: onCancel))
     }
 
     override func cancelOperation(_ sender: Any?) {
@@ -566,26 +949,122 @@ final class CountdownPanel: NSPanel {
 }
 
 private struct CountdownView: View {
+    let kind: CountdownPanel.Kind
+    let total: Int
     let remaining: () -> Int?
     let onCancel: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.textSize) private var textSize
+    /// How full the ring is drawn, from 0 to 1.
+    @State private var ring = 1.0
+
+    static let width: CGFloat = 180
+    static let ringSize: CGFloat = 92
+    static let ringWidth: CGFloat = 6
+    /// The ring's line runs 6 pt inside the 92 pt frame, so its circle is 80 pt across, as on the board.
+    static let ringInset: CGFloat = 6
+    static let top: CGFloat = 20
+    static let bottom: CGFloat = 14
+    static let spacing: CGFloat = 12
+    static let digits = ScaledFont.scaled(40, weight: .bold, tabular: true)
+    static let hintFont = ScaledFont.scaled(12)
+    /// The Cancel button's text, as `BrutalButtonStyle` draws a floating secondary button.
+    static let buttonFont = Brutal.body
+    static let buttonPadding: CGFloat = 8
+
+    static func hint(_ kind: CountdownPanel.Kind) -> String? {
+        switch kind {
+        case .screenshot: String(localized: "Open the menu you need")
+        case .recording: nil
+        }
+    }
+
+    /// The panel's size at `textSize`, worked out before it's shown so the window fits its shape.
+    static func size(kind: CountdownPanel.Kind, textSize: TextSize) -> NSSize {
+        func lineHeight(_ font: ScaledFont) -> CGFloat {
+            NSLayoutManager().defaultLineHeight(for: NSFont.systemFont(ofSize: font.points(textSize))).rounded(.up)
+        }
+        let scale = CGFloat(textSize.scale)
+        var height = top + (ringSize * scale).rounded() + spacing + lineHeight(buttonFont) + buttonPadding * 2 + bottom
+        var width = (width * scale).rounded()
+        if let hint = hint(kind) {
+            height += lineHeight(hintFont) + spacing
+            let font = NSFont.systemFont(ofSize: hintFont.points(textSize))
+            width = max(width, (hint as NSString).size(withAttributes: [.font: font]).width.rounded(.up) + 32)
+        }
+        return NSSize(width: width, height: height)
+    }
+
+    private var seconds: Int { remaining() ?? 0 }
+
+    private var label: String {
+        switch kind {
+        case .screenshot: String(localized: "Capturing in \(seconds) seconds")
+        case .recording: String(localized: "Recording in \(seconds) seconds")
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("\(remaining() ?? 0)")
-                .font(.system(size: 84, weight: .black, design: .rounded))
-                .foregroundStyle(Brutal.ink)
-                .contentTransition(.numericText(countsDown: true))
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: remaining())
-                .frame(width: 148, height: 148)
-                .brutalCircle(Brutal.yellow, shadow: 6)
-            Button("Cancel") { onCancel() }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+        let scale = CGFloat(textSize.scale)
+        let ringSize = (Self.ringSize * scale).rounded()
+        let ringWidth = Self.ringWidth * scale
+        VStack(spacing: Self.spacing) {
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(contrast == .increased ? 0.4 : 0.14), lineWidth: ringWidth)
+                Circle()
+                    .trim(from: 0, to: ring)
+                    .stroke(Brutal.accent, style: StrokeStyle(lineWidth: ringWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Text(verbatim: "\(seconds)")
+                    .font(Self.digits)
+                    .foregroundStyle(.white)
+                    .contentTransition(reduceMotion ? .identity : .numericText(countsDown: true))
+                    .animation(Motion.animation(.countdownFlip, reduceMotion: reduceMotion), value: seconds)
+            }
+            .padding(Self.ringInset * scale)
+            .frame(width: ringSize, height: ringSize)
+            .accessibilityHidden(true)
+            if let hint = Self.hint(kind) {
+                Text(hint)
+                    .font(Self.hintFont)
+                    .foregroundStyle(contrast == .increased ? Color.white : FloatingPanel.secondaryText)
+                    .lineLimit(1)
+                    .accessibilityHidden(true)
+            }
+            Button("Cancel · Esc") { onCancel() }
+                .buttonStyle(BrutalButtonStyle(floating: true))
                 .keyboardShortcut(.cancelAction)
+                .accessibilityLabel(Text("Cancel"))
         }
-        // Fill the panel so the hosting view can't shrink it and clip the shadows.
-        .padding(.trailing, 6)
-        .padding(.bottom, 6)
+        .padding(.top, Self.top)
+        .padding(.bottom, Self.bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .floatingPanel(RoundedRectangle(cornerRadius: 22, style: .circular))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.updatesFrequently)
+        .onChange(of: seconds, initial: true) { _, now in
+            tick(now)
+        }
+    }
+
+    /// Shows the seconds left on the ring, then drains it a second's worth while that second passes. Reduce Motion
+    /// keeps the ring still at the seconds left. VoiceOver hears the whole label first, then each number.
+    private func tick(_ now: Int) {
+        guard now > 0 else { return }
+        ring = CountdownRing.fraction(remaining: now, of: total)
+        if let drain = Motion.animation(.countdownRing, reduceMotion: reduceMotion) {
+            // Set in the next pass, so the drain starts from the seconds left rather than from wherever the last one was.
+            Task { @MainActor in
+                withAnimation(drain) { ring = CountdownRing.target(remaining: now, of: total) }
+            }
+        }
+        let announcement = now == total ? label : "\(now)"
+        NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested, userInfo: [
+            .announcement: announcement, .priority: NSAccessibilityPriorityLevel.high.rawValue,
+        ])
     }
 }
 
@@ -611,7 +1090,7 @@ final class ScreenshotCountdown {
         remaining = seconds
         // Bottom centre, clear of the menu bar and of whatever the user is about to open.
         let visible = screen.visibleFrame
-        let panel = CountdownPanel(center: CGPoint(x: visible.midX, y: visible.minY + 170), remaining: { [weak self] in self?.remaining }) { [weak self] in
+        let panel = CountdownPanel(kind: .screenshot, total: seconds, center: CGPoint(x: visible.midX, y: visible.minY + 170), remaining: { [weak self] in self?.remaining }) { [weak self] in
             self?.cancelled = true
             self?.remaining = nil
             self?.panel?.orderOut(nil)

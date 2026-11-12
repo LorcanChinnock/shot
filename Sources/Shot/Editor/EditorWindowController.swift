@@ -75,6 +75,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             existing.show()
             return
         }
+        let opening = Perf.begin("Window open")
         let saved = flat ? nil : VersionWriter.savedLayers(of: url, in: .app)
         // A version saved over its file has its original in Shot's own folder, so it keeps its own name.
         let file = saved.map { ProjectStore.app.keeps($0.original) ? url : $0.original } ?? url
@@ -90,6 +91,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         let controller = EditorWindowController(model: model, opened: url)
         open.append(controller)
         controller.show()
+        Perf.measureWindowOpen("editor", since: opening)
         log.notice("Editor opened: \(url.path)\(saved == nil ? "" : " with its layers")")
     }
 
@@ -99,7 +101,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         canvas = EditorCanvasView(model: model)
         let pointSize = CGSize(width: CGFloat(model.document.base.width) / model.scale, height: CGFloat(model.document.base.height) / model.scale)
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
-        let size = CGSize(width: min(max(pointSize.width + 60, 980), visible.width * 0.85), height: min(max(pointSize.height + 150, 480), visible.height * 0.85))
+        let size = CGSize(width: min(max(pointSize.width + 60, 1060), visible.width * 0.85), height: min(max(pointSize.height + 150, 480), visible.height * 0.85))
         let editorWindow = EditorWindow()
         window = editorWindow
         super.init()
@@ -108,7 +110,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
             EditorRootView(model: model, canvas: canvas)
         }
         window.delegate = self
-        window.minSize = NSSize(width: 980, height: 420)
+        // The title bar holds the file name, thirteen tools and six buttons.
+        window.minSize = NSSize(width: 1060, height: 420)
 
         editorWindow.onCommand = { [weak self] key, shift, option in
             self?.handleCommand(key, shift: shift, option: option) ?? false

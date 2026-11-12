@@ -2,15 +2,6 @@ import AppKit
 import ShotCore
 import SwiftUI
 
-enum QuickAccessMotion {
-    static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
-
-    /// A soft, slightly overshooting settle as a card arrives.
-    static var enter: Animation { reduced ? .easeOut(duration: 0.15) : .spring(response: 0.45, dampingFraction: 0.72) }
-    /// Quicker and without bounce, so dismissing feels responsive; neighbours slide into the gap with the same curve.
-    static var exit: Animation { reduced ? .easeOut(duration: 0.15) : .spring(response: 0.32, dampingFraction: 0.9) }
-}
-
 struct QuickAccessView: View {
     let model: QuickAccessModel
     let controller: QuickAccessController
@@ -19,7 +10,7 @@ struct QuickAccessView: View {
     private var edge: Edge { position == .right ? .trailing : .leading }
 
     private var transition: AnyTransition {
-        guard !QuickAccessMotion.reduced else {
+        guard !Motion.reduced else {
             return .opacity
         }
         let anchor: UnitPoint = edge == .trailing ? .trailing : .leading
@@ -30,9 +21,22 @@ struct QuickAccessView: View {
     }
 
     var body: some View {
-        VStack(spacing: QuickAccessLayout.spacing) {
-            ForEach(model.cards) { card in
-                QuickAccessCardView(card: card, controller: controller)
+        let layout = model.layout
+        ZStack(alignment: .bottom) {
+            ForEach(Array(model.cards.enumerated()), id: \.element.id) { index, card in
+                let placement = layout.placements[index]
+                QuickAccessCardView(card: card, height: placement.height, isBehind: placement.isBehind, controller: controller)
+                    .scaleEffect(placement.scale, anchor: .bottom)
+                    .offset(y: QuickAccessLayout.padding - placement.frame.minY)
+                    // Cards move with the change that moved them. Reduce Motion puts them in place at once.
+                    .transaction(value: placement) { transaction in
+                        if Motion.reduced {
+                            transaction.animation = nil
+                        }
+                    }
+                    .zIndex(Double(index))
+                    // VoiceOver reads the newest card first, as it's the one in front.
+                    .accessibilitySortPriority(Double(index))
                     .transition(transition)
             }
         }
@@ -41,36 +45,46 @@ struct QuickAccessView: View {
     }
 }
 
+/// One capture: the picture filling a white card, with Copy, Save As… and the corner buttons over it on hover. Behind the
+/// newest card, it's covered in the dark fill the board gives the cards behind.
 private struct QuickAccessCardView: View {
     let card: QuickAccessCard
+    let height: CGFloat
+    let isBehind: Bool
     let controller: QuickAccessController
     @State private var hovering = false
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular) }
 
     var body: some View {
         ZStack {
-            Image(nsImage: card.thumbnail)
-                .resizable()
-                .interpolation(.high)
-                .aspectRatio(contentMode: .fit)
-                .frame(width: QuickAccessCard.width, height: card.height)
-                .accessibilityLabel(Text(card.isVideo ? "Recording \(card.fileURL.lastPathComponent)" : "Screenshot \(card.fileURL.lastPathComponent)"))
-            if hovering {
+            picture
+                .accessibilityActions { accessibilityActions }
+            if isBehind {
+                FloatingPanel.cardBehind
+                    .transition(.opacity)
+                    .accessibilityHidden(true)
+            } else if hovering {
                 hoverActions
                     .transition(.opacity)
-            } else if card.isVideo {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 13, weight: .black))
-                    .foregroundStyle(Brutal.ink)
-                    .frame(width: 34, height: 34)
-                    .brutalCircle(Brutal.yellow, shadow: 2)
+            }
+            if !isBehind, card.isVideo, let duration = card.duration {
+                BrutalBadge(text: Gallery.duration(duration), style: .strong)
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .padding(10)
+                    .accessibilityHidden(true)
             }
         }
-        .frame(width: QuickAccessCard.width, height: card.height)
-        .background(Color.black)
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.radius, style: .circular), width: 2)
-        .contentShape(Rectangle())
+        .frame(width: QuickAccessCard.width, height: height)
+        .background(Color.white)
+        .clipShape(shape)
+        .inkBorder(shape, width: contrast == .increased ? 1 : 0.5, color: edgeColor)
+        .contentShape(shape)
         .onHover { inside in
-            withAnimation(.easeOut(duration: 0.12)) {
+            withAnimation(reduceMotion ? nil : Motion.fade) {
                 hovering = inside
             }
             controller.setHovering(inside, card: card.id)
@@ -79,8 +93,53 @@ private struct QuickAccessCardView: View {
         .contextMenu { menu }
     }
 
-    /// The hover buttons' actions again, plus Copy Path and Pin, which have no button: the card stays as plain
-    /// as it is.
+    /// The board's 0.5 pt edge at 30% black; Increase Contrast takes it to 1 pt at 60%, or at 40% white on a dark card
+    /// behind, as on a floating panel.
+    private var edgeColor: Color {
+        guard contrast == .increased else {
+            return .black.opacity(0.3)
+        }
+        return isBehind ? .white.opacity(0.4) : .black.opacity(0.6)
+    }
+
+    /// The capture, filling the card and cropped to its middle. A recording with no first frame shows a film symbol.
+    @ViewBuilder
+    private var picture: some View {
+        let label = Text(card.isVideo ? "Recording \(card.fileURL.lastPathComponent)" : "Screenshot \(card.fileURL.lastPathComponent)")
+        if card.thumbnail.isTemplate {
+            Image(nsImage: card.thumbnail)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 40, height: 40)
+                // The card is white in both appearances, so the placeholder takes a fixed dark grey rather than ink.
+                .foregroundStyle(ContrastAware(standard: Color(hex: 0x16161A).opacity(0.4), increased: Color(hex: 0x16161A).opacity(0.75)))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityLabel(label)
+        } else {
+            Image(nsImage: card.thumbnail)
+                .resizable()
+                .interpolation(.high)
+                .aspectRatio(contentMode: .fill)
+                .frame(width: QuickAccessCard.width, height: height)
+                .clipped()
+                .accessibilityLabel(label)
+                .accessibilityHint(Text("Drag into any app"))
+        }
+    }
+
+    /// Close and the right-click menu's actions, so VoiceOver can use a card without hovering it.
+    @ViewBuilder
+    private var accessibilityActions: some View {
+        Button("Close") { controller.remove(card.id) }
+        ForEach(Array(controller.actions(for: card).compactMap { $0 }.enumerated()), id: \.offset) { _, action in
+            if action.children.isEmpty {
+                Button(action.title, action: action.perform)
+            }
+        }
+    }
+
+    /// The hover buttons' actions again, plus Copy Path and Show in Finder, which have no button: the card stays as
+    /// plain as it is.
     private var menu: some View {
         ForEach(Array(controller.actions(for: card).enumerated()), id: \.offset) { _, action in
             if let action, !action.children.isEmpty {
@@ -100,44 +159,81 @@ private struct QuickAccessCardView: View {
     private var hoverActions: some View {
         ZStack {
             // Dimmed rather than blurred, so the screenshot still shows behind the buttons.
-            Color.black.opacity(0.35)
-            VStack(spacing: 9) {
-                Button("Copy") { controller.copy(card) }
-                    .buttonStyle(BrutalButtonStyle(color: Brutal.yellow, compact: true))
-                Button("Save As…") { controller.saveAs(card) }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
+            FloatingPanel.scrim
+            VStack(spacing: 8) {
+                Button { controller.copy(card) } label: {
+                    Text("Copy")
+                        .font(.scaled(14, weight: .semibold))
+                        .frame(minWidth: 104)
+                }
+                .buttonStyle(BrutalButtonStyle(.main, floating: true))
+                // White over any picture, as the board draws it, in both appearances.
+                Button { controller.saveAs(card) } label: {
+                    Text("Save As…")
+                        .font(.scaled(14, weight: .medium))
+                        .frame(minWidth: 104)
+                        // As tall as Copy, whose floating style pads it more.
+                        .padding(.vertical, 3)
+                }
+                .buttonStyle(BrutalButtonStyle())
+                .environment(\.colorScheme, .light)
             }
             VStack {
-                HStack {
-                    CornerButton(symbol: "xmark", help: "Close") { controller.remove(card.id) }
+                HStack(spacing: 6) {
+                    CornerButton(symbol: "xmark", help: "Close", iconSize: 10) { controller.remove(card.id) }
                     Spacer()
                     if card.isVideo {
-                        CornerButton(symbol: "scissors", help: "Edit Video") { controller.annotate(card) }
-                        CornerButton(symbol: "photo.stack", help: "Export GIF") { controller.exportGIF(card) }
+                        CornerButton(symbol: "scissors", help: "Edit Video", iconSize: 12) { controller.annotate(card) }
+                        CornerButton(symbol: "photo.stack", help: "Export GIF", iconSize: 12) { controller.exportGIF(card) }
                     } else {
-                        CornerButton(symbol: "pencil", help: "Annotate") { controller.annotate(card) }
+                        CornerButton(symbol: "pencil", help: "Annotate", iconSize: 12) { controller.annotate(card) }
                     }
                 }
                 Spacer()
-                HStack {
+                HStack(alignment: .bottom) {
+                    DragChip()
                     Spacer()
-                    CornerButton(symbol: "folder", help: "Show in Finder") { controller.showInFinder(card) }
+                    // A recording's length badge sits here instead.
+                    if !card.isVideo {
+                        CornerButton(symbol: "pin", help: "Pin to Screen", iconSize: 12) { controller.pin(card) }
+                    }
                 }
             }
-            .padding(10)
+            .padding(8)
         }
+    }
+}
+
+/// "Drag into any app", in the card's bottom-left corner on hover. The card itself is what you drag.
+private struct DragChip: View {
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
+                .font(.system(size: 10, weight: .bold))
+            Text("Drag into any app")
+                .font(.scaled(10.5))
+                .lineLimit(1)
+        }
+        .foregroundStyle(.white.opacity(0.85))
+        .padding(.leading, 6)
+        .padding(.trailing, 8)
+        .padding(.vertical, 3)
+        .floatingPanel(Capsule(), opacity: FloatingPanel.Opacity.cornerButton)
+        .padding(2)
+        .accessibilityHidden(true)
     }
 }
 
 struct CornerButton: View {
     let symbol: String
     let help: LocalizedStringResource
+    var iconSize: CGFloat = 11
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 10, weight: .bold))
+                .font(.system(size: iconSize, weight: .bold))
         }
         .buttonStyle(CornerButtonStyle())
         .brutalTip(help)
@@ -145,13 +241,18 @@ struct CornerButton: View {
     }
 }
 
+/// A small round floating panel over a capture, with a white icon. It brightens while pressed.
 private struct CornerButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
         configuration.label
-            .foregroundStyle(Brutal.ink)
-            .frame(width: 24, height: 24)
-            .brutalSurface(Brutal.paper, radius: Brutal.Radius.chip, shadow: pressed ? 0 : 2)
-            .offset(x: pressed ? 2 : 0, y: pressed ? 2 : 0)
+            .foregroundStyle(.white)
+            .frame(width: 26, height: 26)
+            .overlay {
+                if configuration.isPressed {
+                    Circle().fill(.white.opacity(0.16))
+                }
+            }
+            .floatingPanel(Circle(), opacity: FloatingPanel.Opacity.cornerButton)
+            .contentShape(Circle())
     }
 }

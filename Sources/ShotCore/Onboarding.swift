@@ -44,3 +44,34 @@ public enum OnboardingProgress: String, Sendable {
         (hasPermission ? [] : [.permission]) + (hasAccessibility ? [] : [.accessibility])
     }
 }
+
+/// One step in the welcome window's title bar, with whether it's done, the one showing, or still to come.
+public struct OnboardingIndicatorItem: Equatable, Sendable {
+    public enum State: Sendable {
+        case done, current, upcoming
+    }
+
+    public let step: OnboardingStep
+    public let state: State
+
+    public init(step: OnboardingStep, state: State) {
+        self.step = step
+        self.state = state
+    }
+
+    /// The steps the title bar lists. Screen Recording access always comes first, ticked when the window doesn't ask for it,
+    /// so someone back after the relaunch sees what they've done. The step showing is ticked once it's `finished`, such as
+    /// Try it after the first capture. A window with one step lists none.
+    public static func items(steps: [OnboardingStep], current: Int, finished: Bool) -> [OnboardingIndicatorItem] {
+        let granted = !steps.contains(.permission)
+        let all = (granted ? [.permission] : []) + steps
+        guard all.count > 1 else {
+            return []
+        }
+        let showing = current + (granted ? 1 : 0)
+        return all.enumerated().map { index, step in
+            let state: State = index < showing || (index == showing && finished) ? .done : index == showing ? .current : .upcoming
+            return OnboardingIndicatorItem(step: step, state: state)
+        }
+    }
+}

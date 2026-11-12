@@ -26,19 +26,31 @@ final class SelectionOverlayView: NSView {
     private var isKeyboardSelection = false
     /// What a click on a button of the bar does, with where each was last drawn.
     private enum BarAction: Equatable {
-        case target(CaptureTarget)
+        case mode(CaptureBarMode)
         case scrolling
         case delay
         case magnifier
         case crosshair
         case resolution
-        case browserPage
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
     /// A press that landed on a button of the bar: its release clicks it, unless it turns into dragging out an area first.
     private var pressedChip: (action: BarAction, point: CGPoint)?
     /// Whether the bar sits at the bottom or top, or is hidden, so it stays off what's being picked.
     private var barPlacement = OverlayBarPlacement.bottom
+    /// Where the bar was last drawn, nil while it's hidden or faded, so the chips and loupe keep off it.
+    private var barFrame: CGRect?
+    /// The bar's frame in AppKit global space, nil while it's hidden or faded, for the permission card to sit beside.
+    var barScreenFrame: CGRect? {
+        guard let barFrame, let window else {
+            return nil
+        }
+        return window.convertToScreen(convert(barFrame, to: nil))
+    }
+    /// Set by a click that closed the permission card, so its release doesn't capture.
+    private var swallowsMouseUp = false
+    /// Where the bar's tooltip was last drawn, so the window pick's label keeps off it too.
+    private var tipFrame: CGRect?
     /// The button of the bar under the pointer, which shows its name and key.
     private var hoveredChip: BarAction?
     var magnifierImage: CGImage? {
@@ -47,8 +59,6 @@ final class SelectionOverlayView: NSView {
 
     private static let minimumSize: CGFloat = 4
     private static let orientationLockDistance: CGFloat = 8
-    private static let loupeSize: CGFloat = 120
-    private static let loupeZoom: CGFloat = 8
 
     init(frame: NSRect, display: OverlayDisplay, index: Int, controller: SelectionOverlayController) {
         self.display = display
@@ -57,8 +67,16 @@ final class SelectionOverlayView: NSView {
         super.init(frame: frame)
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
-        setAccessibilityLabel(String(localized: "Capture overlay"))
-        setAccessibilityHelp(hintText)
+    }
+
+    /// Read when VoiceOver asks, so they follow the mode, ratio and kind as they change. The kind leads the label, since
+    /// the bar only draws it.
+    override func accessibilityLabel() -> String? {
+        controller.recording ? String(localized: "Record overlay") : String(localized: "Screenshot overlay")
+    }
+
+    override func accessibilityHelp() -> String? {
+        hintText
     }
 
     @available(*, unavailable)
@@ -78,7 +96,7 @@ final class SelectionOverlayView: NSView {
     }
 
     override func cursorUpdate(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        Self.cursor.set()
     }
 
     override func mouseEntered(with event: NSEvent) {
@@ -95,6 +113,7 @@ final class SelectionOverlayView: NSView {
         isMoving = false
         isKeyboardSelection = false
         portrait = nil
+        setAccessibilityValue(nil)
         needsDisplay = true
     }
 
@@ -124,6 +143,12 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        // A click beside the permission card closes it, like a popover, rather than capturing.
+        if controller.showsPermissionCard {
+            controller.closePermissionCard()
+            swallowsMouseUp = true
+            return
+        }
         let point = clamped(convert(event.locationInWindow, from: nil))
         pointer = point
         pressedChip = barHits.first { $0.rect.contains(point) }.map { ($0.action, point) }
@@ -152,7 +177,7 @@ final class SelectionOverlayView: NSView {
         pointer = point
         if let chip = pressedChip {
             // A drag from a chip starts an area there, so what's under the chips can still be picked.
-            guard chip.action != .browserPage, hypot(point.x - start.x, point.y - start.y) >= Self.orientationLockDistance else {
+            guard hypot(point.x - start.x, point.y - start.y) >= Self.orientationLockDistance else {
                 return
             }
             pressedChip = nil
@@ -178,13 +203,12 @@ final class SelectionOverlayView: NSView {
 
     private func perform(_ action: BarAction) {
         switch action {
-        case let .target(target): controller.setTarget(target)
+        case let .mode(mode): controller.setMode(mode)
         case .scrolling: controller.toggleScrolling()
         case .delay: controller.cycleDelay()
         case .magnifier: controller.toggleMagnifier()
         case .crosshair: controller.toggleCrosshair()
         case .resolution: controller.toggleSizeLabel()
-        case .browserPage: controller.togglePageOnly()
         }
     }
 
@@ -204,6 +228,10 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        if swallowsMouseUp {
+            swallowsMouseUp = false
+            return
+        }
         if let chip = pressedChip {
             pressedChip = nil
             dragStart = nil
@@ -235,7 +263,7 @@ final class SelectionOverlayView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
-        if [49, 48, 1, 2, 46, 8, 34].contains(event.keyCode), !event.isARepeat {
+        if [49, 48, 1, 2, 46, 8, 34, 11].contains(event.keyCode), !event.isARepeat {
             controller.revealBar()
         }
         switch event.keyCode {
@@ -259,7 +287,7 @@ final class SelectionOverlayView: NSView {
             controller.toggleCrosshair()
         case 34:
             controller.toggleSizeLabel()
-        case 11 where controller.target == .window:
+        case 11:
             controller.togglePageOnly()
         case 123...126 where controller.target == .window:
             controller.stepWindow(backward: event.keyCode == 123 || event.keyCode == 126)
@@ -327,8 +355,11 @@ final class SelectionOverlayView: NSView {
         needsDisplay = true
     }
 
-    func announceWindow(_ name: String) {
-        announce(name.isEmpty ? String(localized: "Window") : name)
+    /// Reads out the window stepped to with the arrow keys: its name and size, as its label shows them.
+    func announceWindow() {
+        if let details = pickDetails {
+            announce("\(details.name), \(details.size)")
+        }
     }
 
     private func announce(_ text: String) {
@@ -360,49 +391,203 @@ final class SelectionOverlayView: NSView {
         }
         ctx.clear(dirtyRect)
 
-        // A light dim says the screen is frozen without hiding it; only the outside of an area being made dims more.
+        // A light dim says the screen is frozen without hiding it; only the outside of an area being made or a highlighted
+        // window dims more.
         let hole = holeRect()
+        // A whole window keeps rounded corners like the window's own. A page and a screen are square.
+        let radius = controller.target == .window && controller.hoveredPageFrame == nil ? Brutal.Radius.panel : 0
         let dim = CGMutablePath()
         dim.addRect(bounds)
         if let hole {
-            dim.addRect(hole)
+            dim.addPath(Self.roundedPath(hole, radius: radius))
         }
         ctx.addPath(dim)
-        ctx.setFillColor(NSColor.black.withAlphaComponent(controller.target == .area && hole != nil ? 0.35 : 0.1).cgColor)
+        let dimColor = switch controller.target {
+        case .area where hole != nil: Self.areaDim
+        case .window where hole != nil: Self.pickDim
+        default: NSColor.black.withAlphaComponent(0.1).cgColor
+        }
+        ctx.setFillColor(dimColor)
         ctx.fillPath(using: .evenOdd)
 
         if let hole {
             switch controller.target {
-            case .area:
-                ctx.setStrokeColor(NSColor.white.cgColor)
-                ctx.setLineWidth(1)
-                ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
-            case .window:
-                ctx.setFillColor(NSColor.systemBlue.withAlphaComponent(0.2).cgColor)
-                ctx.fill(hole)
-                ctx.setStrokeColor(NSColor.white.cgColor)
-                ctx.setLineWidth(1)
-                ctx.stroke(hole.insetBy(dx: 0.5, dy: 0.5))
-            case .screen:
-                ctx.setStrokeColor(NSColor.systemBlue.cgColor)
-                ctx.setLineWidth(4)
-                ctx.stroke(hole.insetBy(dx: 2, dy: 2))
+            case .area: drawAreaEdge(hole, in: ctx)
+            case .window, .screen: drawPickHighlight(hole, radius: radius, in: ctx)
             }
         }
 
         drawBar(avoiding: hole)
-        guard let pointer, controller.target == .area else {
+        if let hole, controller.target != .area {
+            drawPickLabel(in: hole, in: ctx)
+        }
+        guard controller.target == .area else {
             return
         }
-        if selection == nil {
-            if showCrosshair {
-                drawCrosshair(at: pointer, in: ctx)
+        let avoiding = barFrame.map { [$0.insetBy(dx: -8, dy: -8)] } ?? []
+        let chips = selection.flatMap { drawChips(for: $0, avoiding: avoiding, in: ctx) }
+        // The guides and loupe follow the pointer before and while dragging, but not for an area made with the arrow keys,
+        // whose edges are elsewhere. Over the bar, they'd cover the buttons and their tooltip.
+        let dragging = dragStart != nil && selection != nil && !isKeyboardSelection
+        guard let pointer, selection == nil || dragging, !pointerIsOnBar else {
+            return
+        }
+        if showCrosshair {
+            drawGuides(at: pointer, in: ctx)
+        }
+        if showMagnifier {
+            // Away from the area, so it doesn't cover the edges being placed: below and right of the pointer to begin with.
+            let start = dragging ? dragStart : nil
+            let right = start.map { pointer.x >= $0.x } ?? true
+            let up = start.map { pointer.y > $0.y } ?? false
+            drawLoupe(at: pointer, right: right, up: up, avoiding: avoiding + (chips.map { [$0] } ?? []), in: ctx)
+        }
+    }
+
+    /// Outside an area being made: `rgba(12,12,16,0.42)`, from the board.
+    private static let areaDim = CGColor(srgbRed: 12 / 255, green: 12 / 255, blue: 16 / 255, alpha: 0.42)
+
+    /// The area's edge from the board: a 1 pt white line just outside it, a 1 pt dark ring outside that, so it shows on light
+    /// and dark screens alike, and a round white handle with an ink edge at each corner and the middle of each long side.
+    private func drawAreaEdge(_ area: CGRect, in ctx: CGContext) {
+        ctx.setLineWidth(1)
+        ctx.setStrokeColor(NSColor.black.withAlphaComponent(0.35).cgColor)
+        ctx.stroke(area.insetBy(dx: -1.5, dy: -1.5))
+        ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.95).cgColor)
+        ctx.stroke(area.insetBy(dx: -0.5, dy: -0.5))
+        let scale = window?.backingScaleFactor ?? 2
+        let edge = Brutal.inkWidth(1.5, scale: scale)
+        let radius = AreaHandles.diameter / 2
+        ctx.setLineWidth(edge)
+        ctx.setStrokeColor(Self.ink.cgColor)
+        ctx.setFillColor(NSColor.white.cgColor)
+        for point in AreaHandles.points(around: area) {
+            let handle = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
+            ctx.fillEllipse(in: handle)
+            ctx.strokeEllipse(in: handle.insetBy(dx: -edge / 2, dy: -edge / 2))
+        }
+    }
+
+    // MARK: Window pick
+
+    /// Outside a highlighted window or page: `rgba(12,12,16,0.34)`, from the board.
+    private static let pickDim = CGColor(srgbRed: 12 / 255, green: 12 / 255, blue: 16 / 255, alpha: 0.34)
+
+    private static func roundedPath(_ rect: CGRect, radius: CGFloat) -> CGPath {
+        let corner = max(min(radius, rect.width / 2, rect.height / 2), 0)
+        return CGPath(roundedRect: rect, cornerWidth: corner, cornerHeight: corner, transform: nil)
+    }
+
+    /// The board's highlight on the window, page or screen a click would capture: the accent at 16% over it, a 3 pt accent
+    /// ring just inside its edge and a 1.5 pt ink ring inside that, so it shows on light and dark windows alike.
+    private func drawPickHighlight(_ hole: CGRect, radius: CGFloat, in ctx: CGContext) {
+        let ink = Brutal.inkWidth(1.5, scale: window?.backingScaleFactor ?? 2)
+        let ring: CGFloat = 3
+        func path(_ inset: CGFloat) -> CGPath {
+            Self.roundedPath(hole.insetBy(dx: inset, dy: inset), radius: radius - inset)
+        }
+        ctx.addPath(path(0))
+        ctx.setFillColor(Brutal.yellowNS.withAlphaComponent(0.16).cgColor)
+        ctx.fillPath()
+        guard hole.width > (ring + ink) * 2, hole.height > (ring + ink) * 2 else {
+            return
+        }
+        ctx.addPath(path(0))
+        ctx.addPath(path(ring))
+        ctx.setFillColor(Brutal.yellowNS.cgColor)
+        ctx.fillPath(using: .evenOdd)
+        ctx.addPath(path(ring))
+        ctx.addPath(path(ring + ink))
+        ctx.setFillColor(Self.ink.cgColor)
+        ctx.fillPath(using: .evenOdd)
+    }
+
+    /// What the label names: the window or screen, its size in pixels as the image will be, and whether the window's shadow
+    /// comes with it. Nil when nothing is highlighted.
+    private var pickDetails: (name: String, size: String, shadow: Bool)? {
+        if controller.screenMode {
+            let name = NSScreen.screens.first { $0.frame == display.frame }?.localizedName ?? String(localized: "Screen")
+            return (name, sizeText(of: bounds), false)
+        }
+        guard let window = controller.hoveredWindow else {
+            return nil
+        }
+        let page = controller.hoveredPageFrame
+        let frame = page ?? controller.appKitFrame(of: window)
+        return (window.pickName ?? String(localized: "Window"), sizeText(of: frame), page == nil && Preferences().windowShadow)
+    }
+
+    /// The board's label in the middle of what's highlighted: a camera on a dark disc, the name and size on a dark panel, and
+    /// how to capture it on a light pill. A small window shows fewer parts, and the label keeps off the bar and its tooltip.
+    private func drawPickLabel(in hole: CGRect, in ctx: CGContext) {
+        guard let details = pickDetails else {
+            return
+        }
+        let textSize = Preferences().textSize
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        let truncating = NSMutableParagraphStyle()
+        truncating.lineBreakMode = .byTruncatingTail
+        let name = NSAttributedString(string: details.name, attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(13), weight: .semibold), .foregroundColor: NSColor.white, .paragraphStyle: truncating,
+        ])
+        let sizeLine = details.shadow ? String(localized: "\(details.size) · with shadow") : details.size
+        let size = NSAttributedString(string: sizeLine, attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: textSize.points(11.5), weight: .medium),
+            .foregroundColor: NSColor.white.withAlphaComponent(increased ? 1 : 0.75),
+        ])
+        let hintLine = controller.windowMode
+            ? [String(localized: "Click or press Return to capture"), String(localized: "Arrows: next window")].joined(separator: " · ")
+            : String(localized: "Click or press Return to capture")
+        let hint = NSAttributedString(string: hintLine, attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(12)), .foregroundColor: Self.ink,
+        ])
+
+        // A long title is cut short rather than running past the window.
+        let maxName = min(textSize.points(420), max(hole.width - 2 * WindowPickLabel.inset - 28, 80))
+        let nameSize = CGSize(width: min(name.size().width.rounded(.up), maxName), height: name.size().height.rounded(.up))
+        let sizeSize = CGSize(width: size.size().width.rounded(.up), height: size.size().height.rounded(.up))
+        let panel = CGSize(width: max(nameSize.width, sizeSize.width) + 28, height: nameSize.height + 2 + sizeSize.height + 16)
+        let hintText = hint.size()
+        let pill = CGSize(width: hintText.width.rounded(.up) + 20, height: hintText.height.rounded(.up) + 6)
+        let disc = textSize.points(64).rounded()
+        var avoiding = barFrame.map { [$0.insetBy(dx: -8, dy: -8)] } ?? []
+        if let tipFrame {
+            avoiding.append(tipFrame)
+        }
+        let parts = WindowPickLabel.layout(
+            icon: CGSize(width: disc, height: disc), name: panel, hint: pill, spacing: textSize.points(10).rounded(),
+            target: hole, in: bounds, avoiding: avoiding
+        )
+        for (part, frame) in parts {
+            switch part {
+            case .icon:
+                drawPanel(frame, radius: frame.height / 2, opacity: FloatingPanel.Opacity.standard, shadow: true, increased: increased, in: ctx)
+                let config = NSImage.SymbolConfiguration(pointSize: textSize.points(24), weight: .medium)
+                    .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
+                if let camera = NSImage(systemSymbolName: "camera", accessibilityDescription: nil)?.withSymbolConfiguration(config) {
+                    let s = camera.size
+                    camera.draw(in: CGRect(x: (frame.midX - s.width / 2).rounded(), y: (frame.midY - s.height / 2).rounded(), width: s.width, height: s.height))
+                }
+            case .name:
+                drawPanel(frame, radius: Brutal.Radius.panel, opacity: FloatingPanel.Opacity.standard, shadow: false, increased: increased, in: ctx)
+                let nameRect = CGRect(x: (frame.midX - nameSize.width / 2).rounded(), y: frame.maxY - 8 - nameSize.height, width: nameSize.width, height: nameSize.height)
+                name.draw(with: nameRect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
+                size.draw(at: CGPoint(x: (frame.midX - sizeSize.width / 2).rounded(), y: nameRect.minY - 2 - sizeSize.height))
+            case .hint:
+                let shape = NSBezierPath(roundedRect: frame, xRadius: frame.height / 2, yRadius: frame.height / 2)
+                NSColor.white.withAlphaComponent(FloatingPanel.solidNS ? 1 : 0.9).setFill()
+                shape.fill()
+                if increased {
+                    Self.ink.withAlphaComponent(0.4).setStroke()
+                    shape.lineWidth = 1
+                    shape.stroke()
+                }
+                hint.draw(at: CGPoint(x: frame.minX + 10, y: (frame.midY - hintText.height / 2).rounded()))
             }
-            if showMagnifier {
-                drawLoupe(at: pointer, in: ctx)
-            }
-        } else if let selection, showSizeLabel {
-            drawSizeLabel(for: selection, near: pointer)
+        }
+        let spoken = "\(details.name), \(details.size)"
+        if accessibilityValue() as? String != spoken {
+            setAccessibilityValue(spoken)
         }
     }
 
@@ -421,94 +606,182 @@ final class SelectionOverlayView: NSView {
         return selection
     }
 
-    private func drawCrosshair(at point: CGPoint, in ctx: CGContext) {
-        ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.8).cgColor)
+    /// The crosshair toggle's guides across the screen, in the area edge's white over a faint dark line so they show on any
+    /// screen. They stop short of the pointer, so the cursor's own crosshair stays clear.
+    private func drawGuides(at point: CGPoint, in ctx: CGContext) {
+        let x = point.x.rounded() + 0.5
+        let y = point.y.rounded() + 0.5
+        let gap = Self.cursorSide / 2 + 3
+        ctx.move(to: CGPoint(x: 0, y: y))
+        ctx.addLine(to: CGPoint(x: x - gap, y: y))
+        ctx.move(to: CGPoint(x: x + gap, y: y))
+        ctx.addLine(to: CGPoint(x: bounds.width, y: y))
+        ctx.move(to: CGPoint(x: x, y: 0))
+        ctx.addLine(to: CGPoint(x: x, y: y - gap))
+        ctx.move(to: CGPoint(x: x, y: y + gap))
+        ctx.addLine(to: CGPoint(x: x, y: bounds.height))
+        guard let path = ctx.path else {
+            return
+        }
+        ctx.setLineWidth(3)
+        ctx.setStrokeColor(NSColor.black.withAlphaComponent(0.25).cgColor)
+        ctx.strokePath()
+        ctx.addPath(path)
         ctx.setLineWidth(1)
-        ctx.move(to: CGPoint(x: 0, y: point.y.rounded() + 0.5))
-        ctx.addLine(to: CGPoint(x: bounds.width, y: point.y.rounded() + 0.5))
-        ctx.move(to: CGPoint(x: point.x.rounded() + 0.5, y: 0))
-        ctx.addLine(to: CGPoint(x: point.x.rounded() + 0.5, y: bounds.height))
+        ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.9).cgColor)
         ctx.strokePath()
     }
 
-    private func drawLoupe(at point: CGPoint, in ctx: CGContext) {
+    /// The board's loupe: the pixels round the pointer, one per cell of an 11 × 11 grid, in a 132 pt circle with a 3 pt white
+    /// ring, a 1.5 pt ink ring and a soft shadow. The pointer's row and column are lit in the accent, its pixel is outlined
+    /// in ink, and a chip at the bottom gives its position in pixels, as the size chip gives the area's size.
+    private func drawLoupe(at point: CGPoint, right: Bool, up: Bool, avoiding: [CGRect], in ctx: CGContext) {
         guard let image = display.image ?? magnifierImage else {
             return
         }
-        let size = Self.loupeSize
-        var origin = CGPoint(x: point.x + 20, y: point.y - size - 20)
-        if origin.x + size > bounds.width {
-            origin.x = point.x - size - 20
-        }
-        if origin.y < 0 {
-            origin.y = point.y + 20
-        }
-        let loupe = CGRect(origin: origin, size: CGSize(width: size, height: size))
-        let sourceSide = size / Self.loupeZoom
-        let source = Geometry.pixelRect(
-            forViewRect: CGRect(x: point.x - sourceSide / 2, y: point.y - sourceSide / 2, width: sourceSide, height: sourceSide),
-            viewHeight: bounds.height,
-            scale: display.scale
-        )
+        let textSize = Preferences().textSize
+        let scale = window?.backingScaleFactor ?? 2
+        let side = textSize.points(Loupe.side).rounded()
+        let inkRing = Brutal.inkWidth(1.5, scale: scale)
+        let outset = 3 + inkRing
+        let loupe = Loupe.frame(side: side, outset: outset, at: point, right: right, up: up, in: bounds, avoiding: avoiding)
+        let imageSize = CGSize(width: image.width, height: image.height)
+        let pixel = Loupe.pixel(at: point, viewHeight: bounds.height, scale: display.scale, imageSize: imageSize)
+
+        // The rings, with the shadow under the outer one.
+        ctx.saveGState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.4)
+        shadow.shadowOffset = NSSize(width: 0, height: -12)
+        shadow.shadowBlurRadius = 14
+        shadow.set()
+        ctx.setFillColor(Self.ink.cgColor)
+        ctx.fillEllipse(in: loupe.insetBy(dx: -outset, dy: -outset))
+        ctx.restoreGState()
+        ctx.setFillColor(NSColor.white.cgColor)
+        ctx.fillEllipse(in: loupe.insetBy(dx: -3, dy: -3))
+
         ctx.saveGState()
         ctx.addEllipse(in: loupe)
         ctx.clip()
         ctx.setFillColor(NSColor.black.cgColor)
         ctx.fill(loupe)
-        if let crop = image.cropping(to: source) {
+        if let placed = Loupe.destination(of: Loupe.source(around: pixel), imageSize: imageSize, in: loupe),
+           let crop = image.cropping(to: placed.crop) {
             ctx.interpolationQuality = .none
-            ctx.draw(crop, in: loupe)
+            ctx.draw(crop, in: placed.rect)
         }
-        let pixel = size / (sourceSide * display.scale)
-        ctx.setStrokeColor(NSColor.systemRed.cgColor)
-        ctx.setLineWidth(1)
-        ctx.stroke(CGRect(x: loupe.midX - pixel / 2, y: loupe.midY - pixel / 2, width: pixel, height: pixel))
-        ctx.restoreGState()
-        ctx.setStrokeColor(Self.ink.cgColor)
-        ctx.setLineWidth(3)
-        ctx.strokeEllipse(in: loupe.insetBy(dx: -1.5, dy: -1.5))
+        let cell = side / CGFloat(Loupe.cells)
+        let middle = CGFloat(Loupe.cells / 2)
+        let centre = CGRect(x: loupe.minX + middle * cell, y: loupe.minY + middle * cell, width: cell, height: cell)
+        // The board's grid is ink at 7%, which vanishes over dark pixels, so it's mid-grey to show over both.
+        ctx.setFillColor(NSColor(white: 0.5, alpha: 0.3).cgColor)
+        let hairline = 1 / scale
+        for step in 1..<Loupe.cells {
+            let offset = CGFloat(step) * cell
+            ctx.fill(CGRect(x: loupe.minX + offset - hairline / 2, y: loupe.minY, width: hairline, height: side))
+            ctx.fill(CGRect(x: loupe.minX, y: loupe.minY + offset - hairline / 2, width: side, height: hairline))
+        }
+        // The row and column lit, leaving the pointer's own pixel its true colour.
+        ctx.setFillColor(Brutal.yellowNS.withAlphaComponent(0.35).cgColor)
+        ctx.fill([
+            CGRect(x: centre.minX, y: loupe.minY, width: cell, height: centre.minY - loupe.minY),
+            CGRect(x: centre.minX, y: centre.maxY, width: cell, height: loupe.maxY - centre.maxY),
+            CGRect(x: loupe.minX, y: centre.minY, width: centre.minX - loupe.minX, height: cell),
+            CGRect(x: centre.maxX, y: centre.minY, width: loupe.maxX - centre.maxX, height: cell),
+        ])
+        // The board's ink outline, with a hairline of white outside it so it still shows over a dark pixel.
         ctx.setStrokeColor(NSColor.white.cgColor)
-        ctx.setLineWidth(1.5)
-        ctx.strokeEllipse(in: loupe.insetBy(dx: 0.75, dy: 0.75))
+        ctx.setLineWidth(hairline)
+        ctx.stroke(centre.insetBy(dx: -hairline / 2, dy: -hairline / 2))
+        ctx.setStrokeColor(Self.ink.cgColor)
+        ctx.setLineWidth(inkRing)
+        ctx.stroke(centre.insetBy(dx: inkRing / 2, dy: inkRing / 2))
+
+        let position = NSAttributedString(string: "\(pixel.x), \(pixel.y)", attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: textSize.points(10), weight: .medium), .foregroundColor: NSColor.white,
+        ])
+        let size = position.size()
+        let chip = CGRect(
+            x: (loupe.midX - size.width / 2 - 6).rounded(), y: loupe.minY + 10,
+            width: size.width.rounded(.up) + 12, height: size.height.rounded(.up) + 2
+        )
+        FloatingPanel.fillNS(Self.chipOpacity, solid: FloatingPanel.solidNS).setFill()
+        NSBezierPath(roundedRect: chip, xRadius: 5, yRadius: 5).fill()
+        position.draw(at: CGPoint(x: chip.minX + 6, y: chip.minY + 1))
+        ctx.restoreGState()
     }
 
     private static let ink = Brutal.inkNS
+    /// The capture bar is too tall for a pill, so it has its own radius.
+    private static let barRadius: CGFloat = 16
+    /// The size, ratio and loupe position chips are a touch more solid than the bar, as the board draws them.
+    private static let chipOpacity = 0.88
 
-    /// Neo-brutalist chip: flat fill, ink border, hard offset shadow. A paper chip follows the appearance; on the yellow accent
-    /// the text stays near-black, as `inkOnFill` keeps it in SwiftUI.
-    private func drawChip(_ text: String, at origin: CGPoint, yellow: Bool, font: NSFont) -> CGRect {
-        let fill = NSColor(yellow ? Brutal.yellow : Brutal.paper)
-        let textColor = yellow ? Self.ink : NSColor(Brutal.ink)
-        let string = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: textColor])
-        let size = string.size()
-        let box = CGRect(x: origin.x, y: origin.y, width: (size.width + 20).rounded(), height: (size.height + 10).rounded())
-        NSColor(Brutal.line).setFill()
-        NSBezierPath(roundedRect: box.offsetBy(dx: 3, dy: -3), xRadius: 7, yRadius: 7).fill()
-        fill.setFill()
-        let shape = NSBezierPath(roundedRect: box, xRadius: 7, yRadius: 7)
-        shape.fill()
-        NSColor(Brutal.line).setStroke()
-        shape.lineWidth = 2
-        shape.stroke()
-        string.draw(at: CGPoint(x: box.minX + 10, y: box.minY + 5))
-        return box
-    }
+    /// The board's crosshair cursor: white 3 pt lines under ink 1.2 pt ones, with a gap where they'd meet so the pixel under
+    /// the hot spot shows. It replaces the system crosshair, which is thin black and gets lost on dark screens.
+    static let cursor: NSCursor = {
+        let side = cursorSide
+        let image = NSImage(size: NSSize(width: side, height: side), flipped: false) { _ in
+            let mid = side / 2
+            let path = NSBezierPath()
+            for (from, to) in [(0, mid - 2), (mid + 2, side)] {
+                path.move(to: NSPoint(x: mid, y: from))
+                path.line(to: NSPoint(x: mid, y: to))
+                path.move(to: NSPoint(x: from, y: mid))
+                path.line(to: NSPoint(x: to, y: mid))
+            }
+            path.lineWidth = 3
+            NSColor.white.setStroke()
+            path.stroke()
+            path.lineWidth = 1.2
+            Brutal.inkNS.setStroke()
+            path.stroke()
+            return true
+        }
+        return NSCursor(image: image, hotSpot: NSPoint(x: side / 2, y: side / 2))
+    }()
 
-    private func drawSizeLabel(for selection: CGRect, near point: CGPoint) {
-        var text = sizeText(of: selection)
-        if controller.aspectRatio != .free {
-            text = "\(controller.aspectRatio.label(portrait: selection.height > selection.width)) · \(text)"
+    private static let cursorSide: CGFloat = 18
+
+    /// The size chip and, beside it, the ratio chip, above the area's top-left corner. The size is in pixels, as the image
+    /// will be, in bold SF Mono so it doesn't jitter while dragging. Size (I) shows both; a ratio other than Free shows on
+    /// its own even with Size off, since it changes what you get. Returns where they went, for the loupe to keep off.
+    private func drawChips(for area: CGRect, avoiding: [CGRect], in ctx: CGContext) -> CGRect? {
+        let shiftHeld = dragStart != nil && !isKeyboardSelection && NSEvent.modifierFlags.contains(.shift)
+        let ratio = shiftHeld ? AspectRatio.square : controller.aspectRatio
+        guard showSizeLabel || ratio != .free else {
+            return nil
         }
-        let font = NSFont.monospacedDigitSystemFont(ofSize: Preferences().textSize.points(12), weight: .bold)
-        let width = (text as NSString).size(withAttributes: [.font: font]).width + 20
-        var origin = CGPoint(x: point.x + 16, y: point.y - 44)
-        if origin.x + width > bounds.width {
-            origin.x = point.x - width - 16
+        let textSize = Preferences().textSize
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        var texts: [NSAttributedString] = []
+        if showSizeLabel {
+            texts.append(NSAttributedString(string: sizeText(of: area), attributes: [
+                .font: NSFont.monospacedSystemFont(ofSize: textSize.points(12), weight: .bold), .foregroundColor: NSColor.white,
+            ]))
         }
-        if origin.y < 0 {
-            origin.y = point.y + 16
+        let ratioText = ratio == .free ? String(localized: "Free ratio") : ratio.label(portrait: area.height > area.width)
+        texts.append(NSAttributedString(string: ratioText, attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(12), weight: .semibold),
+            .foregroundColor: NSColor.white.withAlphaComponent(increased ? 1 : 0.75),
+        ]))
+        let sizes = texts.map { text in
+            let size = text.size()
+            return CGSize(width: size.width.rounded(.up) + 18, height: size.height.rounded(.up) + 6)
         }
-        _ = drawChip(text, at: origin, yellow: true, font: font)
+        let spacing: CGFloat = 6
+        let height = sizes.map(\.height).max() ?? 0
+        let total = CGSize(width: sizes.map(\.width).reduce(0, +) + spacing * CGFloat(sizes.count - 1), height: height)
+        let frame = AreaLabelPlacement.frame(of: total, for: area, in: bounds, avoiding: avoiding)
+        var x = frame.minX
+        for (text, size) in zip(texts, sizes) {
+            let chip = CGRect(x: x, y: frame.minY, width: size.width, height: height)
+            drawPanel(chip, radius: 8, opacity: Self.chipOpacity, shadow: false, increased: increased, in: ctx)
+            text.draw(at: CGPoint(x: chip.minX + 9, y: (chip.midY - text.size().height / 2).rounded()))
+            x = chip.maxX + spacing
+        }
+        return frame
     }
 
     /// Every key the overlay takes, for VoiceOver's help. The bar shows none of it, only each button's name and key on hover.
@@ -521,17 +794,18 @@ final class SelectionOverlayView: NSView {
                 parts.append(String(localized: "X: rotate"))
             }
         case .window:
-            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window"), String(localized: "B: browser page only")]
+            parts = [String(localized: "Click a window"), String(localized: "Arrows: next window")]
         case .screen:
             parts = [String(localized: "Click a screen")]
         }
         parts.append(String(localized: "Tab: area, window or screen"))
+        parts.append(String(localized: "B: browser page only"))
         if controller.offersScrolling {
             parts.append(String(localized: "S: scroll"))
         }
         parts.append(String(localized: "M: magnifier"))
         parts.append(String(localized: "C: crosshair"))
-        parts.append(String(localized: "I: resolution"))
+        parts.append(String(localized: "I: size"))
         if controller.offersDelay {
             parts.append(String(localized: "D: delay"))
         }
@@ -539,88 +813,121 @@ final class SelectionOverlayView: NSView {
         return parts.joined(separator: "   ·   ")
     }
 
-    /// One button of the bar: a mode, Scroll or Delay. `label` is shown beside the icon only while it's picked or on.
+    /// One button of the bar. `label` shows beside the icon: the picked mode's name, Scroll, or the delay while it's on.
     private struct BarButton {
+        enum Look {
+            /// The picked mode: the one ink control on the overlay.
+            case picked
+            /// A mode that isn't picked, Delay or Scroll: icon at 82% white, a 16% fill while on.
+            case plain
+            /// The magnifier, crosshair and size toggles: icon at 55% white while off.
+            case toggle
+        }
         let symbol: String
         let label: String?
         let on: Bool
-        let tip: String
+        let look: Look
+        /// The name in its tooltip and for VoiceOver, and the key that does the same.
+        let name: String
+        let key: String
         let action: BarAction
     }
 
-    private var barButtons: (modes: [BarButton], options: [BarButton]) {
-        let symbols: [CaptureTarget: String] = [.area: "rectangle.dashed", .window: "macwindow", .screen: "display"]
-        let modes = CaptureTarget.allCases.map { target in
-            let picked = target == controller.target
-            return BarButton(symbol: symbols[target] ?? "rectangle.dashed", label: picked ? target.title : nil, on: picked, tip: "\(target.title)  ·  Tab", action: .target(target))
+    /// The bar's buttons in their three groups: the modes, then Delay and Scroll, then the toggles.
+    private var barGroups: [[BarButton]] {
+        let picked = controller.barMode
+        let modes = CaptureBarMode.allCases.map { mode in
+            BarButton(
+                symbol: Self.symbol(of: mode), label: mode == picked ? mode.title : nil, on: mode == picked,
+                look: mode == picked ? .picked : .plain, name: mode.title, key: mode.key, action: .mode(mode)
+            )
         }
         var options: [BarButton] = []
-        if controller.windowMode {
-            let page = controller.browserMode
+        if controller.offersDelay {
+            let delay = controller.delay
             options.append(BarButton(
-                symbol: "safari", label: page ? String(localized: "Page") : nil, on: page,
-                tip: "\(String(localized: "Browser page only"))  ·  B", action: .browserPage
+                symbol: "timer", label: delay > 0 ? CaptureDelay.label(delay) : nil, on: delay > 0, look: .plain,
+                name: String(localized: "Delay: \(CaptureDelay.label(delay))"), key: "D", action: .delay
             ))
         }
         if controller.offersScrolling {
             let scroll = String(localized: "Scroll")
-            options.append(BarButton(symbol: "rectangle.expand.vertical", label: controller.scrolling ? scroll : nil, on: controller.scrolling, tip: "\(scroll)  ·  S", action: .scrolling))
+            options.append(BarButton(symbol: "arrow.down.to.line", label: scroll, on: controller.scrolling, look: .plain, name: scroll, key: "S", action: .scrolling))
         }
-        if controller.offersDelay {
-            let delay = controller.delay
-            options.append(BarButton(
-                symbol: "timer", label: delay > 0 ? CaptureDelay.label(delay) : nil, on: delay > 0,
-                tip: "\(String(localized: "Delay: \(CaptureDelay.label(delay))"))  ·  D", action: .delay
-            ))
+        func toggle(_ symbol: String, _ name: String, _ key: String, on: Bool, _ action: BarAction) -> BarButton {
+            BarButton(symbol: symbol, label: nil, on: on, look: .toggle, name: name, key: key, action: action)
         }
-        func toggle(_ symbol: String, _ name: String, _ key: String, on: Bool, _ action: BarAction) {
-            options.append(BarButton(symbol: symbol, label: nil, on: on, tip: "\(name)  ·  \(key)", action: action))
-        }
-        toggle("magnifyingglass", String(localized: "Magnifier"), "M", on: controller.showMagnifier, .magnifier)
-        toggle("plus.viewfinder", String(localized: "Crosshair"), "C", on: controller.showCrosshair, .crosshair)
-        toggle("ruler", String(localized: "Resolution"), "I", on: controller.showSizeLabel, .resolution)
-        return (modes, options)
+        let aids = [
+            toggle("plus.magnifyingglass", String(localized: "Magnifier"), "M", on: controller.showMagnifier, .magnifier),
+            toggle("plus", String(localized: "Crosshair"), "C", on: controller.showCrosshair, .crosshair),
+            toggle("ruler", String(localized: "Size"), "I", on: controller.showSizeLabel, .resolution),
+        ]
+        return [modes, options, aids]
     }
 
-    /// A small bar of icons that pick area, window or full screen, then Scroll and Delay; a click does what Tab, S and D do.
-    /// It shows on the screen with the pointer only, at the bottom unless what's being picked reaches it, and hides while an area is dragged out.
+    private static func symbol(of mode: CaptureBarMode) -> String {
+        switch mode {
+        case .area: "viewfinder"
+        case .window: "macwindow"
+        case .screen: "display"
+        case .browser: "globe"
+        }
+    }
+
+    /// The capture bar (Foundations › Capture bar): whether this is a screenshot or a recording, the four modes, then Delay
+    /// and Scroll, then the magnifier, crosshair and size toggles. A click does what Tab, B, D, S, M, C and I do. It shows on
+    /// the screen with the pointer only, at the bottom unless what's being picked reaches it, and hides while an area is dragged out.
     private func drawBar(avoiding hole: CGRect?) {
         let previous = barHits.map(\.rect)
         barHits = []
+        barFrame = nil
+        tipFrame = nil
         let opacity = controller.barOpacity
         guard opacity > 0, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false),
               let ctx = NSGraphicsContext.current?.cgContext else {
             return
         }
         let textSize = Preferences().textSize
-        let font = NSFont.systemFont(ofSize: textSize.points(13), weight: .bold)
-        let symbolConfig = NSImage.SymbolConfiguration(pointSize: textSize.points(14), weight: .bold)
-        let (modes, options) = barButtons
-        let pad: CGFloat = 4
-        let gap: CGFloat = 6
-        let divider: CGFloat = 14
-        let height = (String("A") as NSString).size(withAttributes: [.font: font]).height.rounded() + 14
+        let scale = window.backingScaleFactor
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        let modeFont = NSFont.systemFont(ofSize: textSize.points(13), weight: .semibold)
+        // Delay's seconds tick, so they take tabular figures.
+        let optionFont = NSFont.monospacedDigitSystemFont(ofSize: textSize.points(12), weight: .semibold)
+        let kindFont = NSFont.systemFont(ofSize: textSize.points(12), weight: .semibold)
+        let symbolSize = textSize.points(14)
+        let height = textSize.points(34).rounded()
+        let groups = barGroups
 
-        func icon(_ button: BarButton, color: NSColor = .black) -> NSImage? {
-            NSImage(systemSymbolName: button.symbol, accessibilityDescription: nil)?
-                .withSymbolConfiguration(symbolConfig.applying(NSImage.SymbolConfiguration(paletteColors: [color])))
+        func icon(_ button: BarButton, _ color: NSColor) -> NSImage? {
+            let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: button.look == .picked ? .semibold : .medium)
+                .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
+            return NSImage(systemSymbolName: button.symbol, accessibilityDescription: nil)?.withSymbolConfiguration(config)
+        }
+        func font(_ button: BarButton) -> NSFont {
+            button.look == .picked ? modeFont : optionFont
         }
         func width(_ button: BarButton) -> CGFloat {
-            let iconWidth = icon(button)?.size.width.rounded(.up) ?? 0
             guard let label = button.label else {
-                return max(iconWidth + 20, height)
+                // Icon only: a mode is a little wider than tall, and a toggle or Delay is square.
+                return button.look == .toggle || button.action == .delay ? height : textSize.points(38).rounded()
             }
-            return iconWidth + 6 + (label as NSString).size(withAttributes: [.font: font]).width.rounded(.up) + 20
+            let iconWidth = icon(button, .white)?.size.width.rounded(.up) ?? 0
+            let labelWidth = (label as NSString).size(withAttributes: [.font: font(button)]).width.rounded(.up)
+            // The board pads the picked mode 10 before its icon and 12 after its name, and Delay and Scroll 10 either side.
+            let trailing: CGFloat = button.look == .picked ? 12 : 10
+            let spacing: CGFloat = button.look == .picked ? 7 : 6
+            return 10 + iconWidth + spacing + labelWidth + trailing
         }
-        let modeWidths = modes.map(width)
-        let optionWidths = options.map(width)
-        func span(_ widths: [CGFloat]) -> CGFloat {
-            widths.reduce(0, +) + gap * CGFloat(max(widths.count - 1, 0))
-        }
-        let size = CGSize(
-            width: pad * 2 + span(modeWidths) + (options.isEmpty ? 0 : divider + span(optionWidths)),
-            height: height + pad * 2
-        )
+
+        let kind = controller.recording ? String(localized: "Record") : String(localized: "Screenshot")
+        let kindText = NSAttributedString(string: kind, attributes: [
+            .font: kindFont, .foregroundColor: NSColor.white.withAlphaComponent(increased ? 1 : 0.8),
+        ])
+        let dot: CGFloat = 8
+        let kindWidth = 8 + dot + 7 + kindText.size().width.rounded(.up) + 10
+        let widths = groups.map { $0.map(width) }
+        let layout = CaptureBarLayout(groups: [[kindWidth] + widths[0]] + widths.dropFirst(), height: height)
+        let size = layout.size
 
         let dragging = dragStart != nil && pressedChip == nil && !isKeyboardSelection && selection != nil
         barPlacement = OverlayBarPlacement.placement(
@@ -631,6 +938,7 @@ final class SelectionOverlayView: NSView {
             hoveredChip = nil
             return
         }
+        barFrame = frame
         // While fading, the bar draws into one layer so its shadow and fill fade together rather than showing through each other.
         if opacity < 1 {
             ctx.saveGState()
@@ -643,69 +951,177 @@ final class SelectionOverlayView: NSView {
                 ctx.restoreGState()
             }
         }
-        NSColor(Brutal.line).setFill()
-        NSBezierPath(roundedRect: frame.offsetBy(dx: 3, dy: -3), xRadius: 9, yRadius: 9).fill()
-        NSColor(Brutal.paper).setFill()
-        let shape = NSBezierPath(roundedRect: frame, xRadius: 9, yRadius: 9)
-        shape.fill()
-        NSColor(Brutal.line).setStroke()
-        shape.lineWidth = 2
-        shape.stroke()
+        drawPanel(frame, radius: min(Self.barRadius, frame.height / 2), opacity: FloatingPanel.Opacity.standard, shadow: true, increased: increased, in: ctx)
 
-        var x = frame.minX + pad
-        var tip: (text: String, box: CGRect)?
-        func drawButtons(_ buttons: [BarButton], _ widths: [CGFloat]) {
-            for (button, buttonWidth) in zip(buttons, widths) {
-                let box = CGRect(x: x, y: frame.minY + pad, width: buttonWidth, height: height)
-                let ink = button.on ? Self.ink : NSColor(Brutal.ink)
-                if button.on {
-                    NSColor(Brutal.yellow).setFill()
-                    let fill = NSBezierPath(roundedRect: box, xRadius: 6, yRadius: 6)
-                    fill.fill()
-                    NSColor(Brutal.line).setStroke()
-                    fill.lineWidth = 2
-                    fill.stroke()
-                } else if hoveredChip == button.action {
-                    NSColor(Brutal.ink).withAlphaComponent(0.1).setFill()
-                    NSBezierPath(roundedRect: box, xRadius: 6, yRadius: 6).fill()
-                }
-                var contentX = box.minX + 10
-                if let image = icon(button, color: ink) {
-                    let imageSize = image.size
-                    if button.label == nil {
-                        contentX = (box.midX - imageSize.width / 2).rounded()
-                    }
-                    image.draw(in: CGRect(x: contentX, y: (box.midY - imageSize.height / 2).rounded(), width: imageSize.width, height: imageSize.height))
-                    contentX += imageSize.width.rounded(.up) + 6
-                }
-                if let label = button.label {
-                    let string = NSAttributedString(string: label, attributes: [.font: font, .foregroundColor: ink])
-                    string.draw(at: CGPoint(x: contentX, y: (box.midY - string.size().height / 2).rounded()))
-                }
+        func placed(_ rect: CGRect) -> CGRect {
+            rect.offsetBy(dx: frame.minX, dy: frame.minY)
+        }
+        // The kind: a dot in the accent for a screenshot or record red for a recording, then its name.
+        let kindBox = placed(layout.frames[0][0])
+        (controller.recording ? FloatingPanel.recordNS : FloatingPanel.accentNS).setFill()
+        NSBezierPath(ovalIn: CGRect(x: kindBox.minX + 8, y: (kindBox.midY - dot / 2).rounded(), width: dot, height: dot)).fill()
+        kindText.draw(at: CGPoint(x: kindBox.minX + 8 + dot + 7, y: (kindBox.midY - kindText.size().height / 2).rounded()))
+
+        var tip: (button: BarButton, box: CGRect)?
+        let rows = [Array(layout.frames[0].dropFirst())] + layout.frames.dropFirst()
+        for (buttons, rects) in zip(groups.filter { !$0.isEmpty }, rows) {
+            for (button, rect) in zip(buttons, rects) {
+                let box = placed(rect)
+                drawButton(button, in: box, hovered: hoveredChip == button.action, increased: increased, scale: scale, font: font(button), icon: icon)
                 barHits.append((box, button.action))
                 if hoveredChip == button.action {
-                    tip = (button.tip, box)
+                    tip = (button, box)
                 }
-                x += buttonWidth + gap
             }
         }
-        drawButtons(modes, modeWidths)
-        if !options.isEmpty {
-            x += divider / 2 - gap
-            NSColor(Brutal.line).withAlphaComponent(0.35).setFill()
-            NSBezierPath(rect: CGRect(x: x - 1, y: frame.minY + pad + 6, width: 2, height: height - 12)).fill()
-            x += divider / 2
-            drawButtons(options, optionWidths)
+        NSColor.white.withAlphaComponent(increased ? 0.6 : 0.16).setFill()
+        let dividerHeight = min(22, height - 8)
+        for x in layout.dividers {
+            NSBezierPath(rect: CGRect(x: frame.minX + x, y: (frame.midY - dividerHeight / 2).rounded(), width: 1, height: dividerHeight)).fill()
         }
-        // The hovered button's name and key, on the side of the bar away from the screen's edge.
         if let tip {
-            let tipFont = NSFont.systemFont(ofSize: textSize.points(12), weight: .bold)
-            let tipWidth = (tip.text as NSString).size(withAttributes: [.font: tipFont]).width.rounded() + 20
-            let tipHeight = (tip.text as NSString).size(withAttributes: [.font: tipFont]).height.rounded() + 10
-            let tipX = min(max(tip.box.midX - tipWidth / 2, 8), bounds.width - tipWidth - 8).rounded()
-            let tipY = barPlacement == .top ? frame.minY - 10 - tipHeight : frame.maxY + 10
-            _ = drawChip(tip.text, at: CGPoint(x: tipX, y: tipY), yellow: false, font: tipFont)
+            drawTip(tip.button, over: tip.box, bar: frame, textSize: textSize, increased: increased)
         }
+        updateBarElements(groups.flatMap { $0 }, frames: barHits.map(\.rect))
+    }
+
+    private func drawButton(_ button: BarButton, in box: CGRect, hovered: Bool, increased: Bool, scale: CGFloat, font: NSFont, icon: (BarButton, NSColor) -> NSImage?) {
+        let radius = min(Brutal.Radius.group, box.height / 2)
+        let content: NSColor
+        switch button.look {
+        case .picked:
+            // The ink control: the accent with a 1.5 pt black outline and a 2 pt black drop, on whole device pixels.
+            let line = Brutal.inkWidth(1.5, scale: scale)
+            let drop = Brutal.inkOffset(2, scale: scale)
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: box.offsetBy(dx: 0, dy: -drop), xRadius: radius, yRadius: radius).fill()
+            FloatingPanel.accentNS.setFill()
+            NSBezierPath(roundedRect: box, xRadius: radius, yRadius: radius).fill()
+            let outline = NSBezierPath(roundedRect: box.insetBy(dx: line / 2, dy: line / 2), xRadius: radius - line / 2, yRadius: radius - line / 2)
+            outline.lineWidth = line
+            NSColor.black.setStroke()
+            outline.stroke()
+            content = Self.ink
+        case .plain, .toggle:
+            if button.on || hovered {
+                NSColor.white.withAlphaComponent(button.on ? 0.16 : 0.08).setFill()
+                NSBezierPath(roundedRect: box, xRadius: radius, yRadius: radius).fill()
+            }
+            let off: CGFloat = button.look == .toggle ? (increased ? 0.75 : 0.55) : (increased ? 1 : 0.82)
+            content = NSColor.white.withAlphaComponent(button.on ? 1 : off)
+        }
+        var x = box.minX + 10
+        if let image = icon(button, content) {
+            let size = image.size
+            if button.label == nil {
+                x = (box.midX - size.width / 2).rounded()
+            }
+            image.draw(in: CGRect(x: x, y: (box.midY - size.height / 2).rounded(), width: size.width, height: size.height))
+            x += size.width.rounded(.up) + (button.look == .picked ? 7 : 6)
+        }
+        if let label = button.label {
+            let text = NSAttributedString(string: label, attributes: [
+                .font: font, .foregroundColor: button.look == .picked ? content : NSColor.white,
+            ])
+            text.draw(at: CGPoint(x: x, y: (box.midY - text.size().height / 2).rounded()))
+        }
+    }
+
+    /// A floating panel's fill and 0.5 pt edge, dark in both appearances and solid with Increase Contrast or Reduce
+    /// Transparency. The bar's shadow is drawn only outside it, so it doesn't darken the see-through fill.
+    private func drawPanel(_ frame: CGRect, radius: CGFloat, opacity: Double, shadow: Bool, increased: Bool, in ctx: CGContext) {
+        let shape = NSBezierPath(roundedRect: frame, xRadius: radius, yRadius: radius)
+        if shadow {
+            ctx.saveGState()
+            let outside = NSBezierPath(rect: bounds)
+            outside.append(shape)
+            outside.windingRule = .evenOdd
+            outside.addClip()
+            FloatingPanel.shadowNS.set()
+            NSColor.black.setFill()
+            shape.fill()
+            ctx.restoreGState()
+        }
+        FloatingPanel.fillNS(opacity, solid: FloatingPanel.solidNS).setFill()
+        shape.fill()
+        let edgeWidth = 1 / (window?.backingScaleFactor ?? 2)
+        let edge = NSBezierPath(roundedRect: frame.insetBy(dx: edgeWidth / 2, dy: edgeWidth / 2), xRadius: radius - edgeWidth / 2, yRadius: radius - edgeWidth / 2)
+        FloatingPanel.edgeNS(increased: increased).setStroke()
+        edge.lineWidth = edgeWidth
+        edge.stroke()
+    }
+
+    /// The hovered button's tooltip, from Capture › Window pick and delay: its name and keycap on a small dark panel, on the
+    /// side of the bar away from the screen's edge.
+    private func drawTip(_ button: BarButton, over box: CGRect, bar: CGRect, textSize: TextSize, increased: Bool) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else {
+            return
+        }
+        let name = NSAttributedString(string: button.name, attributes: [
+            .font: NSFont.systemFont(ofSize: textSize.points(12)), .foregroundColor: NSColor.white,
+        ])
+        let key = NSAttributedString(string: button.key, attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: textSize.points(10.5), weight: .bold), .foregroundColor: NSColor.white,
+        ])
+        let nameSize = name.size()
+        let keySize = key.size()
+        let capWidth = keySize.width.rounded(.up) + 10
+        let width = 9 + nameSize.width.rounded(.up) + 8 + capWidth + 9
+        let height = max(nameSize.height, keySize.height).rounded(.up) + 8
+        let x = min(max(box.midX - width / 2, 8), bounds.width - width - 8).rounded()
+        let y = barPlacement == .top ? bar.minY - 8 - height : bar.maxY + 8
+        let tip = CGRect(x: x, y: y, width: width, height: height)
+        tipFrame = tip
+        drawPanel(tip, radius: 8, opacity: Self.tipOpacity, shadow: false, increased: increased, in: ctx)
+        name.draw(at: CGPoint(x: tip.minX + 9, y: (tip.midY - nameSize.height / 2).rounded()))
+        let cap = CGRect(x: tip.maxX - 9 - capWidth, y: (tip.midY - keySize.height / 2).rounded(), width: capWidth, height: keySize.height.rounded(.up))
+        NSColor.white.withAlphaComponent(0.16).setFill()
+        NSBezierPath(roundedRect: cap, xRadius: 4, yRadius: 4).fill()
+        key.draw(at: CGPoint(x: cap.minX + 5, y: cap.minY))
+    }
+
+    /// The bar's tooltip is a touch more solid than the bar, as the board draws it.
+    private static let tipOpacity = 0.92
+
+    // MARK: VoiceOver
+
+    /// The bar's buttons as VoiceOver sees them, rebuilt only when one changes. They stay while the bar is faded, since the
+    /// keys still work and a press through VoiceOver shows the bar again.
+    private var barElements: [NSAccessibilityElement] = []
+    private var barElementState: [String] = []
+
+    private func updateBarElements(_ buttons: [BarButton], frames: [CGRect]) {
+        let state = zip(buttons, frames).map { "\($0.name)|\($0.on)|\($1)" }
+        guard state != barElementState else {
+            return
+        }
+        barElementState = state
+        barElements = zip(buttons, frames).map { button, frame in
+            let action = button.action
+            let element = BarElement { [weak self] in
+                self?.controller.revealBar()
+                self?.perform(action)
+            }
+            if case .mode = action {
+                element.setAccessibilityRole(.radioButton)
+                element.setAccessibilityValue(button.on ? 1 : 0)
+            } else if button.look == .toggle || action == .scrolling {
+                element.setAccessibilityRole(.checkBox)
+                element.setAccessibilitySubrole(.toggle)
+                element.setAccessibilityValue(button.on ? 1 : 0)
+            } else {
+                element.setAccessibilityRole(.button)
+            }
+            element.setAccessibilityLabel(button.name)
+            element.setAccessibilityHelp(String(localized: "Key: \(button.key)"))
+            element.setAccessibilityFrameInParentSpace(frame)
+            element.setAccessibilityParent(self)
+            return element
+        }
+    }
+
+    override func accessibilityChildren() -> [Any]? {
+        barElements
     }
 
     /// What the bar keeps off: an area made with the arrow keys, or the highlighted window or page. A full screen is picked with a click anywhere.
@@ -718,5 +1134,23 @@ final class SelectionOverlayView: NSView {
         case .window: return .target(hole)
         case .screen: return nil
         }
+    }
+}
+
+/// A button of the capture bar for VoiceOver, which the overlay draws rather than holding as a view.
+private final class BarElement: NSAccessibilityElement {
+    private let press: @MainActor @Sendable () -> Void
+
+    init(press: @escaping @MainActor @Sendable () -> Void) {
+        self.press = press
+        super.init()
+    }
+
+    override func accessibilityPerformPress() -> Bool {
+        let press = press
+        MainActor.assumeIsolated {
+            press()
+        }
+        return true
     }
 }

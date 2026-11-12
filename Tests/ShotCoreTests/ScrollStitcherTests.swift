@@ -564,18 +564,35 @@ func fabPixels(in image: Bitmap) -> Int {
 
 // MARK: - The panel
 
-@Test func everyStatusHasAChipAndWarningsHaveAMessage() {
+@Test func everyStatusHasAHeadingAndWarningsHaveACard() {
     for status in [ScrollCaptureStatus.ready, .live, .tooFar, .changing, .notEnough, .sizeLimit] {
-        #expect(!status.title.isEmpty)
+        #expect(!status.heading.isEmpty)
+        #expect(!status.detail.isEmpty)
+        #expect((status.warning != nil) == status.isWarning)
     }
-    #expect(ScrollCaptureStatus.live.message == nil)
-    #expect(ScrollCaptureStatus.ready.message == "Scroll the content in any direction.")
-    #expect(ScrollCaptureStatus.tooFar.message == "Scrolled too far at once. Scroll back a little and carry on.")
-    #expect(ScrollCaptureStatus.changing.message == "Something in the area keeps changing, so Shot can't line frames up. Pause the video or scroll past it.")
-    #expect(ScrollCaptureStatus.notEnough.message == "There isn't enough in the area to line frames up. Include some text or an image, or drag out another area.")
-    #expect(ScrollCaptureStatus.sizeLimit.message == "The image is as big as Shot can stitch. Press Return to save it.")
+    #expect(ScrollCaptureStatus.live.heading == "Keep scrolling")
+    #expect(ScrollCaptureStatus.ready.heading == "Start scrolling")
+    #expect(ScrollCaptureStatus.tooFar.warning?.title == "Scrolled too far")
+    #expect(ScrollCaptureStatus.tooFar.warning?.advice == "Scroll back a little and carry on.")
+    #expect(ScrollCaptureStatus.changing.warning?.title == "Can't line up")
+    #expect(ScrollCaptureStatus.notEnough.warning?.title == "Nothing to line up")
+    #expect(ScrollCaptureStatus.sizeLimit.detail == "The image is as big as Shot can stitch. Press Return to save it.")
     #expect([ScrollCaptureStatus.tooFar, .changing, .notEnough].allSatisfy { $0.isWarning })
     #expect(![ScrollCaptureStatus.ready, .live, .sizeLimit].contains { $0.isWarning })
+}
+
+@Test func thePanelCountsFramesKeptAndSaysWhetherAStickyHeaderWasFound() {
+    let offsets = path(steps: down([20, 30, 45, 25, 60, 35, 50, 40, 15, 70]))
+    let (plain, _, _) = stitch(ScrollScene(), offsets: offsets)
+    #expect(!plain.hasStickyHeader)
+    #expect(plain.framesKept >= 2 && plain.framesKept <= offsets.count, "\(plain.framesKept)")
+    let (headed, _, _) = stitch(ScrollScene(header: 36), offsets: offsets)
+    #expect(headed.hasStickyHeader)
+    // Without the kept frames, every frame that lined up counts.
+    let painted = ScrollStitcher(width: 960, height: 640, scale: 2, byteOrder: .rgba)
+    painted.composes = false
+    let (canvasOnly, _, _) = stitch(ScrollScene(), offsets: offsets, stitcher: painted)
+    #expect(canvasOnly.framesKept == offsets.count)
 }
 
 @Test func thePanelGoesBesideTheAreaAndNeverOverIt() {

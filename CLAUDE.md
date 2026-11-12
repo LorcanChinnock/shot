@@ -30,7 +30,7 @@ What this means in practice:
 ```bash
 make test                         # ShotCoreTests, the unit tests (Swift Testing)
 make perf-app                     # make bundle, then scripts/perf.sh: launch, capture, memory, idle CPU of build/ShotDev.app
-make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below); on macOS also scripts/strings.sh --check
+make lint                         # scripts/lint.sh, which bans patterns that caused bugs (see below), then a debug build and scripts/strings.sh --check
 make strings                      # sync Resources/Localizable.xcstrings with the strings the build extracted
 make build                        # Debug build of the app, as Xcode's Build does
 make bundle                       # archive a universal Release build/ShotDev.app only
@@ -62,13 +62,15 @@ Run ShotDev through Xcode, with the `run-shotdev` skill (`.claude/skills/run-sho
 
 Use the MugCo sample app (`make demo`), not whatever window is open: your screen can show private tabs and mail, and changes every run. It is a fake support inbox in its own package, `Samples/MugCo`, so the main build and CI never compile it. It has an email address and card number to blur, and a wrong balance to point an arrow at. All its data is made up, so captures of it are safe to publish. Its window is titled "Mug Co. Support" and the process is `MugCo`.
 
+To drive ShotDev with computer use, follow the `shot-capture-session` skill first: `request_access` only finds ShotDev while one of its windows is open.
+
 The screenshots and recordings in `docs/media` come from a second sample, `docs/demo` (ShotDemo, "Acme Support"), whose ticket, dashboard and chat scenes are scripted so a reshoot lines up with the last one. Use it to reshoot the guide media (see `docs/demo/README.md`), and MugCo for everything else.
 
 ## Architecture
 
 Four targets in `Shot.xcodeproj`, all macOS-only:
 - `ShotCore` (`Sources/ShotCore`, a static framework): everything that needs no window, display or permission. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
-- `Shot` (`Sources/Shot` and `Resources`, the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
+- `Shot` (`Sources/Shot` and `Resources`, the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `MenuBar`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
 - `ShotCoreTests` (`Tests/ShotCoreTests`) and `ScrollLab` (`Sources/ScrollLab`, the tool behind `scripts/scroll-lab`).
 
 **If logic can be tested without a window, it goes in ShotCore with a test.** The one test target is `Tests/ShotCoreTests`. The app has no tests.
@@ -78,21 +80,26 @@ Read the note in `docs/architecture/` before changing the area it covers:
 | Before changing | Read |
 | --- | --- |
 | What belongs in ShotCore, or how it handles images and drawing | [core.md](docs/architecture/core.md) |
-| Taking a capture: `CaptureCoordinator`, picking what to capture, saving | [capture.md](docs/architecture/capture.md) |
+| Taking a capture: `CaptureCoordinator`, the capture bar, picking what to capture, saving, Quick Access | [capture.md](docs/architecture/capture.md) |
 | Annotations, `AnnotationRenderer` or editor undo | [image-editor.md](docs/architecture/image-editor.md) |
 | `Recorder`, pausing or audio | [recording.md](docs/architecture/recording.md) |
 | The video timeline, or GIF export | [video-editor.md](docs/architecture/video-editor.md) |
-| Preferences and `@Setting` | [settings.md](docs/architecture/settings.md) |
-| Shared UI components, lazy lists and grids, or concurrency | [design-system.md](docs/architecture/design-system.md) |
-| `site/` and the user guide | [website.md](docs/architecture/website.md) |
+| Preferences, `@Setting` or the Settings window | [settings.md](docs/architecture/settings.md) |
+| Shared UI components, button kinds, floating panels, motion, lazy lists and grids, or concurrency | [design-system.md](docs/architecture/design-system.md) |
+| `site/`, its tokens, or the user guide | [website.md](docs/architecture/website.md) |
+| Anything for the redesign (#1050): its tokens, rules, and which issue builds each board and updates each guide page | [redesign/spec.md](docs/redesign/spec.md) |
 
 ## Rules enforced by `make lint`
 
 - Use `NSView(hosting:)`, never `NSHostingView(rootView:)`/`NSHostingController`; a plain hosting view crashes when content changes under a visible window. `GlassWindow.swift`, which defines the helper, is exempt.
 - Use `@Setting`, never `@AppStorage`; `@AppStorage` updates late, so views show inconsistent state.
-- Use `inkBorder(_:width:color:)` rather than `strokeBorder` with any `Brutal` colour (a ternary included), and only whole-point ink widths and line widths. `BrutalStyle.swift`, which defines `inkBorder`, is exempt.
+- Use `inkBorder(_:width:color:)` rather than `strokeBorder` with any `Brutal` colour (a ternary included). It snaps the width to whole device pixels, so 1.5 pt ink is crisp on 1x and Retina. `BrutalStyle.swift`, which defines `inkBorder`, is exempt.
 - Use `style: .circular`, never `.continuous`, for rounded corners; continuous corners leave steps under ink borders.
 - ShotCore imports no AppKit, SwiftUI or Cocoa, so its logic is tested without a window.
+- Never pair `onTapGesture(count: 2)` with a single tap; every single click waits out the double-click interval. Use one `onTapGesture` and read `NSApp.currentEvent?.clickCount`.
+- Put a `# macOS: <reason>` comment above each macOS `runs-on` in `.github/workflows/`, saying why the job can't run on Linux, since macOS jobs queue.
+- On the site, no card has one thick coloured edge: `border-top-color` and its kin, or a colour on a one-edge border, are rejected (`site/DESIGN.md`). `HeroStage.astro` is exempt.
+- When `shellcheck` is installed, it checks the install and uninstall scripts and their tests.
 
 ## CI
 
@@ -104,7 +111,7 @@ The repository is public, so GitHub's runners are free, but the free plan runs o
 - The repository has auto-merge turned on only for `dependabot-automerge.yml`, which enables it on Dependabot's patch and minor PRs (not major bumps or Sparkle) so they merge once `linux` and `macos` pass. An admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
 - `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
 - Run `make lint` and `make test` before every push, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it.
-- The redesign is built on a long-lived `redesign` branch with the same required checks. Main is merged into it by hand when needed, as a `chore: merge main into redesign` PR from `chore/merge-main-into-redesign`, with conflicts resolved on the redesign side. Once CI passes, land it with `git push origin chore/merge-main-into-redesign:redesign`, a fast-forward that keeps the merge commit and marks the PR merged; never squash it, and the merge button only squashes (CONTRIBUTING.md › The redesign branch). PRs into `redesign` still use `Closes #N`; `redesign-close-issues.yml` closes those issues on merge, since GitHub only does it for `main`. Only the epic, #1050, stays open until `redesign` merges into `main`.
+- The redesign is built on a long-lived `redesign` branch with the same required checks. Name work branches `redesign-<slug>`: git can't create `redesign/<slug>` while a `redesign` branch exists. Main is merged into it by hand when needed, as a `chore: merge main into redesign` PR from `chore/merge-main-into-redesign`, with conflicts resolved on the redesign side. Once CI passes, land it with `git push origin chore/merge-main-into-redesign:redesign`, a fast-forward that keeps the merge commit and marks the PR merged; never squash it, and the merge button only squashes (CONTRIBUTING.md › The redesign branch). PRs into `redesign` still use `Closes #N`; `redesign-close-issues.yml` closes those issues on merge, since GitHub only does it for `main`. Only the epic, #1050, stays open until `redesign` merges into `main`.
 - Every release builds and tests again, so let the release-please PR collect several merges rather than releasing after each one.
 
 ## Conventions

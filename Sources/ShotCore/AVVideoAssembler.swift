@@ -96,8 +96,10 @@ public enum AVVideoAssembler {
         return passthrough
     }
 
-    /// Copies the samples of `video`'s video track and `audio`'s audio track into one file.
-    private static func mux(video: URL, audio: URL, to output: URL, as fileType: AVFileType) async throws {
+    /// Copies the samples of `video`'s video track and `audio`'s audio track into one file. Cancelling the task, or
+    /// `isCancelled` returning true, before it finishes leaves no file. Tests pass `isCancelled` to stop it partway
+    /// through the copy, which cancelling a task can't do reliably, since a short copy may already be done.
+    static func mux(video: URL, audio: URL, to output: URL, as fileType: AVFileType, isCancelled: @escaping @Sendable () -> Bool = { false }) async throws {
         let writer = try AVAssetWriter(outputURL: output, fileType: fileType)
         let videoAsset = AVURLAsset(url: video)
         let duration = try await videoAsset.load(.duration)
@@ -133,13 +135,15 @@ public enum AVVideoAssembler {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     DispatchQueue(label: "Shot.mux").async {
                         continuation.resume(with: Result {
-                            try Self.copySamples(pending, into: sharedWriter) { cancelled.withLock { $0 } }
+                            try Self.copySamples(pending, into: sharedWriter) { cancelled.withLock { $0 } || isCancelled() }
                         })
                     }
                 }
             } onCancel: {
                 cancelled.withLock { $0 = true }
             }
+            // A cancel that arrives after the last sample still discards the file, rather than finishing it.
+            try Task.checkCancellation()
         } catch {
             // Deletes what was written so far.
             writer.cancelWriting()

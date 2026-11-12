@@ -218,3 +218,27 @@ extension Project {
         return result
     }
 }
+
+/// What the Layers panel's Frame row shows on its right: the crop's shape when it's one the crop tool offers, such as
+/// "16:9" or "3:4", else the pixels it keeps, "1,480 × 560".
+public enum FrameRowDetail {
+    /// The shapes named by ratio, landscape and portrait, as width over height.
+    static let named: [(name: String, width: CGFloat, height: CGFloat)] = [
+        ("1:1", 1, 1), ("4:3", 4, 3), ("3:4", 3, 4), ("16:9", 16, 9), ("9:16", 9, 16),
+    ]
+
+    /// The label for a crop of `size` pixels. A crop is a named shape when either side is within a pixel of it, since
+    /// crops land on whole pixels.
+    public static func label(for size: CGSize, locale: Locale = .current) -> String {
+        guard size.width >= 1, size.height >= 1 else {
+            return ""
+        }
+        for shape in named {
+            let ratio = shape.width / shape.height
+            if abs(size.width - size.height * ratio) <= 1 || abs(size.height - size.width / ratio) <= 1 {
+                return shape.name
+            }
+        }
+        return EditorToolbarLayout.sizeLabel(size, locale: locale)
+    }
+}

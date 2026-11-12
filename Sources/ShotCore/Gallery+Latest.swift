@@ -9,6 +9,11 @@ extension Gallery {
     /// "X.png" and any earlier version beside it, dated by the newest of them, since the latest version has the markup.
     /// Recordings are never versions of one another.
     public static func latest(in items: [GalleryItem]) -> GalleryItem? {
+        latest(in: items, limit: 1).first
+    }
+
+    /// The newest `limit` captures in `items`, newest first, each standing for its versions as `latest(in:)` describes.
+    public static func latest(in items: [GalleryItem], limit: Int) -> [GalleryItem] {
         func key(_ item: GalleryItem, stem: String) -> String {
             item.url.deletingLastPathComponent().appendingPathComponent(stem).path + "." + item.url.pathExtension.lowercased()
         }
@@ -34,8 +39,9 @@ extension Gallery {
             newestInGroup[group] = version > current.version ? (item, version, date) : (current.item, current.version, date)
         }
         return newestInGroup.values
-            .min { $0.date != $1.date ? $0.date > $1.date : $0.item.name < $1.item.name }?
-            .item
+            .sorted { $0.date != $1.date ? $0.date > $1.date : $0.item.name < $1.item.name }
+            .prefix(limit)
+            .map(\.item)
     }
 
     /// "X (3)" is version 3 of "X"; anything else is version 1 of itself. The suffix is the one

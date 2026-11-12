@@ -36,6 +36,9 @@ public enum AnnotationRenderer {
             ctx.setFillColor(background.cgColor)
             ctx.fill(canvas)
         }
+        if let fill = doc.backgroundFill {
+            drawFill(fill, desktopPicture: doc.desktopPicture, in: canvas, ctx: ctx)
+        }
         let dim = doc.spotlightDimPath
         // The dim keeps alpha, so it's composited in a layer of its own to look the same over the editor's backdrop as in the export.
         if dim != nil {
@@ -67,6 +70,32 @@ public enum AnnotationRenderer {
             ctx.endTransparencyLayer()
         }
         ctx.restoreGState()
+    }
+
+    /// Draws `fill` over `canvas`, in the top-left-origin space `renderLayers` sets up: the desktop picture filling it and
+    /// cut to its shape, or a gradient from its top-left corner to its bottom-right, or top to bottom.
+    static func drawFill(_ fill: BackgroundFill, desktopPicture: CGImage?, in canvas: CGRect, ctx: CGContext) {
+        ctx.saveGState()
+        defer { ctx.restoreGState() }
+        ctx.clip(to: canvas)
+        if fill == .desktop, let picture = desktopPicture, picture.width > 0, picture.height > 0 {
+            let size = CGSize(width: picture.width, height: picture.height)
+            let scale = max(canvas.width / size.width, canvas.height / size.height)
+            let drawn = CGSize(width: size.width * scale, height: size.height * scale)
+            let rect = CGRect(x: canvas.midX - drawn.width / 2, y: canvas.midY - drawn.height / 2, width: drawn.width, height: drawn.height)
+            // The canvas is flipped, so the picture is drawn flipped back to stand the right way up.
+            ctx.translateBy(x: 0, y: rect.minY + rect.maxY)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.interpolationQuality = .high
+            ctx.draw(picture, in: rect)
+            return
+        }
+        let (start, end) = fill.colors
+        guard let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: [start.cgColor, end.cgColor] as CFArray, locations: [0, 1]) else {
+            return
+        }
+        let to = fill.isVertical ? CGPoint(x: canvas.minX, y: canvas.maxY) : CGPoint(x: canvas.maxX, y: canvas.maxY)
+        ctx.drawLinearGradient(gradient, start: CGPoint(x: canvas.minX, y: canvas.minY), end: to, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
     }
 
     /// Darkens or blurs `dim`, everything under the lowest spotlight outside every spotlight, faded where `softSpotlights` light it.

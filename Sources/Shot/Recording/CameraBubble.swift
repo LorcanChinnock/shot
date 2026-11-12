@@ -23,7 +23,6 @@ enum CameraError: LocalizedError {
 @MainActor
 final class CameraBubble {
     static let shared = CameraBubble()
-    static let inset: CGFloat = 24
 
     private var panel: CameraBubblePanel?
     private var session: AVCaptureSession?
@@ -33,8 +32,14 @@ final class CameraBubble {
     var windowID: CGWindowID? { panel.map { CGWindowID($0.windowNumber) } }
     var isVisible: Bool { panel != nil }
 
-    func cycleSize() {
-        panel?.cycleSize()
+    /// Shows the resize handle, which only checking before recording offers.
+    var showsHandle = false {
+        didSet { panel?.showsHandle = showsHandle }
+    }
+
+    /// One size larger (`by: 1`) or smaller (`by: -1`), as ⌘+ and ⌘− do on the check-before-recording bar.
+    func step(by step: Int) {
+        panel?.step(by: step)
     }
 
     func move(by delta: CGVector) {
@@ -72,7 +77,7 @@ final class CameraBubble {
     func show(in region: CGRect, preferred: CameraBubbleSize, deviceID: String) async throws {
         hide()
         let current = generation
-        guard let size = CameraBubbleSize.fitting(preferred, in: region, inset: Self.inset) else {
+        guard let size = CameraBubbleSize.fitting(preferred, in: region, inset: CameraBubbleStyle.inset) else {
             throw CameraError.regionTooSmall
         }
         guard let device = CaptureDevices.device(id: deviceID, for: .video) else {
@@ -96,7 +101,8 @@ final class CameraBubble {
         } else {
             warmUp.finish()
         }
-        let panel = CameraBubblePanel(session: session, frame: CameraBubbleLayout.initialFrame(in: region, diameter: size.diameter, inset: Self.inset), size: size, region: region)
+        let panel = CameraBubblePanel(session: session, frame: CameraBubbleLayout.initialFrame(in: region, diameter: size.diameter, inset: CameraBubbleStyle.inset), size: size, region: region)
+        panel.showsHandle = showsHandle
         let box = SessionBox(session: session)
         await Task.detached { box.session.startRunning() }.value
         await warmUp.wait(upTo: .milliseconds(1500))
@@ -184,19 +190,29 @@ private final class CameraWarmUp: NSObject, AVCaptureVideoDataOutputSampleBuffer
     }
 }
 
+/// The bubble's window: the circle and its ring, with macOS's own shadow, which follows the circle and catches no clicks.
 private final class CameraBubblePanel: NSPanel {
-    private static let border: CGFloat = 5
-    private static let shadow: CGFloat = 7
-
     private let previewLayer: AVCaptureVideoPreviewLayer
-    private let ringLayer = CALayer()
-    private let shadowLayer = CAShapeLayer()
-    private var size: CameraBubbleSize
+    private let videoLayer = CALayer()
+    private let ringLayer = CAShapeLayer()
+    private let contrastLayer = CAShapeLayer()
+    private let handleLayer = CAShapeLayer()
+    private let bubbleView = BubbleView()
+    private(set) var size: CameraBubbleSize
     var region: CGRect {
         didSet { place(circle) }
     }
 
-    /// `frame` is the circle; the window adds room for the hard shadow.
+    var showsHandle = false {
+        didSet {
+            guard showsHandle != oldValue else {
+                return
+            }
+            layoutLayers()
+        }
+    }
+
+    /// `frame` is the circle; the window adds room for the ring around it.
     init(session: AVCaptureSession, frame: CGRect, size: CameraBubbleSize, region: CGRect) {
         self.size = size
         self.region = region
@@ -205,7 +221,7 @@ private final class CameraBubblePanel: NSPanel {
         level = .statusBar
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = false
+        hasShadow = true
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
 
@@ -214,82 +230,243 @@ private final class CameraBubblePanel: NSPanel {
             connection.automaticallyAdjustsVideoMirroring = false
             connection.isVideoMirrored = true
         }
-        let view = BubbleView()
-        view.onDoubleClick = { [weak self] in self?.cycleSize() }
-        view.onDrag = { [weak self] origin in self?.place(windowOrigin: origin) }
-        view.wantsLayer = true
-        view.layer?.addSublayer(shadowLayer)
-        view.layer?.addSublayer(ringLayer)
-        ringLayer.addSublayer(previewLayer)
-        ringLayer.masksToBounds = true
-        ringLayer.borderColor = Brutal.inkNS.cgColor
-        ringLayer.borderWidth = Self.border
-        ringLayer.backgroundColor = NSColor.black.cgColor
-        shadowLayer.fillColor = ringLayer.borderColor
-        contentView = view
+        bubbleView.panel = self
+        bubbleView.wantsLayer = true
+        for layer in [contrastLayer, ringLayer, videoLayer, handleLayer] {
+            bubbleView.layer?.addSublayer(layer)
+        }
+        videoLayer.addSublayer(previewLayer)
+        videoLayer.masksToBounds = true
+        videoLayer.backgroundColor = NSColor.black.cgColor
+        ringLayer.fillColor = NSColor.white.cgColor
+        contrastLayer.fillColor = nil
+        contrastLayer.strokeColor = Brutal.inkNS.cgColor
+        handleLayer.fillColor = NSColor.white.cgColor
+        handleLayer.strokeColor = Brutal.inkNS.cgColor
+        contentView = bubbleView
+        layoutLayers()
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(displayOptionsChanged), name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil)
+    }
+
+    deinit {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+    }
+
+    @objc private func displayOptionsChanged() {
         layoutLayers()
     }
 
     private static func windowFrame(forCircle circle: CGRect) -> CGRect {
-        CGRect(x: circle.minX, y: circle.minY - shadow, width: circle.width + shadow, height: circle.height + shadow)
+        circle.insetBy(dx: -CameraBubbleStyle.margin, dy: -CameraBubbleStyle.margin)
+    }
+
+    /// The circle in AppKit global space.
+    var circle: CGRect {
+        frame.insetBy(dx: CameraBubbleStyle.margin, dy: CameraBubbleStyle.margin)
+    }
+
+    /// The handle's centre in the view, or `nil` while it's hidden.
+    var handleCenter: CGPoint? {
+        guard showsHandle else {
+            return nil
+        }
+        let center = CameraBubbleLayout.handleCenter(for: circle, in: region)
+        return CGPoint(x: center.x - frame.minX, y: center.y - frame.minY)
+    }
+
+    /// Whether the handle sits on the circle's right, so the pointer can show the matching resize arrows.
+    var handleOnRight: Bool {
+        CameraBubbleLayout.handleCenter(for: circle, in: region).x > circle.midX
     }
 
     private func layoutLayers() {
-        let diameter = size.diameter
+        let scale = backingScaleFactor
+        let margin = CameraBubbleStyle.margin
+        let ring = CameraBubbleStyle.ringWidth
+        let local = CGRect(x: margin, y: margin, width: size.diameter, height: size.diameter)
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        let circle = CGRect(x: 0, y: Self.shadow, width: diameter, height: diameter)
-        ringLayer.frame = circle
-        ringLayer.cornerRadius = diameter / 2
-        previewLayer.frame = ringLayer.bounds
-        shadowLayer.path = CGPath(ellipseIn: circle.offsetBy(dx: Self.shadow, dy: -Self.shadow), transform: nil)
+        videoLayer.frame = local
+        videoLayer.cornerRadius = size.diameter / 2
+        previewLayer.frame = videoLayer.bounds
+        // The ring is a white disc behind the camera, so its inner edge never shows a seam against the clipped picture.
+        ringLayer.path = CGPath(ellipseIn: local.insetBy(dx: -ring, dy: -ring), transform: nil)
+        let edge = Brutal.inkWidth(CameraBubbleStyle.contrastEdgeWidth, scale: scale)
+        contrastLayer.lineWidth = edge
+        contrastLayer.path = CGPath(ellipseIn: local.insetBy(dx: -ring - edge / 2, dy: -ring - edge / 2), transform: nil)
+        contrastLayer.isHidden = !NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        if let center = handleCenter {
+            let width = Brutal.inkWidth(CameraBubbleStyle.handleEdgeWidth, scale: scale)
+            let side = CameraBubbleStyle.handleDiameter + width
+            handleLayer.lineWidth = width
+            handleLayer.path = CGPath(ellipseIn: CGRect(x: center.x - side / 2, y: center.y - side / 2, width: side, height: side), transform: nil)
+            handleLayer.isHidden = false
+        } else {
+            handleLayer.isHidden = true
+        }
         CATransaction.commit()
-    }
-
-    private var circle: CGRect {
-        CGRect(x: frame.minX, y: frame.minY + Self.shadow, width: size.diameter, height: size.diameter)
+        invalidateShadow()
+        invalidateCursorRects(for: bubbleView)
+        bubbleView.updateAccessibility(size: size)
     }
 
     private func place(_ circle: CGRect) {
-        setFrame(Self.windowFrame(forCircle: CameraBubbleLayout.clamped(circle, in: region, inset: CameraBubble.inset)), display: true)
+        setFrame(Self.windowFrame(forCircle: CameraBubbleLayout.clamped(circle, in: region, inset: CameraBubbleStyle.inset)), display: true)
+        layoutLayers()
     }
 
-    private func place(windowOrigin origin: CGPoint) {
-        place(CGRect(x: origin.x, y: origin.y + Self.shadow, width: size.diameter, height: size.diameter))
+    /// Moves the bubble so the window's origin is `origin`, kept inside the recorded area.
+    func place(windowOrigin origin: CGPoint) {
+        let margin = CameraBubbleStyle.margin
+        place(CGRect(x: origin.x + margin, y: origin.y + margin, width: size.diameter, height: size.diameter))
+    }
+
+    /// Changes the size around the bubble's centre. `remember` makes it the size the next bubble starts at.
+    func resize(to newSize: CameraBubbleSize, remember: Bool) {
+        if remember {
+            SettingsStore.shared.set(newSize.rawValue, forKey: PreferenceKey.cameraSize)
+        }
+        guard newSize != size else {
+            return
+        }
+        let circle = circle
+        size = newSize
+        place(CameraBubbleLayout.resized(circle, to: size.diameter))
     }
 
     func cycleSize() {
-        let circle = circle
-        size = size.next
-        SettingsStore.shared.set(size.rawValue, forKey: PreferenceKey.cameraSize)
-        place(CameraBubbleLayout.resized(circle, to: size.diameter))
-        layoutLayers()
+        resize(to: CameraBubbleSize.fitting(size.next, in: region, inset: CameraBubbleStyle.inset) == size.next ? size.next : .small, remember: true)
+    }
+
+    /// One size larger or smaller, stopping at the largest that fits. Returns whether the size changed.
+    @discardableResult
+    func step(by step: Int) -> Bool {
+        guard let next = size.stepped(by: step), CameraBubbleSize.fitting(next, in: region, inset: CameraBubbleStyle.inset) == next else {
+            return false
+        }
+        resize(to: next, remember: true)
+        return true
+    }
+
+    /// Whether a step that way would change the size, so VoiceOver offers only the actions that work.
+    func canStep(by step: Int) -> Bool {
+        guard let next = size.stepped(by: step) else {
+            return false
+        }
+        return CameraBubbleSize.fitting(next, in: region, inset: CameraBubbleStyle.inset) == next
+    }
+
+    /// The size a handle drag at `pointer`, in AppKit global space, asks for.
+    func resizeTarget(at pointer: CGPoint) -> CameraBubbleSize? {
+        CameraBubbleLayout.resizeTarget(pointer: pointer, circle: circle, region: region, inset: CameraBubbleStyle.inset)
     }
 }
 
+/// Takes the bubble's mouse: dragging moves it, double-clicking changes its size, and while checking before recording
+/// dragging the handle resizes it. VoiceOver reads it as the camera bubble with its size, and can make it larger or smaller.
 private final class BubbleView: NSView {
-    var onDoubleClick: (() -> Void)?
-    /// Called with the window origin that would keep the grab point under the pointer.
-    var onDrag: ((CGPoint) -> Void)?
-    private var grab: CGVector = .zero
+    weak var panel: CameraBubblePanel?
+    private enum Drag {
+        case move(grab: CGVector)
+        case resize(start: CameraBubbleSize)
+    }
+    private var drag: Drag?
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
+    private func onHandle(_ point: CGPoint) -> Bool {
+        guard let center = panel?.handleCenter else {
+            return false
+        }
+        let half = CameraBubbleStyle.handleHitSize / 2
+        return abs(point.x - center.x) <= half && abs(point.y - center.y) <= half
+    }
+
     override func mouseDown(with event: NSEvent) {
-        if event.clickCount == 2 {
-            onDoubleClick?()
-        } else if let window {
+        guard let panel else {
+            return
+        }
+        let point = convert(event.locationInWindow, from: nil)
+        if onHandle(point) {
+            drag = .resize(start: panel.size)
+        } else if event.clickCount == 2 {
+            drag = nil
+            panel.cycleSize()
+        } else {
             let mouse = NSEvent.mouseLocation
-            grab = CGVector(dx: mouse.x - window.frame.minX, dy: mouse.y - window.frame.minY)
+            drag = .move(grab: CGVector(dx: mouse.x - panel.frame.minX, dy: mouse.y - panel.frame.minY))
         }
     }
 
     override func mouseDragged(with event: NSEvent) {
+        guard let panel, let drag else {
+            return
+        }
         let mouse = NSEvent.mouseLocation
-        onDrag?(CGPoint(x: mouse.x - grab.dx, y: mouse.y - grab.dy))
+        switch drag {
+        case .move(let grab):
+            panel.place(windowOrigin: CGPoint(x: mouse.x - grab.dx, y: mouse.y - grab.dy))
+        case .resize:
+            if let target = panel.resizeTarget(at: mouse) {
+                panel.resize(to: target, remember: false)
+            }
+        }
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        if case .resize(let start) = drag, let panel, panel.size != start {
+            panel.resize(to: panel.size, remember: true)
+        }
+        drag = nil
     }
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: .openHand)
+        if let panel, let center = panel.handleCenter {
+            let half = CameraBubbleStyle.handleHitSize / 2
+            let rect = CGRect(x: center.x - half, y: center.y - half, width: half * 2, height: half * 2)
+            addCursorRect(rect, cursor: .frameResize(position: panel.handleOnRight ? .bottomRight : .bottomLeft, directions: .all))
+        }
+    }
+
+    // MARK: Accessibility
+
+    func updateAccessibility(size: CameraBubbleSize) {
+        setAccessibilityElement(true)
+        setAccessibilityRole(.group)
+        setAccessibilityLabel(String(localized: "Camera bubble"))
+        setAccessibilityValue(size.title)
+        setAccessibilityHelp(String(localized: "Drag to move it. Double-click to change its size."))
+        var actions: [NSAccessibilityCustomAction] = []
+        if panel?.canStep(by: 1) == true {
+            actions.append(NSAccessibilityCustomAction(name: String(localized: "Make larger")) { [weak self] in
+                self?.panel?.step(by: 1) ?? false
+            })
+        }
+        if panel?.canStep(by: -1) == true {
+            actions.append(NSAccessibilityCustomAction(name: String(localized: "Make smaller")) { [weak self] in
+                self?.panel?.step(by: -1) ?? false
+            })
+        }
+        setAccessibilityCustomActions(actions)
+    }
+
+    override func accessibilityPerformIncrement() -> Bool {
+        panel?.step(by: 1) ?? false
+    }
+
+    override func accessibilityPerformDecrement() -> Bool {
+        panel?.step(by: -1) ?? false
+    }
+}
+
+extension CameraBubbleSize {
+    /// The size's name, as Settings › Recording and VoiceOver say it.
+    var title: String {
+        switch self {
+        case .small: String(localized: "Small")
+        case .medium: String(localized: "Medium")
+        case .large: String(localized: "Large")
+        }
     }
 }

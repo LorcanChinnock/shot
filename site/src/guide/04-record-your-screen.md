@@ -4,7 +4,7 @@ summary: "Record an area, a window or the whole screen, with your voice, the sou
 group: Capture
 ---
 
-![The recording controls: elapsed time, Pause, the camera bubble button (showing the bubble is off), the dimmed Change camera bubble size button, discard and Stop](../../../docs/media/recording-controls.png)
+![The recording controls: elapsed time, the camera button (showing the camera is off), Pause, discard and Stop](../../../docs/media/recording-controls.png)
 
 ## Start a recording
 
@@ -15,17 +15,18 @@ group: Capture
    - **Full Screen:** click the screen, or press <kbd>Return</kbd>.
 3. Recording starts as soon as you let go.
 
-To wait first, click **Delay** (the timer) on the bar or press <kbd>D</kbd> to step through Off, 3, 5 and 10 seconds. Shot counts down on screen after you pick, then starts recording. It is back to Off the next time.
+To wait first, click **Delay** (the timer) on the bar or press <kbd>D</kbd> to step through Off, 3, 5 and 10 seconds. After you pick, a small panel in the middle of the area counts down in a yellow ring, then recording starts. It is back to Off the next time.
 
 The camera bubble, microphone and cursor are on or off as you set them in **Settings › Recording**.
 
 ## Check everything before you start
 
-Hold <kbd>⌥</kbd> as you finish picking an area or window. Before recording starts, you can then:
+Hold <kbd>⌥</kbd> as you finish picking an area or window. The rest of the screen dims, the frame shows its size in pixels, and a bar appears under it. Before recording starts, you can then:
 
-- move and resize the frame. If you picked an area with a ratio, the handles keep it.
-- switch between an area, a screen and a window.
-- turn the camera bubble, microphone and cursor on or off, just for this recording.
+- move and resize the frame with its handles, or drag the grip above it. If you picked an area with a ratio, the handles keep it, and the size shows the ratio.
+- switch between an area, a window and the full screen.
+- turn the microphone, camera bubble, **Mac sound** and **Cursor** on or off, just for this recording. One that's off has its icon struck through. With the microphone on, the bars under its name move as you speak, so you can check it's working before you start.
+- pick the frame rate for this recording from the menu that shows it, such as **60 fps**.
 
 Press <kbd>Return</kbd> or click **Record** to start, or <kbd>Esc</kbd> to cancel. To get this step every time, turn on **Adjust before recording** in **Settings › Recording**.
 
@@ -33,15 +34,15 @@ When you set a delay on the overlay, Shot's menu bar icon shows the seconds left
 
 ## While you record
 
-The controls float beside the recorded area:
+A dark bar of controls sits under the recorded area, and you can drag it out of the way. On its left, a red dot breathes and the timer counts up. The menu bar shows the same time on red, in place of Shot's icon.
 
 | Control | What it does |
 |---|---|
-| **Pause** | Pauses the recording. Click again to resume. |
-| **Stop** | Stops and saves. |
+| **Microphone** | The bars beside it show how loud you are. Click it to mute. Muting silences only your microphone, not the sound from your Mac. |
+| **Camera** | Shows or hides the camera bubble. Double-click the bubble to change its size. |
+| **Pause** | Pauses the recording. Two amber bars replace the red dot while it's paused, **Resume** takes Pause's place in yellow, and **Stop** loses its red. |
 | **Discard** | Throws the recording away. **Undo** brings it back for 5 seconds, and so does <kbd>⌘Z</kbd>, whichever app is in front. |
-| **Microphone** | Shows its level, and mutes it. Muting silences only your microphone, not the sound from your Mac. |
-| **Camera** | Shows, hides or resizes the camera bubble. |
+| **Stop** | Stops and saves. |
 
 You can also stop by pressing any record shortcut again. Shot's menu bar menu has **Pause Recording** (**Resume Recording** while paused) and **Stop Recording** too.
 
@@ -53,33 +54,33 @@ A window recording captures just that window. It follows the window when you mov
 
 In **Settings › Recording**:
 
-- **Microphone** records your voice. Pick which microphone, and press **Test** to check it.
-- **System audio** records the sound from other apps. Shot's own sounds are left out.
-- **Camera bubble** adds a round webcam view to the recording. Pick the camera and size, and press **Preview** to check your framing.
+- **Microphone** records your voice. Pick which microphone next to **Input**, and press **Test** to see its level as you speak.
+- **Mac sound** records the sound from other apps. Shot's own sounds are left out.
+- **Camera bubble** adds a round webcam view to the recording. Pick the camera and size, and press **Preview** on the dark card above them to check your framing.
 
-The camera bubble starts in the bottom-left corner of the recorded area and stays inside it. Drag it to move it, and double-click it to step through small, medium and large. The size you pick becomes the default. An area too small for the bubble records without it.
+The camera bubble is a round view of your camera with a white edge, and it starts in the bottom-left corner of the recorded area and stays inside it. Drag it to move it, and double-click it to step through small, medium and large. While you check before recording, it has a small round handle on its lower edge: drag the handle to resize it, or press ⌘+ and ⌘− instead. The size you pick becomes the default. An area too small for the bubble records without it.
 
-macOS asks for microphone and camera access the first time Shot uses them. To allow both up front, click **Grant** beside each in **Settings › About**.
+macOS asks for microphone and camera access the first time Shot uses them. To allow both up front, click **Allow…** beside each in **Settings › About**.
 
 ## Show the cursor and your clicks
 
 Also in **Settings › Recording**:
 
 - **Show cursor** records the pointer.
-- **Show clicks** draws a circle wherever you click.
-- **Region border** outlines the recorded area on screen while you record. The border never appears in the video.
+- **Show clicks** draws a yellow ring wherever you click inside the recorded area, in the video and on your screen. It stays for about half a second, then fades. Clicks while you're paused get no ring.
+- **Region border** draws a red line with a soft glow around the recorded area while you record, and a dashed amber line while you're paused. The border never appears in the video.
 
 ## When you stop
 
-Shot saves the recording to your save folder, copies it to the clipboard, and shows it in [Quick Access](#quick-access), where **Edit** opens it in the [video editor](#edit-a-recording). It never opens the editor by itself.
+Shot saves the recording to your save folder, copies it to the clipboard, and shows it in [Quick Access](#quick-access), where **Edit Video** opens it in the [video editor](#edit-a-recording). It never opens the editor by itself.
 
 To stop copying recordings, turn off **Copy to clipboard** in **Settings › Recording**. To skip the card, turn off **Show Quick Access** in **Settings › Capture**.
 
 ## Quality and file format
 
-Recordings are H.264 MP4 at 30 or 60 frames per second. On a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Settings › Recording** also offers 120 fps, which records HEVC MP4. Exports from the video editor of a 120 fps recording are HEVC too. On a slower screen, a 120 fps setting records at 60.
+Recordings are H.264 MP4 at 30 or 60 frames per second. On a display that refreshes at 120 Hz or faster, such as a ProMotion MacBook Pro, **Frame rate** in **Settings › Recording** also offers 120, which records HEVC MP4. Exports from the video editor of a 120 fps recording are HEVC too. On a slower screen, a 120 fps setting records at 60.
 
 > [!NOTE]
-> **If something goes wrong:** each stretch between pauses is written to a temporary folder as you record, and joined into one file when you stop. Quitting Shot mid-recording stops and saves it first. If Shot crashes, or the pieces can't be joined, Shot saves what it recorded to your save folder as `… (recovered).mp4`, or as separate `(recovered, part N)` files, and shows a message with **Show**. If the disk fills up, Shot keeps the last part if it still plays.
+> **If something goes wrong:** each stretch between pauses is written to a temporary folder as you record, and joined into one file when you stop. Quitting Shot mid-recording stops and saves it first. If Shot crashes, it asks **Recover your last recording?** the next time it opens, with how long the recording is and how many parts it was saved in. **Recover** saves it to your save folder as `… (recovered).mp4`, or as separate `(recovered, part N)` files if the parts can't be joined, and a message offers **Show**. **Discard recording** deletes it, with **Undo** for 5 seconds. See [Troubleshooting](#troubleshooting) for the rest of the dialog. If the disk fills up, Shot keeps the last part if it still plays.
 
 Every recording action has a [`shot://` link](#url-scheme) too, such as `shot://record`, which lets you pick an area to record, or stops the recording that's running.

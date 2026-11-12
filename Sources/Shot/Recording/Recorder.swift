@@ -19,6 +19,12 @@ final class RecordingSessionModel {
     private(set) var microphoneMuted = false
     let meter = AudioMeter()
     private(set) var timeline = RecordingTimeline()
+    /// Whole seconds recorded, which the controls and the menu bar show. Set once a second while the clock runs, so
+    /// nothing that reads it redraws more often.
+    private(set) var seconds = 0
+    /// Called with each new `seconds`, and with nil once the clock stops.
+    @ObservationIgnored var onSecond: ((Int?) -> Void)?
+    @ObservationIgnored private var clock: Task<Void, Never>?
 
     func elapsed(at date: Date) -> TimeInterval {
         timeline.elapsed(at: date)
@@ -26,10 +32,44 @@ final class RecordingSessionModel {
 
     func run() {
         timeline.run(at: Date())
+        tick()
     }
 
     func hold() {
         timeline.hold(at: Date())
+        tick()
+    }
+
+    /// Ticks on each whole second until `stopClock`, so the timer never skips or doubles a second.
+    func startClock() {
+        guard clock == nil else {
+            return
+        }
+        clock = Task { [weak self] in
+            while let wait = self.map({ RecordingClock.untilNextSecond($0.elapsed(at: Date())) }) {
+                try? await Task.sleep(for: .seconds(wait))
+                guard !Task.isCancelled else {
+                    return
+                }
+                self?.tick()
+            }
+        }
+        tick(force: true)
+    }
+
+    func stopClock() {
+        clock?.cancel()
+        clock = nil
+        onSecond?(nil)
+    }
+
+    private func tick(force: Bool = false) {
+        let now = RecordingClock.seconds(elapsed(at: Date()))
+        guard clock != nil, now != seconds || force else {
+            return
+        }
+        seconds = now
+        onSecond?(now)
     }
 
     func toggleMute() {
@@ -54,6 +94,8 @@ final class Recorder: NSObject {
     /// Called by the on-screen controls; `true` means discard.
     var onStopRequested: ((Bool) -> Void)?
     var onPhaseChange: ((Phase) -> Void)?
+    /// The whole seconds recorded so far, each second while the controls show, then nil.
+    var onSecond: ((Int?) -> Void)?
 
     private(set) var phase: Phase = .idle {
         didSet { onPhaseChange?(phase) }
@@ -72,6 +114,10 @@ final class Recorder: NSObject {
         let camera: Bool
         let microphone: Bool
         let showsCursor: Bool
+        /// Sound from other apps on the Mac.
+        let systemAudio: Bool
+        /// The frame rate asked for; a display that can't refresh that fast records at the most it offers.
+        let fps: Int
         /// Set when recording one window, which then follows the window and leaves out anything covering it.
         let windowID: CGWindowID?
         /// Set with `windowID` to record only a browser window's page.
@@ -88,6 +134,8 @@ final class Recorder: NSObject {
         let microphone: Bool
         let showsCursor: Bool
         let showsClicks: Bool
+        /// Shot draws its own ring for each click, except in a window recording, where macOS draws them.
+        var drawsClicks: Bool { showsClicks && ClickRing.drawnByShot(recordsWindow: windowID != nil) }
         /// The microphone picked in Settings, or the default at start; `nil` only with no microphone at all.
         let microphoneID: String?
         /// Read once at start, so every segment of one recording has the same frame rate, audio tracks and microphone.
@@ -111,6 +159,7 @@ final class Recorder: NSObject {
     /// A resume's segment start; a stop waits for it so the new stream is stopped and kept rather than left running.
     private var starting: Task<Void, Error>?
     private var border: RecordingBorderPanel?
+    private var clickRings: ClickRings?
     private var controls: NSPanel?
     private var sampleSink = SampleSink(meter: AudioMeter())
     private var model = RecordingSessionModel()
@@ -134,6 +183,7 @@ final class Recorder: NSObject {
         }
         // A window recording captures only that window, so the bubble would never appear in it.
         let camera = options.camera && options.windowID == nil
+        CameraBubble.shared.showsHandle = false
         if camera, !CameraBubble.shared.isVisible {
             await CameraBubble.shared.showFromPreferences(in: region)
         } else if !camera {
@@ -143,7 +193,7 @@ final class Recorder: NSObject {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let finalURL = FileNaming.uniqueURL(in: folder, date: Date(), pathExtension: "mp4", prefix: prefs.filePrefix)
         let microphoneID = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.uniqueID
-        session = Session(screen: screen, region: region, windowID: options.windowID, pageInsets: options.pageInsets, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: prefs.recordingFPS, displayRate: screen.maximumFramesPerSecond), systemAudio: prefs.recordSystemAudio, finalURL: finalURL)
+        session = Session(screen: screen, region: region, windowID: options.windowID, pageInsets: options.pageInsets, microphone: microphone, showsCursor: options.showsCursor, showsClicks: prefs.recordShowsClicks, microphoneID: microphoneID, fps: RecordingFrameRate.effective(setting: options.fps, displayRate: screen.maximumFramesPerSecond), systemAudio: options.systemAudio, finalURL: finalURL)
         segments = RecordingSegments()
         microphoneFailureShown = false
         model = RecordingSessionModel()
@@ -151,7 +201,7 @@ final class Recorder: NSObject {
         model.cameraAvailable = options.windowID == nil
         model.microphoneOn = microphone
         // Panels exist before the stream so the filter can exclude them by window ID.
-        showPanels(screen: screen, region: region, border: prefs.showRecordingBorder)
+        showPanels(screen: screen, region: region, border: prefs.showRecordingBorder, clicks: session?.drawsClicks ?? false)
         do {
             try await startSegment()
         } catch {
@@ -326,10 +376,6 @@ final class Recorder: NSObject {
         }
     }
 
-    func cycleCameraSize() {
-        CameraBubble.shared.cycleSize()
-    }
-
     /// Re-applies the filter so a bubble shown or hidden mid-recording is included or dropped. False when that failed;
     /// while paused there's no stream, and the next segment picks the bubble up.
     private func refreshFilter() async -> Bool {
@@ -402,7 +448,14 @@ final class Recorder: NSObject {
     // MARK: Segments
 
     private func makeFilter(_ session: Session) async throws -> SCContentFilter {
-        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        var content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        // The click ring panel was ordered in just before this, and the window server can take a moment to list it.
+        var tries = 0
+        while let rings = clickRings, !content.windows.contains(where: { $0.windowID == rings.windowID }), tries < 10 {
+            tries += 1
+            try await Task.sleep(for: .milliseconds(30))
+            content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        }
         if let windowID = session.windowID {
             guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
                 throw CaptureError.windowNotFound
@@ -413,13 +466,18 @@ final class Recorder: NSObject {
             throw CaptureError.displayNotFound
         }
         let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        // Shot's windows stay out of the video, except the camera bubble and the main window (Settings and the gallery).
+        // Shot's windows stay out of the video, except the camera bubble, the Settings and gallery windows and
+        // the click rings.
         let cameraWindows = content.windows.filter { $0.windowID == CameraBubble.shared.windowID }
-        let mainWindows = content.windows.filter { $0.windowID == MainWindowController.windowID }
+        let mainWindows = content.windows.filter { ShotWindows.capturable.contains($0.windowID) }
+        let clickWindows = clickRings.map { rings in content.windows.filter { $0.windowID == rings.windowID } } ?? []
+        if clickRings != nil, clickWindows.isEmpty {
+            log.error("Click ring window not found in shareable content")
+        }
         if CameraBubble.shared.isVisible, cameraWindows.isEmpty {
             log.error("Camera bubble window not found in shareable content")
         }
-        return SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: cameraWindows + mainWindows)
+        return SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: cameraWindows + mainWindows + clickWindows)
     }
 
     private func startSegment() async throws {
@@ -451,7 +509,7 @@ final class Recorder: NSObject {
         }
         config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(session.fps))
         config.showsCursor = session.showsCursor
-        config.showMouseClicks = session.showsClicks
+        config.showMouseClicks = session.showsClicks && !session.drawsClicks
         config.captureMicrophone = session.microphone
         config.microphoneCaptureDeviceID = session.microphoneID
         config.capturesAudio = session.systemAudio
@@ -558,29 +616,38 @@ final class Recorder: NSObject {
 
     // MARK: Panels
 
-    private func showPanels(screen: NSScreen, region: CGRect, border showsBorder: Bool) {
+    private func showPanels(screen: NSScreen, region: CGRect, border showsBorder: Bool, clicks drawsClicks: Bool) {
         if showsBorder {
             let border = RecordingBorderPanel(region: region, style: .recording)
             border.orderFrontRegardless()
             self.border = border
         }
+        if drawsClicks {
+            let rings = ClickRings(region: region) { [weak self] in self?.phase == .recording }
+            rings.start()
+            clickRings = rings
+        }
         let actions = RecordingControlPanel.Actions(
             togglePause: { [weak self] in Task { await self?.togglePause() } },
             toggleMute: { [weak self] in self?.toggleMute() },
             toggleCamera: { [weak self] in Task { await self?.toggleCamera() } },
-            cycleCameraSize: { [weak self] in self?.cycleCameraSize() },
             stop: { [weak self] discard in self?.onStopRequested?(discard) }
         )
         let controls = RecordingControlPanel(region: region, screen: screen, model: model, actions: actions)
         controls.orderFrontRegardless()
         self.controls = controls
+        model.onSecond = { [weak self] seconds in self?.onSecond?(seconds) }
+        model.startClock()
     }
 
     private func hidePanels() {
         windowTracker?.cancel()
         windowTracker = nil
+        model.stopClock()
         border?.orderOut(nil)
         border = nil
+        clickRings?.stop()
+        clickRings = nil
         controls?.orderOut(nil)
         controls = nil
     }

@@ -7,6 +7,8 @@ interface Props {
   description?: string;
   /** A wider page, for the guide's three columns. */
   wide?: boolean;
+  /** Adds "guide" to the header's wordmark, on the user guide's pages. */
+  guide?: boolean;
   /** A card for this page's link previews, as a path under /; every page without one shares /og.png. */
   image?: string;
   imageAlt?: string;
@@ -17,9 +19,10 @@ interface Props {
 const {
   title,
   wide = false,
+  guide = false,
   description = 'A screenshot, annotation and screen recording app for the Mac menu bar. Free and open source.',
   image = '/og.png',
-  imageAlt = "Shot's menu bar app: a better ⌘⇧4. A support ticket with a highlighted line, an arrow and a note, and the Quick Access card saying Copied. Free and open source, for Mac.",
+  imageAlt = "Shot's menu bar app: a better ⌘⇧4. Shot's editor with a support ticket, its discount line highlighted and an arrow pointing at it, the capture bar, the Quick Access card and a Copied message. Free and open source, for Mac.",
   noindex = false,
 } = Astro.props;
 const fullTitle = title ? `${title} · Shot` : 'Shot: screenshots and screen recording for macOS';
@@ -27,7 +30,48 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(image, Astro.site);
 const release = await latestRelease();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
-const current = (href: string) => (path === href ? 'page' : undefined);
+const current = (href: string) => {
+  const base = href.replace(/\/$/, '');
+  if (base === '/docs/get-started') return path.startsWith('/docs') ? 'page' : undefined;
+  return path === base ? 'page' : undefined;
+};
+const nav = [
+  { label: 'Features', href: '/#features' },
+  { label: 'Guide', href: '/docs/get-started/' },
+  { label: 'FAQ', href: '/#faq' },
+  { label: 'GitHub', href: 'https://github.com/LorcanChinnock/shot' },
+];
+const footer: { title: string; links: [string, string][] }[] = [
+  {
+    title: 'Product',
+    links: [
+      ['Capture', '/docs/take-a-screenshot/'],
+      ['Mark up', '/docs/annotate-a-screenshot/'],
+      ['Record', '/docs/record-your-screen/'],
+      ['Download', '/#install'],
+      ['Other screenshot apps', '/screenshot-apps/'],
+    ],
+  },
+  {
+    title: 'Help',
+    links: [
+      ['Guide', '/docs/get-started/'],
+      ['Keyboard shortcuts', '/docs/keyboard-shortcuts/'],
+      ['Troubleshooting', '/docs/troubleshooting/'],
+      ['Removing Shot', '/docs/removing-shot/'],
+      ['Report a bug', 'https://github.com/LorcanChinnock/shot/issues'],
+    ],
+  },
+  {
+    title: 'Project',
+    links: [
+      ['Changelog', '/changelog/'],
+      ['GitHub', 'https://github.com/LorcanChinnock/shot'],
+      ['Privacy', '/privacy/'],
+      ['Sponsor', '/sponsor'],
+    ],
+  },
+];
 ---
 
 <!doctype html>
@@ -40,8 +84,8 @@ const current = (href: string) => (path === href ? 'page' : undefined);
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#17161b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1c1f" media="(prefers-color-scheme: dark)" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Shot" />
     <meta property="og:title" content={fullTitle} />
@@ -65,25 +109,29 @@ const current = (href: string) => (path === href ? 'page' : undefined);
   </head>
   <body class={wide ? 'wide' : undefined}>
     <a class="skip" href="#main">Skip to content</a>
-    <div class="backdrop" aria-hidden="true">
-      <div class="blob pink"></div>
-      <div class="blob yellow"></div>
-      <div class="blob mint"></div>
-      <div class="blob sky"></div>
-    </div>
 
-    <header class="site-header wrap">
-      <div class="bar card solid">
+    <header class="site-header">
+      <div class="bar wrap">
         <a class="brand" href="/">
-          <img src="/icon-64.png" alt="" width="32" height="32" />
-          <span>Shot<sup>beta</sup></span>
+          <img src="/icon-64.png" alt="" width="36" height="36" />
+          <span>Shot</span>
+          {guide && <span class="brand-guide">guide</span>}
+          <span class="badge quiet">beta</span>
         </a>
-        <nav aria-label="Main">
-          <a href="/docs/get-started/" aria-current={current('/docs')}>Guide</a>
-          <a class="hide-sm" href="/changelog/" aria-current={current('/changelog')}>Changelog</a>
-          <a class="hide-sm" href="https://github.com/LorcanChinnock/shot">GitHub</a>
-          <a class="hide-sm" href="/sponsor">Sponsor</a>
+        <slot name="header" />
+        <nav class="links" aria-label="Main">
+          {nav.map((l) => <a href={l.href} aria-current={current(l.href)}>{l.label}</a>)}
+          <a class="button small" href="/#install">Download free</a>
         </nav>
+        <details class="menu">
+          <summary>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+            Menu
+          </summary>
+          <nav aria-label="Pages">
+            {nav.map((l) => <a href={l.href} aria-current={current(l.href)}>{l.label}</a>)}
+          </nav>
+        </details>
       </div>
     </header>
 
@@ -91,23 +139,22 @@ const current = (href: string) => (path === href ? 'page' : undefined);
       <slot />
     </main>
 
-    <footer class="site-footer wrap">
-      <div class="bar card">
-        <div class="top">
-          <a class="brand" href="/">
-            <img src="/icon-64.png" alt="" width="32" height="32" />
-            <span>Shot</span>
-          </a>
-          <nav aria-label="Footer">
-            <a href="/docs/get-started/">Guide</a>
-            <a href="/changelog/">Changelog</a>
-            <a href="/screenshot-apps/">Other screenshot apps</a>
-            <a href="/privacy/">Privacy</a>
-            <a href="https://github.com/LorcanChinnock/shot">Source</a>
-            <a href="https://github.com/LorcanChinnock/shot/issues">Report a bug</a>
-            <a href="/sponsor">Sponsor</a>
-            <a href="https://github.com/LorcanChinnock/shot/blob/main/LICENSE">GPL-3.0 license</a>
-          </nav>
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="cols">
+          <div class="about">
+            <a class="brand" href="/">
+              <img src="/icon-64.png" alt="" width="28" height="28" />
+              <span>Shot</span>
+            </a>
+            <p>Screenshots, recordings and GIFs for Mac. Free and open source under the <a href="https://github.com/LorcanChinnock/shot/blob/main/LICENSE">GPL-3.0 license</a>.</p>
+          </div>
+          {footer.map((col) => (
+            <nav aria-labelledby={`footer-${col.title.toLowerCase()}`}>
+              <h2 id={`footer-${col.title.toLowerCase()}`}>{col.title}</h2>
+              {col.links.map(([label, href]) => <a href={href}>{label}</a>)}
+            </nav>
+          ))}
         </div>
         <p class="credit">
           <a class="mark" href="https://lorcanchinnock.com"><b aria-hidden="true">LC<i>_</i></b><span>Made by Lorcan Chinnock</span></a>
@@ -115,5 +162,21 @@ const current = (href: string) => (path === href ? 'page' : undefined);
         </p>
       </div>
     </footer>
+
+    <script>
+      // The phone menu is a <details>, so it needs no script to open. This closes it with Escape, or when a link in it is followed on the same page.
+      const menu = document.querySelector<HTMLDetailsElement>('.site-header .menu');
+      if (menu) {
+        menu.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape' && menu.open) {
+            menu.open = false;
+            menu.querySelector('summary')?.focus();
+          }
+        });
+        menu.addEventListener('click', (event) => {
+          if ((event.target as Element).closest('nav a')) menu.open = false;
+        });
+      }
+    </script>
   </body>
 </html>

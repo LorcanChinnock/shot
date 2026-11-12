@@ -1,13 +1,12 @@
 import ShotCore
 import SwiftUI
 
-/// Handles over the player for the selected video clip: drag the box to move it, a corner to scale it, the knob to rotate it,
-/// and double-click it to crop it. The picture follows when the drag ends, once the preview has been rebuilt. The box goes
-/// round the part a crop leaves, which turns and scales about the whole picture's centre.
+/// Handles over the player for the selected video clip, in the selection style the annotations use: a dashed outline in
+/// the system accent colour with white handles. Drag inside the outline to move the clip, a corner to scale it, and the
+/// round handle to rotate it; it sits above the outline, or just inside its top when there's no room above. Double-click
+/// the clip to crop it. The picture follows when the drag ends, once the preview has been rebuilt. The outline goes round
+/// the part a crop leaves, which turns and scales about the whole picture's centre.
 struct TransformOverlay: View {
-    private static let handleSize: CGFloat = 12
-    private static let knobDistance: CGFloat = 22
-
     private struct Origin {
         var values: PropertyValues
         var pointer: CGPoint
@@ -34,7 +33,7 @@ struct TransformOverlay: View {
                 ZStack {
                     Rectangle()
                         .fill(Color.white.opacity(0.001))
-                        .inkBorder(Rectangle(), width: 2, color: Brutal.yellow)
+                        .overlay(Rectangle().stroke(SelectionStyle.color, style: StrokeStyle(lineWidth: SelectionStyle.lineWidth, dash: SelectionStyle.dash)))
                         .frame(width: size.width, height: size.height)
                         .onTapGesture {
                             if NSApp.currentEvent?.clickCount == 2 {
@@ -43,18 +42,22 @@ struct TransformOverlay: View {
                         }
                         .gesture(move(clip, fit: fit))
                         .offset(shift)
+                    // The rotate handle on its stem, above the top edge's middle, or just inside it when above would be
+                    // out of the well's reach.
+                    let flipped = TransformHandles.rotateHandle(center: center, topMiddle: CGVector(dx: shift.width, dy: shift.height - size.height / 2), rotation: transform.rotation, video: geometry.size, inset: CGSize(width: VideoWell.sideInset, height: VideoWell.verticalInset)).flipped
+                    let knob = flipped ? TransformHandles.knobDistance : -TransformHandles.knobDistance
+                    Rectangle()
+                        .fill(SelectionStyle.color)
+                        .frame(width: 1, height: TransformHandles.knobDistance)
+                        .offset(x: shift.width, y: shift.height - size.height / 2 + knob / 2)
+                        .allowsHitTesting(false)
                     ForEach(Array([(-1.0, -1.0), (1, -1), (1, 1), (-1, 1)].enumerated()), id: \.offset) { _, corner in
-                        Rectangle().fill(Brutal.yellow)
-                            .inkBorder(Rectangle(), width: 2)
-                            .frame(width: Self.handleSize, height: Self.handleSize)
+                        SelectionHandle()
                             .offset(x: shift.width + corner.0 * size.width / 2, y: shift.height + corner.1 * size.height / 2)
                             .gesture(scaling(clip, center: center))
                     }
-                    Circle()
-                        .fill(Brutal.pink)
-                        .inkBorder(Circle(), width: 2)
-                        .frame(width: Self.handleSize, height: Self.handleSize)
-                        .offset(x: shift.width, y: shift.height - size.height / 2 - Self.knobDistance)
+                    SelectionHandle(round: true)
+                        .offset(x: shift.width, y: shift.height - size.height / 2 + knob)
                         .gesture(rotating(clip, center: center))
                 }
                 .rotationEffect(.radians(transform.rotation))

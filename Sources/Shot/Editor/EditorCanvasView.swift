@@ -1,9 +1,13 @@
 import AppKit
+import QuartzCore
 import ShotCore
 
 final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private let model: EditorModel
     private var draft: Annotation?
+    /// A counter popping in as it lands, and when it was placed. Only drawing changes: the document already holds it whole.
+    private var landing: (id: UUID, start: CFTimeInterval)?
+    private var landingLink: CADisplayLink?
     /// What dragging in crop mode does, decided where the press landed, with the crop as it was then.
     private enum CropDrag {
         case handle(CropHandle, start: CGRect)
@@ -37,6 +41,18 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var spaceHeld = false
     /// The last view point of a scroll by dragging: with Space held, the hand tool or the middle button.
     private var panPoint: CGPoint?
+    /// Told where the canvas is, in view points, so the backdrop behind it draws its shadow there.
+    var onImageRectChange: ((CGRect) -> Void)?
+    /// The placed image the pointer is over, which shows its crop badge when it has a crop of its own.
+    private var hoveredImageID: UUID? {
+        didSet {
+            if hoveredImageID != oldValue {
+                needsDisplay = true
+                window?.invalidateCursorRects(for: self)
+            }
+        }
+    }
+    private var hoverArea: NSTrackingArea?
 
     init(model: EditorModel) {
         self.model = model
@@ -62,6 +78,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.document.canvasRect
             _ = model.document.background
             _ = model.cropDraft
+            _ = model.cropBarClearance
             _ = model.stylePreview
             _ = model.selectedIDs
             _ = model.tool
@@ -86,7 +103,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     // MARK: Geometry
 
     /// The canvas as it will be once the draft or note being typed is committed, so it grows and shrinks as they do,
-    /// and as a style previewed in the Style popover would make it.
+    /// and as a style previewed in the Style panel would make it.
     private var canvasRect: CGRect { displayDocument.canvasRect }
 
     /// What the canvas draws: the previewed document grown for the pending draft. In crop mode it's uncropped, so
@@ -110,12 +127,18 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// The whole canvas, no larger than actual size.
     private var fitViewport: Viewport {
-        .fit(canvasRect, in: bounds.size, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale))
+        .fit(canvasRect, in: viewportSize, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale))
     }
 
     /// Clamped on every read, so a crop or a window resize never leaves the canvas scrolled away.
     private var viewport: Viewport {
-        zoomedViewport?.clamped(to: canvasRect, in: bounds.size) ?? fitViewport
+        zoomedViewport?.clamped(to: canvasRect, in: viewportSize) ?? fitViewport
+    }
+
+    /// The room the image fits and scrolls in: the view above the crop bar in crop mode, so the crop's bottom handles
+    /// never sit under it, and all of it otherwise.
+    private var viewportSize: CGSize {
+        CGSize(width: bounds.width, height: max(1, bounds.height - (model.tool == .crop ? model.cropBarClearance : 0)))
     }
 
     /// View points per image pixel.
@@ -151,6 +174,29 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Drawing
 
+    /// Pops the counter `id` in over 200 ms with a small overshoot. Reduce Motion shows it at once.
+    private func land(_ id: UUID) {
+        guard !Motion.reduced else {
+            return
+        }
+        landing = (id, CACurrentMediaTime())
+        if landingLink == nil {
+            let link = displayLink(target: self, selector: #selector(landingFrame))
+            link.add(to: .main, forMode: .common)
+            landingLink = link
+        }
+    }
+
+    @objc private func landingFrame(_ link: CADisplayLink) {
+        needsDisplay = true
+        guard let landing, CACurrentMediaTime() - landing.start < Moment.markLand.duration else {
+            landing = nil
+            landingLink?.invalidate()
+            landingLink = nil
+            return
+        }
+    }
+
     /// Marks transparent padding, as image editors do.
     private static let checkerboard = NSColor(patternImage: NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
         NSColor.white.setFill()
@@ -166,6 +212,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         var doc = displayDocument
+        if let landing, let index = doc.annotations.firstIndex(where: { $0.id == landing.id }) {
+            let progress = (CACurrentMediaTime() - landing.start) / Moment.markLand.duration
+            doc.annotations[index] = doc.annotations[index].scaled(by: Moment.popScale(progress))
+        }
         // The text being edited is drawn by its text field instead, a note's over blank paper.
         if let editingText {
             doc.annotations.removeAll { $0.id == editingText.id }
@@ -175,7 +225,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             doc.annotations.append(draft)
         }
         let rect = imageRect
-        let ink = Brutal.inkNS
         if doc.background == nil, doc.hasPadding {
             let padding = NSBezierPath(rect: rect)
             let image = doc.fullRect.intersection(doc.canvasRect)
@@ -202,10 +251,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             AnnotationRenderer.draw(unclipped, base: doc.base, over: doc.annotations[...], in: ctx)
             ctx.restoreGState()
         }
-        ink.setStroke()
-        let frame = NSBezierPath(rect: rect.insetBy(dx: -0.75, dy: -0.75))
-        frame.lineWidth = 1.5
-        frame.stroke()
+        drawImageEdge(around: rect)
 
         for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
             SelectionStyle.outline(viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
@@ -225,37 +271,191 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 }
             }
         }
+        for badge in cropBadges {
+            drawCropBadge(at: badge.center)
+        }
         if model.tool == .crop, let cropDraft = model.cropDraft {
             drawCrop(viewRect(cropDraft), over: viewRect(cropBounds), in: ctx)
         }
     }
 
-    /// Dims and greys out what `crop` leaves out of `canvas`, the canvas or the image being cropped, so it looks switched off, and draws the
-    /// crop's outline and its eight handles.
+    // MARK: Crop badges
+
+    /// The crop badges showing, with their centres in view points: one on each placed image with its own crop that the
+    /// pointer is over or that's selected. There are none in crop mode, while text is typed, or while a drag moves or
+    /// resizes something.
+    private var cropBadges: [(id: UUID, center: CGPoint)] {
+        guard model.tool != .crop, editingText == nil, !(dragStart != nil && movedSinceMouseDown) else {
+            return []
+        }
+        // The single selection shows its resize handles, so its badge steps out past the corner one.
+        let withHandles = model.selection.flatMap { $0.isLocked ? nil : $0.id }
+        return model.document.annotations.compactMap { annotation in
+            let selected = model.selectedIDs.contains(annotation.id)
+            guard CanvasCropBadge.shows(on: annotation, selected: selected, hovered: annotation.id == hoveredImageID) else {
+                return nil
+            }
+            // An image scrolled wholly out of view has no badge; one partly in view keeps its badge inside the edge.
+            let rect = viewRect(annotation.bounds)
+            guard rect.intersects(bounds) else {
+                return nil
+            }
+            return (annotation.id, CanvasCropBadge.center(of: rect, clearOfHandle: annotation.id == withHandles, in: bounds))
+        }
+    }
+
+    /// The image whose crop badge is under `viewPoint`, if any.
+    private func cropBadge(at viewPoint: CGPoint) -> UUID? {
+        cropBadges.last { CanvasCropBadge.contains(viewPoint, center: $0.center) }?.id
+    }
+
+    /// The board's badge: an 18 pt white circle with a 1 pt edge of ink at 20% and a small drop, holding the crop symbol
+    /// in 85% ink. Dark mode uses the floating pills' `#2C2C30` and the light ink, and Increase Contrast a 60% edge.
+    private func drawCropBadge(at center: CGPoint) {
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        let size = CanvasCropBadge.diameter
+        let box = CGRect(x: center.x - size / 2, y: center.y - size / 2, width: size, height: size)
+        let circle = NSBezierPath(ovalIn: box)
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(dark ? 0.4 : 0.2)
+        shadow.shadowBlurRadius = 3
+        shadow.shadowOffset = NSSize(width: 0, height: -1)
+        shadow.set()
+        (dark ? Self.badgeDarkFill : NSColor.white).setFill()
+        circle.fill()
+        NSGraphicsContext.restoreGraphicsState()
+        let ink = dark ? Self.lightInk : Brutal.inkNS
+        let edge = increased ? ink.withAlphaComponent(0.6) : (dark ? NSColor.white.withAlphaComponent(0.18) : ink.withAlphaComponent(0.2))
+        edge.setStroke()
+        let rim = NSBezierPath(ovalIn: box.insetBy(dx: 0.5, dy: 0.5))
+        rim.lineWidth = 1
+        rim.stroke()
+        let symbolColor = increased || dark ? ink : NSColor(srgbRed: 0x3A / 255, green: 0x39 / 255, blue: 0x3F / 255, alpha: 1)
+        let config = NSImage.SymbolConfiguration(pointSize: 9, weight: .bold).applying(.init(paletteColors: [symbolColor]))
+        guard let symbol = NSImage(systemSymbolName: "crop", accessibilityDescription: nil)?.withSymbolConfiguration(config) else {
+            return
+        }
+        let symbolSize = symbol.size
+        symbol.draw(
+            in: CGRect(x: center.x - symbolSize.width / 2, y: center.y - symbolSize.height / 2, width: symbolSize.width, height: symbolSize.height),
+            from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
+        )
+    }
+
+    private static let badgeDarkFill = NSColor(srgbRed: 0x2C / 255, green: 0x2C / 255, blue: 0x30 / 255, alpha: 1)
+    private static let lightInk = NSColor(srgbRed: 0xED / 255, green: 0xEB / 255, blue: 0xE6 / 255, alpha: 1)
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if hoverArea == nil {
+            let area = NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
+            addTrackingArea(area)
+            hoverArea = area
+        }
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        let viewPoint = convert(event.locationInWindow, from: nil)
+        // A badge already showing keeps its image hovered, since it reaches past the image's corner.
+        if let badge = cropBadge(at: viewPoint) {
+            hoveredImageID = badge
+            setToolTip(String(localized: "Crop Image"))
+            return
+        }
+        setToolTip(nil)
+        let point = viewport.imagePoint(viewPoint)
+        let hit = model.document.annotations.topmostIndex(at: point, tolerance: handleTolerance).map { model.document.annotations[$0] }
+        hoveredImageID = hit?.imageFullRect != nil ? hit?.id : nil
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        hoveredImageID = nil
+        setToolTip(nil)
+    }
+
+    private func setToolTip(_ tip: String?) {
+        if toolTip != tip {
+            toolTip = tip
+        }
+    }
+
+    /// The board's hairline just outside the image: ink at 8% (dark white at 10%, half as thick), and 50% ink under
+    /// Increase Contrast. The backdrop draws the soft shadow under it.
+    private func drawImageEdge(around rect: CGRect) {
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let width: CGFloat = dark ? 0.5 : 1
+        let color: NSColor = if NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast {
+            (dark ? NSColor.white : Brutal.inkNS).withAlphaComponent(0.5)
+        } else {
+            dark ? NSColor.white.withAlphaComponent(0.1) : Brutal.inkNS.withAlphaComponent(0.08)
+        }
+        color.setStroke()
+        let edge = NSBezierPath(rect: rect.insetBy(dx: -width / 2, dy: -width / 2))
+        edge.lineWidth = width
+        edge.stroke()
+    }
+
+    /// Washes what `crop` leaves out of `canvas`, the canvas or the image being cropped, in the backdrop's colour, and
+    /// draws the crop as on Edit › Image editor · crop and combine: a 1.5 pt ink outline with a 1 pt edge outside it in
+    /// the opposite colour, a thirds grid, ink L-shaped corners and a short bar in the middle of each side.
     private func drawCrop(_ crop: CGRect, over canvas: CGRect, in ctx: CGContext) {
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
         let outside = NSBezierPath(rect: canvas)
         outside.append(NSBezierPath(rect: crop))
         outside.windingRule = .evenOdd
         ctx.saveGState()
         outside.addClip()
-        ctx.setBlendMode(.saturation)
-        ctx.setFillColor(gray: 0.5, alpha: 1)
-        ctx.fill(canvas)
-        ctx.setBlendMode(.normal)
-        ctx.setFillColor(gray: 0, alpha: 0.45)
-        ctx.fill(canvas)
+        let wash = dark ? NSColor(srgbRed: 0x15 / 255, green: 0x15 / 255, blue: 0x17 / 255, alpha: 1) : NSColor(srgbRed: 0xEC / 255, green: 0xEA / 255, blue: 0xE5 / 255, alpha: 1)
+        wash.withAlphaComponent(increased ? 0.85 : 0.72).setFill()
+        canvas.fill()
         ctx.restoreGState()
-        NSColor.black.withAlphaComponent(0.5).setStroke()
-        let shadow = NSBezierPath(rect: crop)
-        shadow.lineWidth = 3
-        shadow.stroke()
-        NSColor.white.setStroke()
-        let outline = NSBezierPath(rect: crop)
+
+        // The thirds grid, white at 80% (all white under Increase Contrast), inside the crop.
+        NSColor.white.withAlphaComponent(increased ? 1 : 0.8).setFill()
+        for third in [1.0 / 3, 2.0 / 3] {
+            NSRect(x: (crop.minX + crop.width * third).rounded() - 0.5, y: crop.minY, width: 1, height: crop.height).fill()
+            NSRect(x: crop.minX, y: (crop.minY + crop.height * third).rounded() - 0.5, width: crop.width, height: 1).fill()
+        }
+
+        // The ink, light in dark mode, with an edge of the opposite colour outside it, so the outline and marks show on
+        // any screenshot.
+        let ink = dark ? NSColor(srgbRed: 0xED / 255, green: 0xEB / 255, blue: 0xE6 / 255, alpha: 1) : Brutal.inkNS
+        let edge: NSColor = dark ? .black : .white
+        edge.setStroke()
+        let halo = NSBezierPath(rect: crop.insetBy(dx: -0.5, dy: -0.5))
+        halo.lineWidth = 1
+        halo.stroke()
+        ink.setStroke()
+        let outline = NSBezierPath(rect: crop.insetBy(dx: 0.75, dy: 0.75))
         outline.lineWidth = 1.5
         outline.stroke()
-        for handle in CropHandle.allCases {
-            SelectionStyle.handle(at: handle.point(on: crop))
+
+        ink.setFill()
+        for path in Self.cropMarks(crop) {
+            edge.setStroke()
+            path.lineWidth = 2
+            path.stroke()
+            path.fill()
         }
+    }
+
+    /// The crop's corners and side bars, in view points, from ShotCore's `CropMarks`, which the video editor shares.
+    /// Their hit areas are the handles'.
+    private static func cropMarks(_ crop: CGRect) -> [NSBezierPath] {
+        let corners = CropMarks.corners(of: crop).map { points in
+            let path = NSBezierPath()
+            path.move(to: points[0])
+            points.dropFirst().forEach { path.line(to: $0) }
+            path.close()
+            return path
+        }
+        let bars = CropMarks.bars(of: crop).map { NSBezierPath(roundedRect: $0, xRadius: CropMarks.barRadius, yRadius: CropMarks.barRadius) }
+        return corners + bars
     }
 
     /// Where a press in crop mode lands decides whether dragging resizes, moves or redraws the crop.
@@ -313,6 +513,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: restingCursor)
+        guard !spaceHeld, model.tool != .hand else {
+            return
+        }
+        let size = CanvasCropBadge.diameter
+        for badge in cropBadges {
+            addCursorRect(CGRect(x: badge.center.x - size / 2, y: badge.center.y - size / 2, width: size, height: size), cursor: .pointingHand)
+        }
     }
 
     private func beginPan(_ event: NSEvent) {
@@ -345,6 +552,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         window?.makeFirstResponder(self)
         if spaceHeld || model.tool == .hand {
             beginPan(event)
+            return
+        }
+        // The crop badge adjusts its image's crop, whichever tool is picked, as the Layers panel's badge does.
+        if let badge = cropBadge(at: convert(event.locationInWindow, from: nil)) {
+            movedSinceMouseDown = false
+            model.cropImage(badge)
             return
         }
         let point = imagePoint(event)
@@ -400,7 +613,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 model.selectedID = pressedText.id
             }
         case .counter:
-            model.add(Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth))
+            let counter = Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth)
+            model.add(counter)
+            land(counter.id)
         case .text:
             // Pressing existing text selects it to move or edit instead of starting more text on top of it.
             pressedText = textOrNote(at: point)
@@ -786,7 +1001,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard zoom != currentZoom else {
             return
         }
-        zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: canvasRect, in: bounds.size)
+        zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: canvasRect, in: viewportSize)
         viewportDidChange()
     }
 
@@ -795,7 +1010,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard zoomedViewport != nil else {
             return
         }
-        zoomedViewport = viewport.panned(by: offset).clamped(to: canvasRect, in: bounds.size)
+        zoomedViewport = viewport.panned(by: offset).clamped(to: canvasRect, in: viewportSize)
         viewportDidChange()
     }
 
@@ -836,14 +1051,35 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         pan(by: CGVector(dx: event.scrollingDeltaX * step, dy: event.scrollingDeltaY * step))
     }
 
-    /// Shows the new zoom in the toolbar and keeps an open text field over its text.
+    /// Shows the new zoom in the zoom control, moves the image's shadow, and keeps an open text field over its text.
     private func viewportDidChange() {
         let zoom = currentZoom
         if model.zoom != zoom {
             model.zoom = zoom
         }
         layoutTextField()
+        updateStyleBar()
+        onImageRectChange?(imageRect)
         needsDisplay = true
+    }
+
+    /// Tells the style bar where the mark it styles is, and to step aside while a drag draws, moves, resizes or crops.
+    private func updateStyleBar() {
+        let dragging = dragStart != nil && (draft != nil || movedSinceMouseDown || cropDrag != nil)
+        if model.isCanvasDragging != dragging {
+            model.isCanvasDragging = dragging
+        }
+        let mark = (editingPaper ?? editedText ?? model.selection).flatMap { annotation -> CGRect? in
+            let bounds = annotation.bounds
+            guard !bounds.isNull else {
+                return nil
+            }
+            let outline = viewRect(bounds.insetBy(dx: -annotation.lineWidth / 2, dy: -annotation.lineWidth / 2))
+            return outline.insetBy(dx: -StyleBarPlacement.markPadding, dy: -StyleBarPlacement.markPadding)
+        }
+        if model.styleBarMark != mark {
+            model.styleBarMark = mark
+        }
     }
 
     // MARK: Text
@@ -916,6 +1152,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     func controlTextDidChange(_ notification: Notification) {
         layoutTextField()
+        updateStyleBar()
     }
 
     var isEditingText: Bool { textField != nil }

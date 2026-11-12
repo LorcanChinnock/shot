@@ -205,7 +205,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         if case .shape = kind { cornerBox != nil } else { false }
     }
 
-    /// True for what the Style popover and a pasted style can set a corner radius on: a placed image or a shape with corners.
+    /// True for what the style sections and a pasted style can set a corner radius on: a placed image or a shape with corners.
     public var takesCornerRadius: Bool {
         styleKind?.takesCorners == true || roundsShape
     }

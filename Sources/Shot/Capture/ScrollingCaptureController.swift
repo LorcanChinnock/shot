@@ -17,6 +17,12 @@ final class ScrollCaptureModel {
     var viewport = CGRect.zero
     /// The image so far at an eighth of its size, clear where nothing has been seen.
     var preview: CGImage?
+    /// Frames the image is built from so far.
+    var framesKept = 0
+    /// Whether a sticky header was found, which the image shows once.
+    var hasStickyHeader = false
+    /// The side the image is growing on, where the preview shows the yellow edge and "Not yet".
+    var frontier = ScrollFrontier.bottom
 }
 
 /// Runs one scrolling capture: streams the area while the person scrolls it themselves, stitches the frames as they
@@ -131,7 +137,7 @@ final class ScrollingCaptureController: NSObject {
         }
         // Shot's own windows, the panel and outline included, never appear in the frames.
         let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        let mainWindows = content.windows.filter { $0.windowID == MainWindowController.windowID }
+        let mainWindows = content.windows.filter { ShotWindows.capturable.contains($0.windowID) }
         let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: mainWindows)
         let config = SCStreamConfiguration()
         config.sourceRect = Geometry.displayLocalTopLeft(region, screenFrame: screen.frame)
@@ -151,7 +157,7 @@ final class ScrollingCaptureController: NSObject {
     // MARK: Panels
 
     private func showPanels() {
-        let border = RecordingBorderPanel(region: region, style: .outline(Self.outlineColor(for: model.status)))
+        let border = RecordingBorderPanel(region: region, style: .scrolling)
         border.orderFrontRegardless()
         self.border = border
         let panel = ScrollCapturePanel(model: model, region: region, screen: screen, actions: .init(
@@ -160,7 +166,6 @@ final class ScrollingCaptureController: NSObject {
         ))
         panel.orderFrontRegardless()
         self.panel = panel
-        observeStatus()
     }
 
     private func hidePanels() {
@@ -168,30 +173,6 @@ final class ScrollingCaptureController: NSObject {
         border = nil
         panel?.orderOut(nil)
         panel = nil
-    }
-
-    /// Keeps the outline's colour with the status.
-    private func observeStatus() {
-        withObservationTracking {
-            _ = model.status
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                guard let self, let border = self.border else {
-                    return
-                }
-                border.setStyle(.outline(Self.outlineColor(for: self.model.status)))
-                self.observeStatus()
-            }
-        }
-    }
-
-    static func outlineColor(for status: ScrollCaptureStatus) -> NSColor {
-        switch status {
-        case .ready: Brutal.inkNS
-        case .live: Brutal.mintNS
-        case .sizeLimit: Brutal.yellowNS
-        case .tooFar, .changing, .notEnough: Brutal.redNS
-        }
     }
 }
 
@@ -268,7 +249,10 @@ private final class ScrollFrameSink: NSObject, SCStreamOutput, @unchecked Sendab
         }
         Task { @MainActor [model] in
             model.status = update.status
+            model.frontier = ScrollFrontier.after(model.frontier, oldSize: model.size, newSize: update.size, viewport: update.viewport)
             model.size = update.size
+            model.framesKept = update.framesKept
+            model.hasStickyHeader = update.hasStickyHeader
             model.viewport = update.viewport
             if let preview {
                 model.preview = preview.image
@@ -293,10 +277,12 @@ private final class ScrollFrameSink: NSObject, SCStreamOutput, @unchecked Sendab
 
 // MARK: Panel
 
-/// The panel beside the area: a status chip and the size, a preview of the image so far with the unseen parts hatched
-/// and the area outlined, one message when something needs attention, and Done and Cancel. It takes no keyboard
-/// focus, so the content's app keeps scrolling with the keyboard, and it grows to fit what it shows.
-private final class ScrollCapturePanel: NSPanel {
+/// The panel beside the area (Capture › Scrolling capture): a status heading, a preview of the image so far with what
+/// isn't covered yet hatched and a yellow edge where the area is, the size, frames kept and whether a sticky header
+/// was found, a warning card when something needs attention, and Cancel and Done. Unlike the other floating panels it
+/// follows the appearance, as the board draws it. It takes no keyboard focus, so the content's app keeps scrolling
+/// with the keyboard, and it grows to fit what it shows.
+private final class ScrollCapturePanel: FloatingPanelWindow {
     struct Actions {
         let done: @MainActor () -> Void
         let cancel: @MainActor () -> Void
@@ -309,12 +295,9 @@ private final class ScrollCapturePanel: NSPanel {
     init(model: ScrollCaptureModel, region: CGRect, screen: NSScreen, actions: Actions) {
         self.region = region
         room = screen.visibleFrame
-        let size = NSSize(width: ScrollCaptureView.width + 4, height: 200)
-        super.init(contentRect: NSRect(origin: ScrollCapturePanelPlacement.origin(for: size, region: region, visible: screen.visibleFrame), size: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        let size = NSSize(width: ScrollCaptureView.width, height: 420)
+        super.init(contentRect: NSRect(origin: ScrollCapturePanelPlacement.origin(for: size, region: region, visible: screen.visibleFrame), size: size))
         level = .statusBar
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = false
         isMovableByWindowBackground = true
         becomesKeyOnlyIfNeeded = true
         isReleasedWhenClosed = false
@@ -337,57 +320,106 @@ private final class ScrollCapturePanel: NSPanel {
 }
 
 private struct ScrollCaptureView: View {
-    static let width: CGFloat = 268
+    static let width: CGFloat = 300
+    static let radius: CGFloat = 16
 
     let model: ScrollCaptureModel
     let actions: ScrollCapturePanel.Actions
     let onSize: (CGSize) -> Void
+    @Environment(\.textSize) private var textSize
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                BrutalChip(text: model.status.title, color: chipColor)
-                BrutalChip(text: sizeText)
-                Spacer(minLength: 0)
+        VStack(spacing: 0) {
+            header
+            Brutal.separator.frame(height: 1)
+            HStack(alignment: .top, spacing: 12) {
+                ScrollPreview(model: model)
+                facts
             }
-            ScrollPreview(image: model.preview, size: model.size, viewport: model.viewport)
-            if let message = model.status.message {
-                Text(message)
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            HStack {
-                Button("Cancel") { actions.cancel() }
-                    .buttonStyle(BrutalButtonStyle(compact: true))
-                    .brutalTip("Cancel (Esc)")
-                Spacer()
-                Button {
-                    actions.done()
-                } label: {
-                    Label("Done", systemImage: "checkmark").labelStyle(.titleAndIcon).fixedSize()
-                }
-                .buttonStyle(BrutalButtonStyle(color: Brutal.mint, compact: true))
-                .brutalTip("Save and copy (Return)")
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            Brutal.separator.frame(height: 1)
+            footer
+        }
+        // Wider at larger text sizes, so the facts and the footer keep their size rather than shrinking or truncating.
+        .frame(width: (Self.width * textSize.scale).rounded())
+        .modifier(ScrollPanelSurface(shape: RoundedRectangle(cornerRadius: Self.radius, style: .circular)))
+        .fixedSize()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Scrolling capture"))
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { onSize($0) }
+        .onChange(of: model.status) { _, status in
+            if let warning = status.warning {
+                AccessibilityNotification.Announcement("\(warning.title). \(warning.advice)").post()
             }
         }
-        .padding(14)
-        .frame(width: Self.width)
-        .brutalSurface(Brutal.paper.opacity(0.72), glass: true, radius: 14, shadow: 4)
-        .padding(.trailing, 4)
-        .padding(.bottom, 4)
-        .fixedSize()
-        .onGeometryChange(for: CGSize.self) { $0.size } action: { onSize($0) }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var chipColor: Color {
-        switch model.status {
-        case .ready: Brutal.paper
-        case .live: Brutal.mint
-        case .sizeLimit: Brutal.yellow
-        case .tooFar, .changing, .notEnough: Brutal.red
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                StatusDot(live: model.status == .live)
+                Text(model.status.heading)
+                    .font(.scaled(14, weight: .bold))
+                    .foregroundStyle(Brutal.ink)
+            }
+            Text(model.status.detail)
+                .font(.scaled(12))
+                .foregroundStyle(Brutal.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var facts: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Fact(label: "Size") {
+                Text(sizeText).font(Brutal.numbers)
+            }
+            Fact(label: "Frames kept") {
+                Text(model.framesKept.formatted()).font(Brutal.numbers)
+            }
+            Fact(label: "Sticky header") {
+                Text(model.hasStickyHeader ? "Kept once" : "None found").font(.scaled(12, weight: .semibold))
+            }
+            Spacer(minLength: 0)
+            if let warning = model.status.warning {
+                WarningCard(title: warning.title, advice: warning.advice)
+            }
+        }
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var footer: some View {
+        HStack(spacing: 8) {
+            Text("Esc discards")
+                .font(Brutal.caption)
+                .foregroundStyle(Brutal.tertiaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Cancel") { actions.cancel() }
+                .buttonStyle(BrutalButtonStyle())
+                .brutalTip("Discard the capture", key: "Esc")
+            Button {
+                actions.done()
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Done")
+                    Text(verbatim: "↩").font(.scaled(11)).opacity(0.7).accessibilityHidden(true)
+                }
+                .fixedSize()
+            }
+            .buttonStyle(BrutalButtonStyle(.main))
+            .accessibilityLabel(Text("Done"))
+            .brutalTip("Save and copy", key: "↩")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private var sizeText: String {
@@ -395,63 +427,143 @@ private struct ScrollCaptureView: View {
     }
 }
 
-/// The image so far, scaled to fit, over hatching that shows through where nothing has been seen, with the area
-/// outlined so the person can tell where they are and scroll back to fill a gap.
-private struct ScrollPreview: View {
-    let image: CGImage?
-    let size: CGSize
-    let viewport: CGRect
+private let scrollPanelFill = Color(light: Color(red: 250 / 255, green: 249 / 255, blue: 246 / 255), dark: Color(hex: 0x2C2C30))
 
-    private static let maxWidth = ScrollCaptureView.width - 28
-    private static let maxHeight: CGFloat = 220
+/// The panel's surface: the board's warm white in light, the popover grey in dark. It's solid, unlike the board's 96%,
+/// because the panel sits beside content that's moving and text behind it showed through. The system window shadow
+/// goes round it.
+private struct ScrollPanelSurface<S: InsettableShape>: ViewModifier {
+    let shape: S
+    @Environment(\.colorSchemeContrast) private var contrast
 
-    var body: some View {
-        let fitted = fittedSize
-        let scale = size.width > 0 ? fitted.width / size.width : 1
-        ZStack(alignment: .topLeading) {
-            Hatching()
-            if let image {
-                Image(decorative: image, scale: 1)
-                    .resizable()
-                    .interpolation(.medium)
-                    .frame(width: fitted.width, height: fitted.height)
-            }
-            if size.width > 0 {
-                Color.clear
-                    .inkBorder(Rectangle(), width: 2, color: Brutal.sky)
-                    .frame(width: max(4, viewport.width * scale), height: max(4, viewport.height * scale))
-                    .offset(x: viewport.minX * scale, y: viewport.minY * scale)
-            }
-        }
-        .frame(width: fitted.width, height: fitted.height)
-        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular), width: 2)
-        .accessibilityLabel(Text("Preview of the image so far"))
-    }
-
-    /// The preview's size: the image's shape within the panel, and a square before there is one.
-    private var fittedSize: CGSize {
-        guard size.width > 0, size.height > 0 else {
-            return CGSize(width: Self.maxWidth, height: Self.maxWidth * 0.6)
-        }
-        let scale = min(Self.maxWidth / size.width, Self.maxHeight / size.height)
-        return CGSize(width: max(24, (size.width * scale).rounded()), height: max(24, (size.height * scale).rounded()))
+    func body(content: Content) -> some View {
+        let increased = contrast == .increased
+        content
+            .background(scrollPanelFill, in: shape)
+            .inkBorder(shape, width: 0.5, color: Color(light: .black.opacity(increased ? 0.5 : 0.25), dark: .white.opacity(increased ? 0.4 : 0.14)))
     }
 }
 
-/// Diagonal hatching, which marks what hasn't been seen.
+/// Green with a soft ring while frames are being added; grey otherwise, since the heading and warning card say why.
+private struct StatusDot: View {
+    let live: Bool
+
+    var body: some View {
+        Circle()
+            .fill(live ? Brutal.success : Brutal.tertiaryText)
+            .frame(width: 8, height: 8)
+            .background(Circle().fill(Brutal.success.opacity(live ? 0.22 : 0)).frame(width: 14, height: 14))
+            .accessibilityHidden(true)
+    }
+}
+
+/// A label over its value, read by VoiceOver as one.
+private struct Fact<Value: View>: View {
+    let label: LocalizedStringResource
+    @ViewBuilder let value: Value
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.scaled(12))
+                .foregroundStyle(Brutal.tertiaryText)
+            value
+                .foregroundStyle(Brutal.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The yellow card for a status that needs attention.
+private struct WarningCard: View {
+    let title: String
+    let advice: String
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    private static let fill = Color(light: Color(hex: 0xFFF4D6), dark: Color(hex: 0xF2CC4A).opacity(0.14))
+    private static let text = Color(light: Color(hex: 0x6B4F00), dark: Color(hex: 0xF2CC4A))
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let edge = contrast == .increased ? 0.6 : 0.25
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.scaled(12, weight: .semibold))
+            Text(advice).font(.scaled(12)).lineSpacing(2).fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(Self.text)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Self.fill, in: shape)
+        .inkBorder(shape, width: 1, color: Color(light: Color(hex: 0x8A6A00).opacity(edge), dark: Color(hex: 0xF2CC4A).opacity(edge + 0.1)))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The image so far over hatching, which shows through where nothing has been seen and fills the room past the
+/// frontier marked "Not yet", with a yellow edge where the area is so the person can tell how far they've come.
+private struct ScrollPreview: View {
+    let model: ScrollCaptureModel
+
+    static let size = CGSize(width: 150, height: 280)
+    private static let reserve: CGFloat = 40
+
+    var body: some View {
+        let layout = ScrollPreviewLayout(size: model.size, viewport: model.viewport, frontier: model.frontier, box: Self.size, reserve: Self.reserve, growing: model.status != .sizeLimit)
+        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        ZStack(alignment: .topLeading) {
+            Hatching()
+            if let image = model.preview {
+                Image(decorative: image, scale: 1)
+                    .resizable()
+                    .interpolation(.medium)
+                    .frame(width: layout.image.width, height: layout.image.height)
+                    .offset(x: layout.image.minX, y: layout.image.minY)
+            }
+            if let notYet = layout.notYet, notYet.height >= 22, notYet.width >= 52 {
+                Text("Not yet")
+                    .font(.scaled(10, weight: .semibold))
+                    .foregroundStyle(Brutal.secondaryText)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Brutal.window, in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                    .frame(width: notYet.width, height: notYet.height)
+                    .offset(x: notYet.minX, y: notYet.minY)
+            }
+            if let edge = layout.edge {
+                Brutal.accent
+                    .inkBorder(Rectangle(), width: 0.5, color: Brutal.line)
+                    .frame(width: edge.width, height: edge.height)
+                    .offset(x: edge.minX, y: edge.minY)
+            }
+        }
+        .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
+        .clipShape(shape)
+        .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
+        .accessibilityElement()
+        .accessibilityLabel(Text("Preview of the image so far"))
+    }
+}
+
+/// Diagonal stripes on the window colour, which mark what hasn't been seen.
 private struct Hatching: View {
+    @Environment(\.colorSchemeContrast) private var contrast
+
     var body: some View {
         Canvas { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Brutal.well))
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Brutal.window))
             var path = Path()
-            let step: CGFloat = 8
+            // 6 pt stripes every 12 pt, measured across them, as the board's 135° gradient draws them.
+            let step = 12 * 2.squareRoot()
             var x = -size.height
             while x < size.width {
                 path.move(to: CGPoint(x: x, y: size.height))
                 path.addLine(to: CGPoint(x: x + size.height, y: 0))
                 x += step
             }
-            context.stroke(path, with: .color(Brutal.ink.opacity(0.18)), lineWidth: 1)
+            context.stroke(path, with: .color(Brutal.ink.opacity(contrast == .increased ? 0.22 : 0.1)), lineWidth: 6)
         }
     }
 }

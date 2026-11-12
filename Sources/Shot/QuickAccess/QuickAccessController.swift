@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import os
 import Observation
 import ShotCore
@@ -8,8 +9,6 @@ private let log = Logger.shot("quick-access")
 
 struct QuickAccessCard: Identifiable {
     static let width = QuickAccessLayout.cardWidth
-    static let minHeight: CGFloat = 135
-    static let maxHeight: CGFloat = 180
 
     let id = UUID()
     let fileURL: URL
@@ -18,23 +17,24 @@ struct QuickAccessCard: Identifiable {
     /// The capture with the style Use this style for new captures gave it, which Copy and dragging use in place of the
     /// plain file; `nil` while it's drawn, and for a capture with no style.
     var styledURL: URL?
+    /// A recording's length in seconds, once it's read; `nil` before then and for a screenshot.
+    var duration: Double?
 
-    var height: CGFloat {
-        let size = thumbnail.size
-        guard size.width > 0 else {
-            return Self.maxHeight
-        }
-        return min(Self.maxHeight, max(Self.minHeight, (Self.width * size.height / size.width).rounded()))
-    }
+    var height: CGFloat { QuickAccessLayout.cardHeight(for: thumbnail.size) }
 }
 
 @MainActor
 @Observable
 final class QuickAccessModel {
     var cards: [QuickAccessCard] = []
+    /// Whether every card shows in full, as it does while the pointer is on the stack, rather than the older ones
+    /// waiting behind the newest.
+    var isFannedOut = false
+
+    var layout: QuickAccessLayout { QuickAccessLayout(cardHeights: cards.map(\.height), fannedOut: isFannedOut) }
 }
 
-/// A card's action, for its right-click menu and the menu Space opens. With `children`, it's a submenu of them instead.
+/// A card's action, for its right-click menu and VoiceOver's actions. With `children`, it's a submenu of them instead.
 struct QuickAccessCardAction {
     let title: String
     var children: [QuickAccessCardAction] = []
@@ -45,15 +45,17 @@ struct QuickAccessCardAction {
 final class QuickAccessController {
     static let shared = QuickAccessController()
     static let maxCards = 5
-    static let inset: CGFloat = 20
+    static let inset = QuickAccessLayout.screenInset
 
     var onAnnotate: ((URL) -> Void)?
     var onExportGIF: ((URL) -> Void)?
 
     private let model = QuickAccessModel()
-    private var panel: NSPanel?
+    private var panel: FloatingPanelWindow?
     private var timers: [UUID: Task<Void, Never>] = [:]
     private var settleTask: Task<Void, Never>?
+    /// Watch the pointer while the stack is fanned out, to fold it again once the pointer leaves.
+    private var pointerMonitors: [Any] = []
 
     /// How long a card's exit takes; the panel keeps its size until then so the card isn't clipped mid-slide.
     private static let exitDuration: Duration = .milliseconds(350)
@@ -99,26 +101,40 @@ final class QuickAccessController {
 
     func add(videoURL: URL, thumbnail: CGImage?) {
         let image = thumbnail.map { NSImage(cgImage: $0, size: .zero) } ?? NSImage(systemSymbolName: "film", accessibilityDescription: nil) ?? NSImage()
-        add(QuickAccessCard(fileURL: videoURL, thumbnail: image, isVideo: true))
+        let card = QuickAccessCard(fileURL: videoURL, thumbnail: image, isVideo: true)
+        add(card)
+        // The length badge comes a moment after the card, so reading the file never holds the card up.
+        Task { @MainActor [weak self] in
+            guard let seconds = try? await AVURLAsset(url: videoURL).load(.duration).seconds, seconds.isFinite,
+                  let self, let index = self.model.cards.firstIndex(where: { $0.id == card.id }) else {
+                return
+            }
+            self.model.cards[index].duration = seconds
+        }
     }
 
     private func add(_ card: QuickAccessCard) {
+        let opening = Perf.begin("Quick Access open")
         settleTask?.cancel()
         ensurePanel()
-        layout(for: model.cards + [card])
+        // The panel only grows now, so the card that was in front isn't clipped as it moves behind the new one. It takes
+        // its exact size once the cards have settled.
+        layout(for: model.cards + [card], growOnly: true)
         panel?.orderFrontRegardless()
         // A panel that was just ordered in has to render empty first, or the card has nothing to animate from.
         Task { @MainActor [weak self] in
             guard let self else {
                 return
             }
-            withAnimation(QuickAccessMotion.enter) {
+            withAnimation(Motion.arrive) {
                 self.model.cards.append(card)
             }
+            Perf.endAtCommit("Quick Access open", opening, "card")
             while self.model.cards.count > Self.maxCards {
                 self.remove(self.model.cards[0].id)
             }
             self.startTimer(for: card.id)
+            self.settle()
         }
     }
 
@@ -127,9 +143,18 @@ final class QuickAccessController {
         if let styled = model.cards.first(where: { $0.id == id })?.styledURL {
             Self.removeStyled(styled)
         }
-        withAnimation(QuickAccessMotion.exit) {
+        withAnimation(Motion.leave) {
             model.cards.removeAll { $0.id == id }
         }
+        if model.cards.isEmpty {
+            fold()
+        }
+        settle()
+    }
+
+    /// Once the cards have finished moving, sizes the panel to them, or hides it when there are none, and works the
+    /// system shadow out again, since it follows what's drawn.
+    private func settle() {
         settleTask?.cancel()
         settleTask = Task { [weak self] in
             try? await Task.sleep(for: Self.exitDuration)
@@ -140,16 +165,81 @@ final class QuickAccessController {
                 self.panel?.orderOut(nil)
             } else {
                 self.layout()
+                self.panel?.refreshShadow()
             }
         }
     }
 
-    /// Leaving a card restarts its timer. Entering doesn't cancel it: when cards reflow under a
-    /// still pointer the exit can be missed, so expiry checks the pointer instead.
+    /// Entering a card fans the stack out. Leaving a card restarts its timer. Entering doesn't cancel it: when cards
+    /// reflow under a still pointer the exit can be missed, so expiry checks the pointer instead.
     func setHovering(_ hovering: Bool, card id: UUID) {
-        if !hovering {
+        if hovering {
+            fanOut()
+        } else {
             startTimer(for: id)
         }
+    }
+
+    /// Shows every card in full, so an older one can be reached. The newest stays where it is, and the older ones move
+    /// up above it.
+    private func fanOut() {
+        guard !model.isFannedOut, model.cards.count > 1 else {
+            return
+        }
+        settleTask?.cancel()
+        layout(for: model.cards, fannedOut: true, growOnly: true)
+        withAnimation(Motion.arrive) {
+            model.isFannedOut = true
+        }
+        watchPointer()
+        settle()
+    }
+
+    /// Puts the older cards back behind the newest once the pointer has left the panel.
+    private func foldIfPointerLeft() {
+        guard model.isFannedOut, !isPointerOverStack else {
+            return
+        }
+        fold()
+        settle()
+    }
+
+    private func fold() {
+        stopWatchingPointer()
+        guard model.isFannedOut else {
+            return
+        }
+        withAnimation(Motion.leave) {
+            model.isFannedOut = false
+        }
+    }
+
+    /// The pointer leaving can't be seen from the cards alone: it may leave through a gap between them, where the panel
+    /// is see-through and gets no events. So while fanned out, every pointer move checks whether it's left the panel.
+    /// A drag doesn't count, so dragging a card out doesn't fold the stack under it.
+    private func watchPointer() {
+        guard pointerMonitors.isEmpty else {
+            return
+        }
+        let check: @Sendable (NSEvent) -> Void = { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.foldIfPointerLeft()
+            }
+        }
+        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: check) {
+            pointerMonitors.append(monitor)
+        }
+        if let monitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved, handler: { event in
+            check(event)
+            return event
+        }) {
+            pointerMonitors.append(monitor)
+        }
+    }
+
+    private func stopWatchingPointer() {
+        pointerMonitors.forEach(NSEvent.removeMonitor)
+        pointerMonitors.removeAll()
     }
 
     private func startTimer(for id: UUID) {
@@ -163,7 +253,8 @@ final class QuickAccessController {
             guard !Task.isCancelled, let self else {
                 return
             }
-            if self.isPointerOver(id) {
+            // Every card waits while the pointer is on the stack, so none moves under it.
+            if self.isPointerOverStack {
                 self.startTimer(for: id)
             } else {
                 self.remove(id)
@@ -171,24 +262,20 @@ final class QuickAccessController {
         }
     }
 
-    private func isPointerOver(_ id: UUID) -> Bool {
+    /// Whether the pointer is on the panel, cards and the gaps between them included.
+    private var isPointerOverStack: Bool {
         guard let panel, panel.isVisible else {
             return false
         }
-        guard let index = model.cards.firstIndex(where: { $0.id == id }) else {
-            return false
-        }
-        let frame = QuickAccessLayout(cardHeights: model.cards.map(\.height)).cardFrames[index]
-        return frame.offsetBy(dx: panel.frame.minX, dy: panel.frame.minY).contains(NSEvent.mouseLocation)
+        return panel.frame.contains(NSEvent.mouseLocation)
     }
 
     private func ensurePanel() {
         if panel == nil {
-            let panel = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+            // The system shadow follows each card's shape and, unlike one drawn in SwiftUI, needs no margin that
+            // would catch clicks.
+            let panel = FloatingPanelWindow(contentRect: .zero)
             panel.level = .floating
-            panel.isOpaque = false
-            panel.backgroundColor = .clear
-            panel.hasShadow = false
             panel.becomesKeyOnlyIfNeeded = true
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
@@ -197,15 +284,31 @@ final class QuickAccessController {
         }
     }
 
+    /// How far a card's outer edge sits in from the screen's side and bottom.
+    static var cardEdgeInset: CGFloat { inset + QuickAccessLayout.padding }
+
+    /// The top of the cards in screen coordinates while any are showing on `screen`, so a toast there can rest above
+    /// them. Nil when the cards are on another display, where they'd say nothing about this one.
+    func cardsTop(on screen: NSScreen) -> CGFloat? {
+        guard let panel, panel.isVisible, !model.cards.isEmpty, panel.screen == screen else {
+            return nil
+        }
+        return panel.frame.maxY - QuickAccessLayout.padding
+    }
+
     private func layout() {
         layout(for: model.cards)
     }
 
-    private func layout(for cards: [QuickAccessCard]) {
+    /// Sizes and places the panel for `cards`. With `growOnly`, it never gets smaller, so cards still moving aren't clipped.
+    private func layout(for cards: [QuickAccessCard], fannedOut: Bool? = nil, growOnly: Bool = false) {
         guard let panel else {
             return
         }
-        let size = QuickAccessLayout(cardHeights: cards.map(\.height)).size
+        var size = QuickAccessLayout(cardHeights: cards.map(\.height), fannedOut: fannedOut ?? model.isFannedOut).size
+        if growOnly, panel.isVisible {
+            size.height = max(size.height, panel.frame.height)
+        }
         let screen = NSScreen.underPointer ?? NSScreen.screens[0]
         let visible = screen.visibleFrame
         let x = Preferences().quickAccessPosition == .left ? visible.minX + Self.inset : visible.maxX - Self.inset - size.width
@@ -214,7 +317,7 @@ final class QuickAccessController {
     }
 
     /// The card's actions in menu order, with `nil` for a divider: the hover buttons' actions, plus Copy Path and
-    /// Pin, which have no button.
+    /// Show in Finder, which have no button.
     func actions(for card: QuickAccessCard) -> [QuickAccessCardAction?] {
         var actions: [QuickAccessCardAction?] = [
             QuickAccessCardAction(title: String(localized: "Copy")) { self.copy(card) },
@@ -241,13 +344,13 @@ final class QuickAccessController {
             Toast.error("Couldn't read \(card.fileURL.lastPathComponent)")
             return
         }
-        Toast.show("Copied")
+        Toast.done("Copied")
     }
 
     /// Copies the file's path as text.
     func copyPath(_ card: QuickAccessCard) {
         Clipboard.copy(string: card.fileURL.path)
-        Toast.show("Copied path")
+        Toast.done("Copied path")
     }
 
     func saveAs(_ card: QuickAccessCard) {
@@ -261,7 +364,7 @@ final class QuickAccessController {
         // Saving over the capture's own file has nothing to copy.
         let source = card.fileURL
         if destination.resolvingSymlinksInPath().standardizedFileURL == source.resolvingSymlinksInPath().standardizedFileURL {
-            Toast.show("Saved \(destination.lastPathComponent)")
+            Toast.done("Saved \(destination.lastPathComponent)")
             return
         }
         do {
@@ -274,7 +377,7 @@ final class QuickAccessController {
             } else {
                 try FileManager.default.copyItem(at: source, to: destination)
             }
-            Toast.show("Saved \(destination.lastPathComponent)")
+            Toast.done("Saved \(destination.lastPathComponent)")
         } catch {
             Toast.error("Couldn't save: \(error.localizedDescription)")
         }

@@ -1,307 +1,588 @@
-/* Tokens mirror Sources/Shot/Design/BrutalStyle.swift; DESIGN.md says how the site uses them. */
+/* Tokens from docs/redesign/spec.md (App values and Website values); DESIGN.md says how the site uses them. */
+@font-face {
+  font-family: "Caveat";
+  src: url("/fonts/caveat-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --ink: #12121a;
-  /* Borders and hard shadows. The same as ink in light mode; near-black in dark, like Brutal.line. */
-  --line: #12121a;
-  /* Text on an accent fill stays near-black in both themes. */
-  --on-accent: #12121a;
-  --bg: #f6f4ef;
-  /* The raised fill under ink: buttons, keycaps, code and search. */
+  /* Neutrals: the app's window, group and text colours. */
+  --bg: #f7f6f3;
+  --surface: #fff;
   --paper: #fff;
-  --glass: rgb(255 255 255 / 0.42);
-  --glass-strong: rgb(255 255 255 / 0.72);
-  --well: rgb(18 18 26 / 0.07);
-  --muted: rgb(18 18 26 / 0.68);
-  --dots: rgb(18 18 26 / 0.10);
-  --blob: 1;
+  --control: #f1efea;
+  --ink: #16161a;
+  --muted: #55545a;
+  --tertiary: #6b6a70;
+  --hairline: rgb(22 22 26 / 0.08);
+  --edge: rgb(22 22 26 / 0.16);
+  --hover: rgb(22 22 26 / 0.07);
+  --well: rgb(22 22 26 / 0.06);
+  --dots: rgb(22 22 26 / 0.09);
+  --soft-shadow: 0 2px 4px rgb(22 22 26 / 0.06);
+  --float-shadow: 0 12px 32px rgb(22 22 26 / 0.14);
+  --code-bg: #fff;
 
-  --yellow: #ffd43b;
-  --pink: #ff7ab6;
-  --mint: #4fe3b5;
-  --sky: #6fc3ff;
-  --violet: #9b8cff;
-  --red: #ff5c5c;
-  --orange: #ff9f43;
-  --lime: #b6e24b;
+  /* Ink: outlines and hard drops. Text on the accent stays near-black in both themes. */
+  --line: #16161a;
+  --on-accent: #16161a;
 
-  --border: 3px;
+  /* Each colour has one job: yellow is the accent, red is Shot's own marks. */
+  --accent: #ffd43b;
+  --accent-text: #8a6a00;
+  --record: #e5352b;
+  --red-text: #c4271e;
+  --copied: #7fd8a0;
+
+  /* Pastel panels sit behind product shots, never behind text-only content. */
+  --sand: #f3d9b1;
+  --lilac: #dcd6f2;
+  --sky-panel: #c9dceb;
+  --blush: #f2d3d8;
+  --sage: #d8e8d0;
+
+  /* Sticky notes, callouts and scope tags keep their light colours in dark too, like paper. */
+  --note: #fff1a8;
+  --note-text: #3d3000;
+  --note-heading: #6b4f00;
+  --tag-capture: #f9c6ce;
+  --tag-editor: #bfe3f5;
+  --tag-gallery: #d8e8d0;
+  --tag-release: #dcd6f2;
+
+  /* The dark band: the scrolling strip, the install command and dark cards. */
+  --band: #16161a;
+  --band-text: #edebe6;
+  --band-muted: #b9b7be;
+
+  /* Shape and ink. */
+  --border: 2px;
   --radius: 12px;
+  --radius-card: 18px;
+  --radius-ink: 20px;
+  --radius-panel: 26px;
   --shadow: 4px;
-  --gap: 16px;
-  --ease-out: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --ink-ring: 0 0 0 2px var(--line);
+  --ink-drop: 0 4px 0 var(--line);
+
+  /* Motion tokens (spec › Website values › Motion). */
+  --press: 80ms linear;
+  --pop: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --sweep: 700ms cubic-bezier(0.6, 0, 0.2, 1);
+  --draw: 500ms ease-out;
+  --hover-ease: 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
   --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --hand: "Caveat", "Bradley Hand", "Segoe Print", cursive;
 
   color-scheme: light dark;
 }
 
-/* Dark mode, as in the app: depth by lightness, near-black lines and shadows, off-white text and softer accents. */
+/* Dark mode: the app's dark neutrals and dark accent, until the Website boards get a dark version. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --ink: #e6e3dc;
-    --line: #050507;
-    --bg: #17161b;
-    --paper: #38373e;
-    --glass: rgb(44 43 49 / 0.82);
-    --glass-strong: rgb(44 43 49 / 0.94);
+    --bg: #1c1c1f;
+    --surface: #2c2c30;
+    --paper: #3a3a3f;
+    --control: #3a3a3f;
+    --ink: #edebe6;
+    --muted: #a9a7ae;
+    --tertiary: #a9a7ae;
+    --hairline: rgb(255 255 255 / 0.08);
+    --edge: rgb(255 255 255 / 0.14);
+    --hover: rgb(255 255 255 / 0.08);
     --well: rgb(255 255 255 / 0.07);
-    --muted: rgb(230 227 220 / 0.7);
-    --dots: rgb(255 255 255 / 0.07);
-    --blob: 0.36;
+    --dots: rgb(255 255 255 / 0.06);
+    --soft-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
+    --float-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+    /* Code sits in the app's dark well, where Shiki's dark colours pass 4.5:1. */
+    --code-bg: #1c1c1f;
 
-    --yellow: #edcb55;
-    --pink: #e58bb3;
-    --mint: #62cdab;
-    --sky: #80bbe6;
-    --violet: #9c92e3;
-    --red: #e26c6c;
-    --orange: #e8a060;
-    --lime: #b1cf62;
+    --line: #050507;
+    --accent: #f2cc4a;
+    --accent-text: #f2cc4a;
+    --record: #ff453a;
+    --red-text: #ff7b72;
+
+    /* Pastels step down into the dark surface so a panel doesn't glare. */
+    --sand: color-mix(in srgb, #f3d9b1 26%, #2c2c30);
+    --lilac: color-mix(in srgb, #dcd6f2 26%, #2c2c30);
+    --sky-panel: color-mix(in srgb, #c9dceb 26%, #2c2c30);
+    --blush: color-mix(in srgb, #f2d3d8 26%, #2c2c30);
+    --sage: color-mix(in srgb, #d8e8d0 26%, #2c2c30);
+
+    --band: #111113;
   }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 88px; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 24px; }
 
 body {
   margin: 0;
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
-  font: 500 17px/1.55 var(--font);
+  font: 400 16.5px/1.65 var(--font);
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
 }
 
 img, video { display: block; max-width: 100%; height: auto; }
-a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 3px; }
-a:hover { text-decoration-color: var(--pink); }
-:focus-visible { outline: 3px solid var(--sky); outline-offset: 3px; border-radius: 4px; }
-::selection { background: var(--yellow); color: var(--on-accent); }
+a { color: inherit; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--accent); }
+/* An ink ring, so focus shows on the page, on yellow and on the dark band alike. */
+:focus-visible { outline: 2.5px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
+.dark-band :focus-visible, .marquee :focus-visible { outline-color: var(--band-text); }
+::selection { background: var(--accent); color: var(--on-accent); }
 
-h1, h2, h3 { font-family: var(--display); font-weight: 900; letter-spacing: -0.025em; line-height: 1.05; margin: 0; text-wrap: balance; }
+h1, h2, h3 { font-family: var(--display); font-weight: 900; line-height: 1.05; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(36px, 4.6vw, 56px); letter-spacing: -0.04em; line-height: 1.02; }
+h2 { font-size: 30px; letter-spacing: -0.03em; }
+h3 { letter-spacing: -0.015em; }
 p { text-wrap: pretty; }
 code, kbd { font-family: var(--mono); }
+.lede { font-size: 20px; line-height: 1.5; color: var(--muted); }
 
 .skip {
   position: absolute; left: 16px; top: -100px; z-index: 100;
   padding: 10px 16px; font-weight: 800; text-decoration: none;
-  color: var(--on-accent); background: var(--yellow);
-  border: var(--border) solid var(--line); border-radius: 10px;
+  color: var(--on-accent); background: var(--accent);
+  border: 2px solid var(--line); border-radius: 10px;
 }
 .skip:focus { top: 16px; }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* Backdrop: drifting colour blobs and a dot grid, like GlassBackdrop. */
-.backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-.backdrop::after {
-  content: ""; position: absolute; inset: 0;
-  background-image: radial-gradient(circle, var(--dots) 0.8px, transparent 1.2px);
-  background-size: 18px 18px;
-  mask-image: radial-gradient(ellipse at center, #000 30%, rgb(0 0 0 / 0.3) 100%);
-}
-.blob {
-  position: absolute; border-radius: 50%; filter: blur(8px); opacity: var(--blob);
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--c) var(--o), transparent), color-mix(in srgb, var(--c) calc(var(--o) / 2), transparent) 45%, transparent);
-  animation: drift var(--period) ease-in-out infinite alternate;
-}
-.blob.pink   { --c: var(--pink);   --o: 55%; --period: 31s; width: 60vmax; height: 60vmax; left: -20vmax; top: -18vmax; }
-.blob.sky    { --c: var(--sky);    --o: 55%; --period: 37s; width: 66vmax; height: 66vmax; right: -24vmax; bottom: -26vmax; }
-.blob.yellow { --c: var(--yellow); --o: 50%; --period: 43s; width: 48vmax; height: 48vmax; right: -12vmax; top: -16vmax; }
-.blob.mint   { --c: var(--mint);   --o: 45%; --period: 29s; width: 44vmax; height: 44vmax; left: -14vmax; bottom: -18vmax; }
-@keyframes drift { to { transform: translate(6vmax, 5vmax) scale(1.08); } }
+/* ---------- Surfaces ---------- */
 
-/* Surfaces */
+/* A quiet card: the app's group fill and a hairline. Ink is saved for the action. */
 .card {
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  backdrop-filter: blur(18px) saturate(1.4);
-  border: var(--border) solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow) var(--shadow) 0 var(--line);
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 0 0 1px var(--hairline);
 }
-.card.solid { background: var(--glass-strong); }
-a.card { transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out); }
-a.card:hover { transform: translate(-2px, -2px); box-shadow: calc(var(--shadow) + 2px) calc(var(--shadow) + 2px) 0 var(--line); }
-a.card:active { transform: translate(var(--shadow), var(--shadow)); box-shadow: 0 0 0 var(--line); transition-duration: 40ms; }
+a.card { text-decoration: none; transition: transform var(--hover-ease), box-shadow var(--hover-ease); }
+a.card:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px var(--edge), var(--float-shadow); }
 
-.chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px;
-  font: 800 12px/1.4 var(--font); letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--on-accent);
-  background: var(--chip, var(--yellow));
-  border: 2px solid var(--line); border-radius: 999px;
+/* An ink card. Add .tilt to tilt it at rest and straighten and lift it on hover. */
+.ink-card {
+  background: var(--surface);
+  border-radius: var(--radius-ink);
+  box-shadow: var(--ink-ring), var(--ink-drop);
 }
+.tilt { transform: rotate(var(--tilt, -1.2deg)); transition: transform var(--hover-ease), box-shadow var(--hover-ease); }
+.tilt:hover, .tilt:focus-within { transform: rotate(0deg) translateY(-4px); }
 
-/* Buttons */
+/* A pastel panel behind a product shot: .panel.sand, .lilac, .sky, .blush or .sage. */
+.panel { border-radius: var(--radius-panel); background: var(--panel, var(--sand)); color: var(--ink); }
+.panel.sand { --panel: var(--sand); }
+.panel.lilac { --panel: var(--lilac); }
+.panel.sky { --panel: var(--sky-panel); }
+.panel.blush { --panel: var(--blush); }
+.panel.sage { --panel: var(--sage); }
+
+/* The dark band, for the scrolling strip and dark cards. */
+.dark-band { background: var(--band); color: var(--band-text); border-radius: var(--radius-card); }
+
+/* ---------- Buttons ---------- */
+
+/* The ink button: the one action a page wants you to take next. */
 .button {
-  --fill: var(--yellow);
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  min-height: 48px; padding: 10px 20px;
-  font: 800 17px/1.2 var(--font); text-decoration: none; color: var(--on-accent);
-  background: var(--fill);
-  border: var(--border) solid var(--line); border-radius: var(--radius);
-  box-shadow: var(--shadow) var(--shadow) 0 var(--line);
+  min-height: 48px; padding: 11px 22px;
+  font: 800 16px/1.2 var(--font); text-decoration: none; color: var(--on-accent);
+  background: var(--accent);
+  border: 2px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--ink-drop);
   cursor: pointer;
-  transition: transform 100ms var(--ease-out), box-shadow 100ms var(--ease-out);
+  transition: transform var(--press), box-shadow var(--press), background-color var(--press);
 }
-.button:hover { transform: translate(-1px, -1px); box-shadow: calc(var(--shadow) + 1px) calc(var(--shadow) + 1px) 0 var(--line); text-decoration: none; }
-.button:active { transform: translate(var(--shadow), var(--shadow)); box-shadow: 0 0 0 var(--line); transition-duration: 40ms; }
-.button.small { min-height: 38px; padding: 6px 14px; font-size: 15px; border-radius: 10px; box-shadow: 3px 3px 0 var(--line); }
-.button.small:active { transform: translate(3px, 3px); }
-/* A neutral button follows the theme, like the app's paper. */
-.button.white { --fill: var(--paper); color: var(--ink); }
+.button:hover { text-decoration: none; }
+.button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.button.small {
+  min-height: 36px; padding: 6px 16px;
+  font-size: 14.5px; font-weight: 700;
+  border-width: 1.5px; border-radius: 10px;
+  box-shadow: 0 2px 0 var(--line);
+}
+.button.small:active { transform: translateY(2px); box-shadow: 0 0 0 var(--line); }
+/* Secondary: white (raised grey in dark), a soft edge and no ink. */
+.button.secondary, .button.white {
+  color: var(--ink); background: var(--surface); font-weight: 600;
+  border-color: transparent;
+  box-shadow: 0 0 0 1px var(--edge), var(--soft-shadow);
+}
+.button.secondary:hover, .button.white:hover { background: color-mix(in srgb, var(--surface), var(--ink) 4%); }
+.button.secondary:active, .button.white:active { transform: none; box-shadow: 0 0 0 1px var(--edge); background: var(--control); }
 .button .sub { font-weight: 600; font-size: 13px; opacity: 0.7; }
 
-/* Key caps press down like a button, into their shadow. */
+/* A plain link to what's next. */
+.go { font-weight: 800; font-size: 15px; text-decoration: none; }
+.go::after { content: " →"; display: inline-block; white-space: pre; transition: transform var(--hover-ease); }
+.go:hover::after { transform: translateX(3px); }
+
+/* ---------- Keys, badges and tags ---------- */
+
+/* Key caps press down into their shadow. In text they use 1.5 px ink and a 2 px drop. */
 kbd.key, .prose kbd {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 1.9em; padding: 0.1em 0.45em;
-  font: 800 0.9em/1.3 var(--font); white-space: nowrap;
+  min-width: 1.9em; padding: 0.05em 0.45em; margin-bottom: 2px;
+  font: 800 0.9em/1.35 var(--font); white-space: nowrap;
   color: var(--ink);
   background: var(--paper);
-  border: 2px solid var(--line); border-radius: 7px;
-  box-shadow: 2px 2px 0 var(--line);
-  transition: transform 80ms ease-out, box-shadow 80ms ease-out;
+  border-radius: 7px;
+  box-shadow: 0 0 0 1.5px var(--line), 0 2px 0 var(--line);
+  transition: transform var(--press), box-shadow var(--press);
 }
-kbd.key:hover, .prose kbd:hover { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--line); }
+kbd.key:hover, .prose kbd:hover { transform: translateY(2px); box-shadow: 0 0 0 1.5px var(--line), 0 0 0 var(--line); }
+/* A big key cap, in a heading or the hero: 2 px ink and a 4 px drop. */
+kbd.key.big { min-width: 1.6em; padding: 0.05em 0.3em; margin-bottom: 4px; border-radius: 10px; box-shadow: var(--ink-ring), var(--ink-drop); }
+kbd.key.big:hover { transform: translateY(3px); box-shadow: var(--ink-ring), 0 1px 0 var(--line); }
+kbd.key.accent { background: var(--accent); color: var(--on-accent); }
 
-/* Layout */
-.wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
+/* A badge: Latest on the accent with an ink ring, .dark for Free, .quiet for beta. */
+.badge, .chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 10px;
+  font: 800 12px/1.5 var(--font);
+  color: var(--on-accent);
+  background: var(--chip, var(--accent));
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.badge.dark { padding: 1px 8px; font-size: 11px; font-weight: 700; color: var(--bg); background: var(--ink); box-shadow: none; }
+.badge.quiet { padding: 1px 6px; font-size: 11px; font-weight: 600; border-radius: 5px; color: var(--muted); background: var(--well); box-shadow: none; }
+
+/* A scope tag, for the changelog's areas. Like paper, it keeps its light colour in dark, so its dark text stays readable. */
+.tag {
+  display: inline-block; padding: 0 7px;
+  font: 700 12px/1.6 var(--font); color: #16161a;
+  background: var(--tag, #f1efea); border-radius: 6px;
+}
+.tag.capture { --tag: var(--tag-capture); }
+.tag.editor { --tag: var(--tag-editor); }
+.tag.gallery { --tag: var(--tag-gallery); }
+.tag.release { --tag: var(--tag-release); }
+
+/* ---------- Tabs and questions ---------- */
+
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tabs [role="tab"], .tabs label {
+  font: 700 14px/1.2 var(--font); color: var(--ink);
+  min-height: 40px; padding: 8px 14px;
+  background: var(--surface); border: 1.5px solid var(--edge); border-radius: 11px;
+  cursor: pointer;
+  transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), background-color 200ms;
+}
+.tabs [role="tab"][aria-selected="true"], .tabs label:has(input:checked) {
+  color: var(--on-accent); background: var(--accent); border-color: var(--line);
+  box-shadow: 0 3px 0 var(--line); transform: translateY(-2px);
+}
+
+/* Tabs without a script: a radio group whose labels look like tabs. The arrow keys move between them, and the page
+   shows the checked one's panel with :has() (the landing page's Capture section). */
+.tabs label { display: inline-flex; align-items: center; gap: 8px; }
+.tabs label svg { flex: none; }
+.tabs label input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.tabs label:has(input:focus-visible) { outline: 2.5px solid var(--ink); outline-offset: 3px; }
+
+/* A question that opens: <details class="faq"><summary>…</summary><p>…</p></details>. No script. */
+.faq {
+  background: var(--surface); border-radius: 16px;
+  box-shadow: 0 0 0 1px var(--hairline);
+  transition: box-shadow 250ms;
+}
+.faq[open] { box-shadow: 0 0 0 1.5px var(--line), 0 4px 0 var(--line); }
+.faq summary {
+  --plus: var(--ink);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 52px; padding: 12px 16px;
+  font-weight: 800; font-size: 15.5px; cursor: pointer; list-style: none;
+  border-radius: 16px;
+}
+.faq summary::-webkit-details-marker { display: none; }
+/* The plus turns into a cross as the answer opens. */
+.faq summary::after {
+  content: ""; flex: none; width: 28px; height: 28px; border-radius: 9px;
+  background:
+    linear-gradient(var(--plus), var(--plus)) center / 12px 3px no-repeat,
+    linear-gradient(var(--plus), var(--plus)) center / 3px 12px no-repeat,
+    var(--control);
+  transition: background-color 200ms;
+}
+.faq[open] summary { --plus: var(--on-accent); }
+.faq[open] summary::after {
+  --x: transparent calc(50% - 1.5px), var(--plus) calc(50% - 1.5px) calc(50% + 1.5px), transparent calc(50% + 1.5px);
+  background:
+    linear-gradient(45deg, var(--x)) center / 11px 11px no-repeat,
+    linear-gradient(-45deg, var(--x)) center / 11px 11px no-repeat,
+    var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.faq > :not(summary) { margin: 0; padding: 0 16px 14px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+
+/* ---------- Shot's marks: page ornament drawn with the app's own tools ---------- */
+
+/* The highlighter under one word per heading. */
+.hl {
+  padding: 0 0.06em;
+  background-image: linear-gradient(transparent 56%, var(--accent) 56%, var(--accent) 94%, transparent 94%);
+  background-repeat: no-repeat; background-size: 100% 100%;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+@media (prefers-color-scheme: dark) {
+  /* Light text on yellow fails contrast, so in dark the stroke sits lower, under the letters. */
+  .hl { background-image: linear-gradient(transparent 80%, var(--accent) 80%, var(--accent) 96%, transparent 96%); }
+}
+
+/* Marks are decoration: anchored to what they label, hidden from assistive tech, and gone under 860 px. */
+.anchor { position: relative; }
+.deco { pointer-events: none; user-select: none; }
+@media (max-width: 860px) { .deco { display: none !important; } }
+
+/* The counter badge, as the app's step tool draws it. */
+.counter {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  font: 900 16px/1 var(--display); color: #fff;
+  background: #e5352b;
+  box-shadow: 0 0 0 2.5px #fff;
+}
+
+/* A drawn arrow: an inline SVG with a .shaft path and a .head shape. Set --len to the path's length. */
+.arrow { overflow: visible; color: #e5352b; }
+.arrow .shaft { fill: none; stroke: currentColor; stroke-width: 4.5; stroke-linecap: round; stroke-dasharray: var(--len, 120); }
+.arrow .head { fill: currentColor; }
+
+/* A sticky note. Handwriting appears here only, never in text you need to read. */
+.note {
+  display: inline-block; max-width: 190px;
+  padding: 12px 14px 16px;
+  font: 700 22px/1 var(--hand); letter-spacing: 0;
+  color: var(--note-text); background: var(--note);
+  box-shadow: 0 8px 18px rgb(22 22 26 / 0.16);
+  transform: rotate(var(--r, -3deg));
+}
+
+/* The scrolling band: list the items twice so the loop is seamless, and hide the copy from assistive tech. */
+.marquee { overflow: hidden; padding: 12px 0; background: var(--band); color: var(--band-text); border-radius: 14px; transform: rotate(-0.8deg); }
+.marquee > ul { display: flex; width: max-content; margin: 0; padding: 0; list-style: none; }
+.marquee li { padding-right: 36px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+/* ---------- Layout ---------- */
+
+.wrap { width: min(1240px, 100% - 32px); margin-inline: auto; }
 .narrow { width: min(760px, 100% - 32px); margin-inline: auto; }
-/* Guide pages with a right-hand rail are wider, header and footer included. */
-@media (min-width: 1280px) { .wide .wrap { width: min(1320px, 100% - 32px); } }
+/* Guide pages are wider, header and footer included. */
+.wide .wrap { width: min(1360px, 100% - 32px); }
 section { padding-block: clamp(48px, 8vw, 96px); }
 .section-head { max-width: 660px; margin-bottom: 36px; }
-.section-head h2 { font-size: clamp(32px, 5vw, 52px); margin-top: 14px; }
+.section-head h2 { font-size: clamp(30px, 4vw, 44px); margin-top: 14px; }
 .section-head p { color: var(--muted); font-size: 19px; margin: 14px 0 0; }
 
-/* Header */
-.site-header {
-  position: sticky; top: 12px; z-index: 10;
-  margin-top: 12px;
-  view-transition-name: site-header;
+/* ---------- Header ---------- */
+
+.site-header { position: relative; z-index: 10; view-transition-name: site-header; }
+.site-header .bar { display: flex; align-items: center; gap: 12px 24px; padding-block: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 19px/1 var(--display); text-decoration: none; letter-spacing: -0.01em; }
+.brand img { width: 36px; height: 36px; transition: transform var(--hover-ease); }
+.brand:hover img { transform: rotate(-6deg); }
+/* "Shot guide" on the guide's pages: the board's red, in the system font, since handwriting is for sticky notes only. */
+.brand .brand-guide { margin-left: -4px; color: var(--red-text); font-weight: 800; }
+.site-header .links { display: flex; align-items: center; gap: 4px; margin-left: auto; font-size: 14.5px; }
+.site-header .links a:not(.button) { padding: 6px 12px; font-weight: 500; text-decoration: none; border-radius: 8px; transition: background-color 150ms; }
+.site-header .links a:not(.button):hover, .site-header .links a[aria-current="page"] { background: var(--hover); }
+.site-header .links a[aria-current="page"] { font-weight: 700; }
+.site-header .links .button { margin-left: 6px; white-space: nowrap; }
+
+/* The phone menu: the logo and Download stay, and the links move behind a Menu button. */
+.site-header .menu { display: none; position: relative; }
+.site-header .menu summary {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 8px 14px;
+  font-weight: 600; font-size: 15px; list-style: none; cursor: pointer;
+  background: var(--surface); border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--edge), var(--soft-shadow);
 }
-.site-header .bar {
-  display: flex; align-items: center; gap: 12px;
-  padding: 8px 8px 8px 12px;
+.site-header .menu summary::-webkit-details-marker { display: none; }
+.site-header .menu nav {
+  position: absolute; right: 0; top: calc(100% + 8px);
+  display: grid; min-width: 220px; padding: 6px;
+  background: var(--surface); border-radius: 14px;
+  box-shadow: 0 0 0 1px var(--edge), var(--float-shadow);
 }
-.brand { display: flex; align-items: center; gap: 10px; font: 900 20px/1 var(--display); text-decoration: none; letter-spacing: -0.02em; }
-.brand img { width: 32px; height: 32px; transition: transform 300ms var(--ease-out); }
-.brand:hover img { transform: rotate(-8deg) scale(1.08); }
-.brand sup { font: 800 12px/1 var(--font); letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 6px; color: var(--on-accent); border: 2px solid var(--line); border-radius: 999px; background: var(--pink); vertical-align: 6px; margin-left: 2px; }
-.site-header nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
-.site-header nav a:not(.button) { padding: 6px 10px; font-weight: 700; font-size: 15px; text-decoration: none; border-radius: 8px; }
-.site-header nav a:not(.button):hover, .site-header nav a[aria-current="page"] { background: var(--well); }
-@media (max-width: 560px) {
-  .site-header nav a.hide-sm { display: none; }
+.site-header .menu nav a { display: flex; align-items: center; min-height: 44px; padding: 8px 12px; font-weight: 600; text-decoration: none; border-radius: 9px; }
+.site-header .menu nav a:hover, .site-header .menu nav a[aria-current="page"] { background: var(--hover); }
+@media (max-width: 720px) {
+  .site-header .links a:not(.button) { display: none; }
+  .site-header .menu { display: block; }
+  .site-header .bar { gap: 8px; }
 }
-/* The smallest phones can't fit the badge beside Guide and Download. */
-@media (max-width: 380px) {
-  .brand sup { display: none; }
-  .site-header nav a:not(.button) { padding-inline: 6px; }
-  .site-header nav .button.small { padding-inline: 10px; }
+/* Phones drop the beta badge so Download and Menu fit on one line. */
+@media (max-width: 430px) {
+  .brand .badge, .brand .brand-guide { display: none; }
+  .site-header .links .button { padding-inline: 12px; margin-left: 0; }
 }
 
-/* Footer */
-.site-footer { padding: 48px 0 40px; }
-.site-footer .bar { display: grid; gap: 20px; padding: 24px; }
-.site-footer .top { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; justify-content: space-between; }
-.site-footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-weight: 700; font-size: 15px; }
-.site-footer nav a { text-decoration: none; }
-.site-footer nav a:hover { text-decoration: underline; }
-.site-footer .credit { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-top: 18px; border-top: 2px solid var(--well); color: var(--muted); font-size: 14px; }
+/* ---------- Footer ---------- */
+
+.site-footer { margin-top: 48px; border-top: 1px solid var(--hairline); }
+.site-footer .cols { display: flex; flex-wrap: wrap; gap: 32px 64px; padding: 40px 0 32px; }
+.site-footer .about { flex: 1 1 260px; display: grid; align-content: start; gap: 10px; }
+.site-footer .about .brand { font-size: 17px; }
+.site-footer .about .brand img { width: 28px; height: 28px; }
+.site-footer .about p { margin: 0; max-width: 34ch; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.site-footer .about p a { white-space: nowrap; }
+.site-footer nav { display: grid; align-content: start; gap: 9px; min-width: 140px; font-size: 14px; }
+.site-footer nav h2 { font: 800 14px/1.4 var(--font); letter-spacing: 0; }
+.site-footer nav a { color: var(--muted); text-decoration: none; }
+.site-footer nav a:hover { color: var(--ink); text-decoration: underline; }
+.site-footer .credit { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 18px 0 48px; border-top: 1px solid var(--hairline); color: var(--muted); font-size: 14px; }
 .site-footer .credit a { color: var(--ink); font-weight: 700; }
+@media (max-width: 560px) {
+  .site-footer .cols { flex-direction: column; gap: 28px; }
+}
 /* The maker's mark: LC_ from lorcanchinnock.com, in Shot's ink with a yellow underscore. */
 .mark { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
-.mark b { font: 900 15px/1 var(--mono); letter-spacing: -0.04em; padding: 4px 5px; border: 2px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
-.mark b i { font-style: normal; color: var(--yellow); -webkit-text-stroke: 0.5px var(--line); }
+.mark b { font: 900 15px/1 var(--mono); letter-spacing: -0.04em; padding: 4px 5px; border-radius: 6px; background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1.5px var(--line); }
+.mark b i { font-style: normal; color: var(--accent); -webkit-text-stroke: 0.5px var(--line); }
 
-/* Prose (docs, changelog, privacy) */
+/* ---------- Prose: the base for the guide and the long-form pages (Prose.astro and the guide's page add the board's look) ---------- */
+
 .prose { padding: clamp(20px, 4vw, 44px); }
-.prose h1 { font-size: clamp(36px, 6vw, 56px); margin-bottom: 20px; }
-.prose h2 { font-size: 30px; margin: 48px 0 12px; padding-top: 24px; border-top: var(--border) solid var(--line); }
-.prose h3 { font-size: 21px; margin: 32px 0 8px; letter-spacing: -0.015em; }
+.prose h1 { margin-bottom: 20px; }
+.prose h2 { margin: 48px 0 12px; padding-top: 24px; border-top: 1px solid var(--hairline); }
+.prose h3 { font-size: 21px; margin: 32px 0 8px; }
 .prose h1 + p, .prose h1 + ul { margin-top: 0; }
 .prose ul { padding-left: 1.2em; }
 .prose li { margin: 6px 0; }
 .prose li::marker { color: var(--ink); }
 .prose strong { font-weight: 800; }
 .prose code { font-size: 0.86em; padding: 0.1em 0.35em; background: var(--well); border-radius: 5px; }
-.prose pre { margin: 0; padding: 16px; overflow-x: auto; border: 2px solid var(--line); border-radius: 10px; background: var(--paper) !important; box-shadow: 3px 3px 0 var(--line); }
+.prose pre { margin: 0; padding: 16px; overflow-x: auto; border-radius: 12px; background: var(--code-bg) !important; box-shadow: 0 0 0 1px var(--edge); }
 .prose pre code { padding: 0; background: none; }
 /* Shiki writes both themes; dark mode swaps to the dark one. */
 @media (prefers-color-scheme: dark) {
   .prose .astro-code, .prose .astro-code span { color: var(--shiki-dark) !important; }
 }
 .prose table { width: 100%; border-collapse: collapse; font-size: 15px; margin: 16px 0; display: block; overflow-x: auto; }
-.prose th, .prose td { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--well); vertical-align: top; }
-.prose th { border-bottom: var(--border) solid var(--line); font-weight: 800; }
+.prose th, .prose td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+.prose th { border-bottom: 1.5px solid var(--edge); font-weight: 800; }
 .prose a { font-weight: 600; }
-.prose img { border: 2px solid var(--line); border-radius: 10px; }
+.prose img { border-radius: 12px; box-shadow: 0 0 0 1px var(--edge); }
 
 /* A code block with its Copy button (rehypeCodeCopy in src/lib/guide.ts). */
 .prose .code { position: relative; margin: 16px 0; }
-.prose .code .copy-code { position: absolute; top: 8px; right: 8px; min-height: 30px; padding: 3px 10px; font-size: 13px; border-width: 2px; border-radius: 8px; box-shadow: 2px 2px 0 var(--line); opacity: 0; }
+.prose .code .copy-code { position: absolute; top: 8px; right: 8px; min-height: 30px; padding: 3px 10px; font-size: 13px; border-radius: 8px; opacity: 0; }
 .prose .code .copy-code[hidden] { display: none; }
 .prose .code:hover .copy-code, .prose .code .copy-code:focus-visible, .prose .code .copy-code.done { opacity: 1; }
 @media (hover: none) { .prose .code .copy-code { opacity: 1; } }
-.prose .code .copy-code:active { transform: translate(2px, 2px); }
+.prose .code .copy-code.done { color: #16161a; background: var(--copied); }
 
 /* Guide pieces: key caps, numbered steps and callouts (written as GitHub alerts, `> [!TIP]`). */
-.prose kbd { display: inline-block; min-width: 1.7em; padding: 0 0.4em; font-size: 0.86em; line-height: 1.5; text-align: center; border-radius: 6px; }
+.prose kbd { min-width: 1.7em; padding: 0 0.4em; font-size: 0.86em; line-height: 1.5; border-radius: 6px; }
 .prose ol { list-style: none; counter-reset: step; padding-left: 0; display: grid; gap: 10px; }
 .prose ol > li { counter-increment: step; position: relative; margin: 0; padding-left: 44px; min-height: 30px; }
+/* Numbered steps use the counter badge: Shot's red with a white ring. */
 .prose ol > li::before {
   content: counter(step);
-  position: absolute; left: 0; top: -1px;
-  width: 30px; height: 30px; display: grid; place-items: center;
-  font: 900 15px/1 var(--display);
-  color: var(--on-accent);
-  background: var(--accent, var(--yellow));
-  border: 2px solid var(--line); border-radius: 50%;
+  position: absolute; left: 2px; top: 0;
+  width: 28px; height: 28px; display: grid; place-items: center;
+  font: 900 14px/1 var(--display);
+  color: #fff; background: #e5352b;
+  border-radius: 50%; box-shadow: 0 0 0 2.5px #fff;
 }
-.prose .callout { margin: 24px 0; padding: 14px 18px; border: 2px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--callout) 14%, var(--paper)); box-shadow: 3px 3px 0 var(--line); }
+.prose .callout { margin: 24px 0; padding: 14px 18px; border-radius: 14px; }
 .prose .callout > p { margin: 0; }
 .prose .callout > p + p { margin-top: 8px; }
-.prose .callout-label { display: flex; align-items: center; gap: 8px; font: 800 12px/1.6 var(--font); letter-spacing: 0.06em; text-transform: uppercase; }
-.prose .callout-label::before { content: ""; width: 10px; height: 10px; border: 2px solid var(--line); border-radius: 50%; background: var(--callout); }
-.prose .callout.tip { --callout: var(--mint); }
-.prose .callout.note { --callout: var(--sky); }
-.prose .callout.warning { --callout: var(--red); }
-.prose p > img:only-child { margin-block: 8px; box-shadow: 4px 4px 0 var(--line); }
+.prose .callout-label { display: flex; align-items: center; gap: 8px; font: 800 13px/1.6 var(--font); }
+.prose .callout-tip { background: var(--note); color: var(--note-text); }
+.prose .callout-tip .callout-label { color: var(--note-heading); }
+.prose .callout-note { background: #dcebf7; color: #173e73; box-shadow: inset 0 0 0 1px rgb(29 95 184 / 0.18); }
+.prose .callout-note .callout-label { color: #1d5fb8; }
+.prose .callout-warning { background: color-mix(in srgb, var(--record) 12%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--record) 35%, transparent); }
+.prose .callout-warning .callout-label { color: var(--red-text); }
+.prose .callout a, .prose .callout code { color: inherit; }
+.prose .callout kbd { color: #16161a; background: #fff; }
 
-/* Motion. Everything here is decoration on content that's already visible, so a browser without it loses nothing. */
+/* ---------- Motion ----------
+   Everything here is decoration on content that's already visible, so a browser without it loses nothing.
+   It all sits behind no-preference: with Reduce Motion on, nothing moves and the page shows its last frame. */
 @media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+
   /* Cross-document view transitions: the header stays put and the page fades through. */
   @view-transition { navigation: auto; }
   ::view-transition-old(root) { animation: 160ms ease-in both page-out; }
   ::view-transition-new(root) { animation: 260ms var(--ease-out) both page-in; }
 
-  /* The numbered steps in the guide pop in. */
-  .prose ol > li::before { animation: badge 500ms 150ms var(--ease-out) both; }
+  /* Pop: badges, notes and counters arrive with a small overshoot. Set --delay to stagger them. */
+  .pop { animation: pop var(--pop) var(--delay, 0ms) both; }
+  /* Sweep: the highlighter draws under its word. */
+  .hl { animation: sweep var(--sweep) var(--delay, 300ms) both; }
+  /* Draw: an arrow draws towards what it points at, then its head appears. */
+  .arrow .shaft { animation: draw var(--draw) var(--delay, 600ms) both; }
+  .arrow .head { animation: fade-in 120ms calc(var(--delay, 600ms) + 400ms) both; }
 
-  /* Sections lift in as they scroll into view. */
+  /* Ambient loops. */
+  .counter.pulse { animation: pulse 2.4s var(--delay, 0ms) infinite; }
+  .note.wobble { animation: wobble 4s ease-in-out infinite; }
+  .float { animation: float 5s ease-in-out infinite; }
+  kbd.key.press { animation: key-press 4s var(--delay, 0ms) infinite; }
+  .marquee > ul { animation: marquee var(--marquee, 32s) linear infinite; }
+  .marquee:hover > ul { animation-play-state: paused; }
+
+  /* The numbered steps in the guide pop in. */
+  .prose ol > li::before { animation: pop var(--pop) 150ms both; }
+
+  /* Rise: sections fade up as they scroll into view. */
   @supports (animation-timeline: view()) {
     .reveal {
-      animation: reveal linear both;
+      animation: rise linear both;
       animation-timeline: view();
-      animation-range: entry 0% entry 60%;
+      animation-range: entry 0% cover 28%;
     }
+    /* A mark inside a section can wait for it: .pop.on-view pops as it scrolls into view. */
+    .pop.on-view { animation: pop linear both; animation-timeline: view(); animation-range: entry 20% cover 40%; }
   }
 }
+
 @keyframes page-out { to { opacity: 0; transform: translateY(-6px); } }
 @keyframes page-in { from { opacity: 0; transform: translateY(10px); } }
-@keyframes badge { from { transform: scale(0) rotate(-90deg); } }
-@keyframes reveal { from { opacity: 0; transform: translateY(40px) scale(0.98); } }
+@keyframes pop {
+  0% { opacity: 0; transform: translateY(10px) scale(0.9) rotate(var(--r, 0deg)); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.04) rotate(var(--r, 0deg)); }
+  100% { opacity: 1; transform: rotate(var(--r, 0deg)); }
+}
+@keyframes sweep { from { background-size: 0% 100%; } to { background-size: 100% 100%; } }
+@keyframes draw { from { stroke-dashoffset: var(--len, 120); } to { stroke-dashoffset: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 2.5px #fff, 0 0 0 2.5px rgb(229 53 43 / 0.45); }
+  70% { box-shadow: 0 0 0 2.5px #fff, 0 0 0 12px rgb(229 53 43 / 0); }
+}
+@keyframes wobble { 0%, 100% { transform: rotate(var(--r, -3deg)); } 50% { transform: rotate(calc(var(--r, -3deg) + 5deg)); } }
+@keyframes float { 0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); } 50% { transform: translateY(-8px) rotate(var(--r, 0deg)); } }
+@keyframes key-press {
+  0%, 8%, 36%, 100% { transform: translateY(0); box-shadow: var(--ink-ring), var(--ink-drop); }
+  12%, 30% { transform: translateY(3px); box-shadow: var(--ink-ring), 0 1px 0 var(--line); }
+}
+@keyframes marquee { to { transform: translateX(-50%); } }
+@keyframes rise { from { opacity: 0; transform: translateY(36px); } }
 
+/* Reduce Motion: nothing moves. Colour and opacity changes stay as a 120 ms fade, and buttons darken instead of dropping. */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .blob { animation: none; }
-  *, *::before, *::after { transition-duration: 0s !important; }
+  *, *::before, *::after { transition-property: opacity, color, background-color, box-shadow !important; transition-duration: 120ms !important; }
+  .tilt:hover, .tilt:focus-within { transform: rotate(var(--tilt, -1.2deg)); }
+  a.card:hover, kbd.key:hover, .prose kbd:hover, .go:hover::after, .brand:hover img { transform: none; }
+  .button:active { transform: none; box-shadow: var(--ink-drop); filter: brightness(0.92); }
+  .button.small:active { transform: none; box-shadow: 0 2px 0 var(--line); }
+  .button.secondary:active, .button.white:active { box-shadow: 0 0 0 1px var(--edge); filter: none; }
 }

@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
     lazy var coordinator = CaptureCoordinator(state: state)
     private var defaultsObserver: NSObjectProtocol?
+    private var statusMenu: StatusMenu?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // First, before anything below saves a setting and makes a new user look like an earlier one.
@@ -26,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let launch = Perf.millisecondsSinceLaunch() {
             Perf.signposter.emitEvent("Ready", "launch ms=\(launch)")
         }
+        Perf.watchMenuOpening()
         QuickAccessController.shared.onAnnotate = { [weak self] url in
             self?.coordinator.annotate(url)
         }
@@ -47,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         installEditMenu()
         _ = Updater.shared
+        statusMenu = StatusMenu(state: state, coordinator: coordinator)
         Task.detached(priority: .utility) {
             // A loupe left by a run that quit or died mid-pick would otherwise swallow every click.
             ColorSampler.endLoupe()
@@ -94,6 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        Toast.commitPending()
         TextIndexer.shared.stop()
         if ColorSampler.isShowing {
             ColorSampler.endLoupe()
@@ -105,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// behind the notch or pushed off a crowded bar.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         log.notice("Reopened; showing Settings")
-        MainWindowController.showSettings()
+        SettingsWindowController.show()
         return false
     }
 
@@ -140,7 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Toast.error("Unknown settings section: \(name)")
                 return
             }
-            MainWindowController.showSettings(section: section)
+            SettingsWindowController.show(section: section)
         case .welcome:
             WelcomeWindow.showAgain()
         case let .captureTimer(seconds):
@@ -207,6 +211,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showSettings() {
-        MainWindowController.showSettings()
+        SettingsWindowController.show()
     }
 }

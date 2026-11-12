@@ -21,7 +21,7 @@ struct ColorSwatches: View {
             Swatch(color: nil, isSelected: selected == nil, name: String(localized: "Transparent")) { choose(nil) }
         }
         ForEach(RGBA.presets.indices, id: \.self) { index in
-            Swatch(color: RGBA.presets[index], isSelected: selected == RGBA.presets[index], name: EditorToolbar.colorNames[index]) {
+            Swatch(color: RGBA.presets[index], isSelected: selected == RGBA.presets[index], name: PresetColorNames.all[index]) {
                 choose(RGBA.presets[index])
             }
         }
@@ -49,6 +49,7 @@ private struct CustomColorButton: View {
     let beginPicking: () -> Void
     let editorShown: (Bool) -> Void
     @State private var isOpen = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isSelected: Bool { isOpen || custom != nil }
 
@@ -71,7 +72,7 @@ private struct CustomColorButton: View {
         .brutalTip(help)
         .accessibilityLabel(Text(help))
         .accessibilityAddTraits(custom != nil ? .isSelected : [])
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+        .animation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
             ColorEditor(initial: lastCustom ?? fallback, pick: pick)
         }
@@ -91,7 +92,7 @@ private struct CustomColorButton: View {
     }
 }
 
-private struct ColorEditor: View {
+struct ColorEditor: View {
     let pick: (RGBA) -> Void
     @State private var hue: Double
     @State private var saturation: Double
@@ -130,7 +131,7 @@ private struct ColorEditor: View {
                 Button(action: sample) {
                     Image(systemName: "eyedropper")
                 }
-                .buttonStyle(BrutalButtonStyle(compact: true))
+                .buttonStyle(BrutalButtonStyle(.toolbar))
                 .brutalTip("Pick a colour on screen", detail: "Click anywhere, including the image. Esc cancels.")
                 .accessibilityLabel(Text("Pick a colour on screen"))
                 Spacer()
@@ -159,7 +160,7 @@ private struct ColorEditor: View {
     /// Moves the editor to the colour sampled and applies it exactly, in the same undo step as the editor's other picks.
     private func sample() {
         Task {
-            guard let picked = await ColorSampler.sample() else {
+            guard let picked = await ColorSampler.sample(for: .pick) else {
                 return
             }
             let c = NSColor(srgbRed: picked.r, green: picked.g, blue: picked.b, alpha: picked.a)
@@ -234,15 +235,19 @@ private struct SaturationBrightnessField: View {
     private func percent(_ value: Double) -> Int { Int((value * 100).rounded()) }
 }
 
-/// A capsule track with a round knob. Once focused, the arrow keys step it by 1% of its range, ⇧ by 10%.
-/// `onEditingChanged` reports a drag, or an arrow key held down, starting and ending, so a caller can make each one
-/// undo step.
+/// A slider, from Components › Choice: a 4 pt track filled in ink up to an 18 pt white knob. A colour slider passes a
+/// `track` gradient instead, drawn 8 pt tall so the colours show. Once focused, the arrow keys step it by 1% of its range,
+/// ⇧ by 10%. `onEditingChanged` reports a drag, or an arrow key held down, starting and ending, so a caller can make each
+/// one undo step. A `floating` slider is for the dark floating panels: a 3 pt white track at 25% filled in white up to a
+/// 12 pt knob.
 struct BrutalSlider: View {
+
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...1
-    let track: LinearGradient
+    var track: LinearGradient?
     var checkerboard = false
     var width: CGFloat = 200
+    var floating = false
     var onEditingChanged: (Bool) -> Void = { _ in }
     @State private var isDragging = false
     /// Whether an arrow key is down, so its repeats join one edit.
@@ -251,31 +256,30 @@ struct BrutalSlider: View {
     /// be a copy from before the press, so each repeat steps from this instead.
     @State private var steppedValue: Double?
     @FocusState private var isFocused: Bool
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    private var increased: Bool { contrast == .increased }
+    private var knob: CGFloat { floating ? 12 : 18 }
 
     private var fraction: Double { (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound) }
 
     var body: some View {
         ZStack(alignment: .leading) {
-            if checkerboard {
-                Canvas { ctx, size in
-                    let cell: CGFloat = 6
-                    for x in 0...Int(size.width / cell) {
-                        for y in 0...Int(size.height / cell) where (x + y) % 2 == 0 {
-                            ctx.fill(Path(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)), with: .color(.gray.opacity(0.4)))
-                        }
+            trackView
+            Circle().fill(.white)
+                .inkBorder(Circle(), width: 1, color: floating ? .clear : Color(hex: 0x16161A).opacity(increased ? 0.6 : 0.2))
+                .shadow(color: .black.opacity(0.2), radius: 1.5, y: 1)
+                .frame(width: knob, height: knob)
+                .background {
+                    if isFocused, isEnabled {
+                        Color.clear.inkBorder(Circle(), width: 4, color: Brutal.focusRing).padding(-4)
                     }
                 }
-                .background(Color.white)
-                .clipShape(Capsule().inset(by: 1))
-            }
-            Capsule().fill(track)
-                .inkBorder(Capsule(), width: 2)
-            Circle().fill(isFocused ? Brutal.yellow : Brutal.paper)
-                .inkBorder(Circle(), width: 2)
-                .frame(width: 16, height: 16)
-                .offset(x: fraction * (width - 16))
+                .offset(x: fraction * (width - knob))
         }
-        .frame(width: width, height: 16)
+        .frame(width: width, height: knob)
+        .opacity(isEnabled ? 1 : 0.45)
         .contentShape(Rectangle())
         .gesture(DragGesture(minimumDistance: 0)
             .onChanged { drag in
@@ -283,7 +287,7 @@ struct BrutalSlider: View {
                     isDragging = true
                     onEditingChanged(true)
                 }
-                let dragged = min(max((drag.location.x - 8) / (width - 16), 0), 1)
+                let dragged = min(max((drag.location.x - knob / 2) / (width - knob), 0), 1)
                 value = range.lowerBound + dragged * (range.upperBound - range.lowerBound)
             }
             .onEnded { _ in
@@ -321,6 +325,44 @@ struct BrutalSlider: View {
         }
     }
 
+    /// The plain track, filled in ink up to the knob, or a colour slider's gradient over an optional checkerboard.
+    @ViewBuilder
+    private var trackView: some View {
+        if let track {
+            ZStack {
+                if checkerboard {
+                    Canvas { ctx, size in
+                        let cell: CGFloat = 4
+                        for x in 0...Int(size.width / cell) {
+                            for y in 0...Int(size.height / cell) where (x + y) % 2 == 0 {
+                                ctx.fill(Path(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell)), with: .color(.gray.opacity(0.4)))
+                            }
+                        }
+                    }
+                    .background(Color.white)
+                }
+                Capsule().fill(track)
+            }
+            .clipShape(Capsule())
+            .inkBorder(Capsule(), width: 1, color: increased ? Brutal.ink.opacity(0.6) : Brutal.controlEdge)
+            .frame(height: 8)
+        } else if floating {
+            let filled = knob / 2 + fraction * (width - knob)
+            Capsule().fill(Color.white.opacity(increased ? 0.5 : 0.25))
+                .overlay(alignment: .leading) {
+                    Capsule().fill(Color.white).frame(width: filled)
+                }
+                .frame(height: 3)
+        } else {
+            let filled = knob / 2 + fraction * (width - knob)
+            Capsule().fill(increased ? AnyShapeStyle(Brutal.ink.opacity(0.35)) : AnyShapeStyle(Brutal.quietTrack))
+                .overlay(alignment: .leading) {
+                    Capsule().fill(Brutal.ink).frame(width: filled)
+                }
+                .frame(height: 4)
+        }
+    }
+
     /// Ends the edit a held arrow key started. A key let go after focus moved away never reports its release.
     private func endStepping() {
         guard isStepping else {
@@ -337,6 +379,7 @@ private struct Swatch: View {
     let isSelected: Bool
     let name: String
     let action: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: action) {
@@ -356,7 +399,7 @@ private struct Swatch: View {
         .brutalTip(name)
         .accessibilityLabel(Text(name))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
+        .animation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
     }
 }
 
@@ -372,28 +415,32 @@ struct ToolGroup<Content: View>: View {
     }
 }
 
+/// A toolbar button with a tip. A tool tile (`tool`) draws the selected tool in ink; any other tile fills while it's on.
 struct Tile<Label: View>: View {
     let selected: Bool
-    let color: Color
+    /// Picks a tool, so the selected one is the toolbar's ink control.
+    var tool = false
     let help: String
+    /// The tile's shortcut, shown on a keycap beside `help` in its tip.
+    var key: String?
     /// What the tile does, shown under `help` in its tip.
     var detail: String?
     /// A disabled tile is dimmed but still shows its tip.
     var isEnabled = true
     let action: () -> Void
     @ViewBuilder let label: Label
-    @State private var hovering = false
 
-    init(selected: Bool, color: Color, help: LocalizedStringResource, detail: LocalizedStringResource? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
-        self.init(selected: selected, color: color, help: String(localized: help), detail: detail.map { String(localized: $0) }, isEnabled: isEnabled, action: action, label: label)
+    init(selected: Bool, tool: Bool = false, help: LocalizedStringResource, key: String? = nil, detail: LocalizedStringResource? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+        self.init(selected: selected, tool: tool, help: String(localized: help), key: key, detail: detail.map { String(localized: $0) }, isEnabled: isEnabled, action: action, label: label)
     }
 
     /// A tile whose help is already localized, such as a tool's title.
     @_disfavoredOverload
-    init<S: StringProtocol>(selected: Bool, color: Color, help: S, detail: String? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+    init<S: StringProtocol>(selected: Bool, tool: Bool = false, help: S, key: String? = nil, detail: String? = nil, isEnabled: Bool = true, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
         self.selected = selected
-        self.color = color
+        self.tool = tool
         self.help = String(help)
+        self.key = key
         self.detail = detail
         self.isEnabled = isEnabled
         self.action = action
@@ -402,25 +449,11 @@ struct Tile<Label: View>: View {
 
     var body: some View {
         Button(action: action) {
-            label
-                .foregroundStyle(Brutal.ink)
-                .frame(width: 30, height: 30)
-                .inkOnFill(selected ? color : nil)
-                .background {
-                    if selected {
-                        Color.clear.brutalSurface(color, radius: Brutal.Radius.inset, shadow: 2)
-                    } else if hovering {
-                        RoundedRectangle(cornerRadius: Brutal.Radius.inset, style: .circular).fill(Brutal.ink.opacity(0.08))
-                    }
-                }
-                .contentShape(Rectangle())
+            label.frame(minWidth: 16, minHeight: 16)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(BrutalButtonStyle(tool ? .tool : .toolbar, isOn: selected))
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.35)
         .accessibilityLabel(Text(help))
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .onHover { hovering = $0 }
-        .brutalTip(help, detail: detail)
+        .brutalTip(help, key: key, detail: detail)
     }
 }

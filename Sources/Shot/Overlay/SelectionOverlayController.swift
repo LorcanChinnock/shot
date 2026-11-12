@@ -44,6 +44,10 @@ final class SelectionOverlayController {
     private(set) var pageOnly = Preferences().browserPageOnly
     var browserMode: Bool { windowMode && pageOnly && Permissions.hasAccessibility }
     var screenMode: Bool { target == .screen }
+    /// The mode the capture bar shows as picked.
+    var barMode: CaptureBarMode { CaptureBarMode(target: target, browserPage: browserMode) }
+    /// Whether the pick is for a recording rather than a screenshot, which the bar names.
+    let recording: Bool
     /// Seconds to wait after the pick before capturing; 0 is off. `offersDelay` is false where waiting makes no sense.
     private(set) var delay = 0
     let offersDelay: Bool
@@ -67,6 +71,9 @@ final class SelectionOverlayController {
     /// A window picked with Tab holds the highlight until the mouse moves.
     private var isWindowPinned = false
     private var panels: [OverlayPanel] = []
+    /// The card that asks for Accessibility access after Browser is picked without it, while it shows.
+    private var permissionCard: BrowserPermissionCard?
+    var showsPermissionCard: Bool { permissionCard != nil }
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
     private var magnifierTask: Task<Void, Never>?
@@ -79,12 +86,12 @@ final class SelectionOverlayController {
     private(set) var barOpacity: CGFloat = 1
     private var barTimer: Task<Void, Never>?
     private static let barLinger: Duration = .seconds(4)
-    private static let barFade: Duration = .milliseconds(200)
     /// The modifier keys held by the event that ended the selection.
     private var endModifiers: NSEvent.ModifierFlags = []
 
-    private init(target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool, windows: [WindowInfo], isLive: Bool) {
+    private init(target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool, recording: Bool, windows: [WindowInfo], isLive: Bool) {
         self.target = target
+        self.recording = recording
         self.offersDelay = offersDelay
         self.offersScrolling = offersScrolling
         self.windows = windows
@@ -98,8 +105,12 @@ final class SelectionOverlayController {
 
     /// Like the above, also returning the modifier keys held as the selection ended, read from that event rather than
     /// later, and the delay chosen when `offersDelay`.
-    static func select(displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool = false, windows: [WindowInfo], isLive: Bool = false) async -> OverlayResult {
-        let controller = SelectionOverlayController(target: target, offersDelay: offersDelay, offersScrolling: offersScrolling, windows: windows, isLive: isLive)
+    static func select(
+        displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool = false, recording: Bool = false, windows: [WindowInfo], isLive: Bool = false
+    ) async -> OverlayResult {
+        let controller = SelectionOverlayController(
+            target: target, offersDelay: offersDelay, offersScrolling: offersScrolling, recording: recording, windows: windows, isLive: isLive
+        )
         // The overlay views hold the controller unowned; keep it alive until the user finishes.
         let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation
@@ -153,7 +164,7 @@ final class SelectionOverlayController {
             keyPanel.makeFirstResponder(views.first { $0.window === keyPanel })
         }
         updateHover(redraw: true)
-        NSCursor.crosshair.set()
+        SelectionOverlayView.cursor.set()
         revealBar()
     }
 
@@ -181,8 +192,10 @@ final class SelectionOverlayController {
     private func fadeOutBar() async {
         let clock = ContinuousClock()
         let start = clock.now
+        // As long as a panel takes to leave, or Reduce Motion's fade.
+        let fade = Duration.seconds(Motion.reduced ? Moment.reducedFade : Moment.panelArrive.duration)
         while !Task.isCancelled {
-            let progress = min((clock.now - start) / Self.barFade, 1)
+            let progress = min((clock.now - start) / fade, 1)
             barOpacity = CGFloat(1 - progress)
             redrawAll()
             if progress >= 1 {
@@ -234,14 +247,14 @@ final class SelectionOverlayController {
         }
     }
 
-    /// Space: between area and window, as in macOS.
+    /// Space: between area and window, as in macOS. It lands on Window, not Browser, as Window's keycap says.
     func toggleWindowMode() {
-        setTarget(windowMode ? .area : .window)
+        setMode(windowMode ? .area : .window)
     }
 
-    /// Tab: area, window, then full screen.
+    /// Tab: area, window, then full screen, with page-only off so it reaches Window. Browser is reached with B.
     func cycleTarget(backward: Bool) {
-        setTarget(target.next(backward: backward))
+        setMode(CaptureBarMode(target: target.next(backward: backward), browserPage: false))
     }
 
     func setTarget(_ newTarget: CaptureTarget) {
@@ -256,17 +269,72 @@ final class SelectionOverlayController {
         updateHover(redraw: true)
     }
 
-    /// B: picks browser windows as just their page, or whole. Without Accessibility it closes the overlay and asks macOS
-    /// for it, so the prompt isn't left behind the overlay.
+    /// B: switches to Browser, which picks a browser window's page alone, or from Browser back to Window.
     func togglePageOnly() {
-        guard Permissions.hasAccessibility else {
-            finish(nil)
-            Permissions.requestAccessibility()
+        setMode(barMode == .browser ? .window : .browser)
+    }
+
+    /// A click on one of the bar's modes. Browser needs Accessibility to find the page: without it the permission card
+    /// says why and offers Use Window or Grant Access, and the overlay stays in the mode it was in.
+    func setMode(_ mode: CaptureBarMode) {
+        if mode.picksPage, !Permissions.hasAccessibility {
+            showPermissionCard()
             return
         }
-        pageOnly.toggle()
-        isWindowPinned = false
-        updateHover(redraw: true)
+        if mode.target == .window, pageOnly != mode.picksPage {
+            pageOnly = mode.picksPage
+            isWindowPinned = false
+            if target == .window {
+                updateHover(redraw: true)
+            }
+        }
+        setTarget(mode.target)
+    }
+
+    /// Shows the browser permission card next to the bar on the screen with the pointer. Grant Access closes the overlay
+    /// before asking macOS, so the prompt isn't left behind it.
+    private func showPermissionCard() {
+        if let permissionCard {
+            permissionCard.makeKey()
+            return
+        }
+        let pointer = NSEvent.mouseLocation
+        guard let view = views.first(where: { $0.window.map { NSMouseInRect(pointer, $0.frame, false) } ?? false }) ?? views.first,
+              let screen = view.window?.frame else {
+            return
+        }
+        let card = BrowserPermissionCard(bar: view.barScreenFrame, screen: screen, actions: .init(
+            useWindow: { [weak self] in
+                self?.closePermissionCard()
+                self?.setMode(.window)
+            },
+            grant: { [weak self] in
+                self?.finish(nil)
+                Permissions.requestAccessibility()
+            },
+            close: { [weak self] in self?.closePermissionCard() }
+        ))
+        permissionCard = card
+        card.orderFrontRegardless()
+        card.makeKey()
+        card.announce()
+        NSCursor.arrow.set()
+    }
+
+    /// Closes the permission card and gives the keyboard back to the overlay under the pointer.
+    func closePermissionCard() {
+        guard let card = permissionCard else {
+            return
+        }
+        permissionCard = nil
+        card.orderOut(nil)
+        let pointer = NSEvent.mouseLocation
+        if let panel = panels.first(where: { NSMouseInRect(pointer, $0.frame, false) }) ?? panels.first {
+            panel.makeKey()
+            panel.makeFirstResponder(views.first { $0.window === panel })
+        }
+        SelectionOverlayView.cursor.set()
+        revealBar()
     }
 
     func toggleScrolling() {
@@ -328,12 +396,13 @@ final class SelectionOverlayController {
             next = backward ? visible.count - 1 : 0
         }
         hoveredWindow = visible[next]
+        // The page goes with the window, so Browser highlights and captures the page of the window stepped to.
+        hoveredPage = browserMode ? pageRect(of: visible[next]) : nil
         isWindowPinned = true
         for view in views {
             view.needsDisplay = true
         }
-        let name = [visible[next].ownerName, visible[next].title].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
-        views.first?.announceWindow(name)
+        views.first?.announceWindow()
     }
 
     /// The page of a browser window in CoreGraphics global space, or nil for any other window or while Accessibility
@@ -374,6 +443,8 @@ final class SelectionOverlayController {
         }
         self.continuation = nil
         endModifiers = modifiers
+        permissionCard?.orderOut(nil)
+        permissionCard = nil
         for panel in panels {
             panel.orderOut(nil)
             panel.close()
