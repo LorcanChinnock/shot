@@ -88,7 +88,7 @@ private struct SettingsSidebarRow: View {
             .contentShape(Rectangle())
             .modifier(SidebarRowBackground(selected: selected, hovering: hovering))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .opacity(faded ? (contrast == .increased ? 0.75 : 0.4) : 1)
         .onHover { hovering = $0 }
         .accessibilityLabel(Text(section.title))
@@ -138,7 +138,7 @@ private struct OpenGalleryRow: View {
             .contentShape(Rectangle())
             .modifier(SidebarRowBackground(selected: false, hovering: hovering))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .onHover { hovering = $0 }
         .accessibilityLabel(Text("Open Gallery"))
     }
@@ -172,7 +172,7 @@ private struct SettingsSidebarFooter: View {
             .padding(.bottom, 2)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .overlay(alignment: .top) {
             Theme.hairline.frame(height: 1)
         }
