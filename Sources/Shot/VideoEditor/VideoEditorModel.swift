@@ -46,9 +46,8 @@ final class VideoEditorModel {
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
     private(set) var estimatedSize: Int?
-    /// The side panel beside the video: the Inspector or Export, which take turns. Export starts closed in every window
-    /// (rule 2), while the Inspector opens again if it was open when the last window closed, as the image editor's Layers does.
-    private(set) var sidePanel: VideoSidePanel? = UserDefaults.standard.bool(forKey: VideoEditorModel.showsInspectorKey) ? .inspector : nil
+    /// The side panel beside the video: the Inspector or Export, which take turns. Both start closed in every window (rule 2).
+    private(set) var sidePanel: VideoSidePanel?
     /// How far Export has got, from 0 to 1, while it can tell; nil when it can't or nothing is exporting.
     private(set) var exportFraction: Double?
     private(set) var history = VideoEditHistory()
@@ -105,8 +104,6 @@ final class VideoEditorModel {
     /// The colour a border picked from the custom colour editor had last, which its rainbow swatch applies again; `nil`
     /// until one is picked, so the swatch doesn't offer white, which the palette has.
     private(set) var lastBorderColor: RGBA?
-
-    private static let showsInspectorKey = PreferenceKey.videoEditorShowsInspector
 
     @ObservationIgnored private var dragOrigin: Project?
     /// Where the annotation clip being dragged to another lane will land.
@@ -1003,10 +1000,8 @@ final class VideoEditorModel {
         setSidePanel(VideoSidePanel.toggling(.inspector, from: sidePanel))
     }
 
-    /// Remembers whether the Inspector is open for the next window, as the image editor's Layers panel does.
     private func setSidePanel(_ panel: VideoSidePanel?) {
         sidePanel = panel
-        UserDefaults.standard.set(panel == .inspector, forKey: Self.showsInspectorKey)
         if panel != .inspector {
             stylePreview = nil
         }

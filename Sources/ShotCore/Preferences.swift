@@ -80,9 +80,6 @@ public enum PreferenceKey {
     public static let gaveBackTextCaptureKey = "gaveBackTextCaptureKey"
     /// True once Shot has given ⌘⇧3 back to macOS, so it does that only once.
     public static let gaveBackFullScreenKey = "gaveBackFullScreenKey"
-    /// Window layout: whether the photo editor shows its layers, and the video editor its inspector.
-    public static let editorShowsLayers = "editorShowsLayers"
-    public static let videoEditorShowsInspector = "videoEditorShowsInspector"
     /// True once launch has kept the magnifier, crosshair and size label on for someone who used Shot while they started on.
     /// Not a setting, so resetting settings keeps it.
     public static let keptSelectionAids = "keptSelectionAids"
@@ -166,8 +163,6 @@ public struct Preferences {
             PreferenceKey.galleryShowsSidebar: true,
             PreferenceKey.galleryFolderSidebarWidth: 220.0,
             PreferenceKey.appSidebarWidth: 228.0,
-            PreferenceKey.editorShowsLayers: false,
-            PreferenceKey.videoEditorShowsInspector: false,
         ]
         for action in ShotAction.allCases {
             values[PreferenceKey.hotkey(action)] = action.defaultCombo?.encoded ?? ""
@@ -213,6 +208,14 @@ public struct Preferences {
     /// Deletes the shortcut saved for text capture, which Shot no longer has.
     public static func removeTextCapture(in store: UserDefaults = .standard) {
         store.removeObject(forKey: "hotkey.capture-text")
+    }
+
+    /// Deletes whether the image editor's Layers panel and the video editor's Inspector were open, which older versions
+    /// remembered for the next window. Both panels now start closed in every window.
+    public static func removeRememberedPanels(in store: UserDefaults = .standard) {
+        for key in ["editorShowsLayers", "videoEditorShowsInspector"] {
+            store.removeObject(forKey: key)
+        }
     }
 
     /// Deletes the language Translate Text remembered, which Shot no longer has.

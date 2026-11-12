@@ -22,7 +22,7 @@ Click the **Inspector** button, the one with sliders beside **Draw** in the titl
 
 **Reset** at the top of the panel puts all of these back to how a new clip starts and clears its keyframes, in one undo step. It stays greyed out while the clip is untouched, and leaves the crop and style alone. With nothing selected, the panel shows the video's size under **Frame**, with **Crop**.
 
-The Inspector and the Export panel share the space beside the video, so opening one closes the other. The editor remembers whether you left the Inspector open.
+The Inspector and the Export panel share the space beside the video, so opening one closes the other. Both start closed each time you open a recording.
 
 ## Animate with keyframes
 
