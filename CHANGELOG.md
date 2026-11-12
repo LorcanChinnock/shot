@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.87](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.86...v0.7.0-beta.87) (2026-11-12)
+
+
+### Bug Fixes
+
+* **editor:** put white and the custom colour in the style bar ([#1278](https://github.com/LorcanChinnock/shot/issues/1278)) ([ac1ff1d](https://github.com/LorcanChinnock/shot/commit/ac1ff1d86f1cac044aa62075cd1259612355563b))
+
 ## [0.7.0-beta.86](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.85...v0.7.0-beta.86) (2026-11-12)
 
 
