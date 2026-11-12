@@ -2,7 +2,7 @@ import AppKit
 import ShotCore
 import SwiftUI
 
-struct BrutalMenuItem {
+struct ThemeMenuItem {
     let title: String
     var symbol: String?
     /// Shown only; the shortcut itself is handled elsewhere.
@@ -12,8 +12,8 @@ struct BrutalMenuItem {
     let action: () -> Void
 }
 
-enum BrutalMenuEntry {
-    case button(BrutalMenuItem)
+enum ThemeMenuEntry {
+    case button(ThemeMenuItem)
     case header(String)
     case divider
 
@@ -24,10 +24,10 @@ enum BrutalMenuEntry {
     /// An item whose title is already localized, or is a name such as a device's.
     @_disfavoredOverload
     static func item<S: StringProtocol>(_ title: S, symbol: String? = nil, shortcut: String? = nil, selected: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> Self {
-        .button(BrutalMenuItem(title: String(title), symbol: symbol, shortcut: shortcut, isSelected: selected, isEnabled: enabled, action: action))
+        .button(ThemeMenuItem(title: String(title), symbol: symbol, shortcut: shortcut, isSelected: selected, isEnabled: enabled, action: action))
     }
 
-    fileprivate var pickable: BrutalMenuItem? {
+    fileprivate var pickable: ThemeMenuItem? {
         if case .button(let item) = self, item.isEnabled {
             return item
         }
@@ -35,12 +35,12 @@ enum BrutalMenuEntry {
     }
 }
 
-/// A button that opens a brutal-styled menu of `entries` under it. Style the button with `buttonStyle`, as for any button.
+/// A button that opens a menu in the app's style of `entries` under it. Style the button with `buttonStyle`, as for any button.
 /// The menu is its own window, so it draws over everything in the window and is never clipped.
-struct BrutalDropdown<Label: View>: View {
+struct ThemeDropdown<Label: View>: View {
     /// What the menu is for, which VoiceOver reads as the button's label.
     let title: LocalizedStringResource
-    let entries: [BrutalMenuEntry]
+    let entries: [ThemeMenuEntry]
     @ViewBuilder let label: Label
     @State private var menu = DropdownMenu()
 
@@ -69,25 +69,25 @@ struct BrutalDropdown<Label: View>: View {
 }
 
 /// A pop-up menu, from Components › Choice: the secondary button's look with the chosen value and up and down chevrons,
-/// opening a menu of `entries` with the chosen one ticked. For a menu of commands rather than a choice, use `BrutalDropdown`.
-struct BrutalPopUp: View {
+/// opening a menu of `entries` with the chosen one ticked. For a menu of commands rather than a choice, use `ThemeDropdown`.
+struct ThemePopUp: View {
     let title: LocalizedStringResource
-    let entries: [BrutalMenuEntry]
+    let entries: [ThemeMenuEntry]
     /// The chosen value's title, already localized.
     let value: String
     var maxWidth: CGFloat?
 
     var body: some View {
-        BrutalDropdown(title: title, entries: entries) {
+        ThemeDropdown(title: title, entries: entries) {
             HStack(spacing: 10) {
                 Text(value).lineLimit(1)
                     .frame(maxWidth: maxWidth, alignment: .leading)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.scaled(9, weight: .bold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
             }
         }
-        .buttonStyle(BrutalButtonStyle(.popUp))
+        .buttonStyle(ThemeButtonStyle(.popUp))
         // With a maximum width, the value shortens with an ellipsis when its row runs out of room, such as at a larger
         // text size, rather than pushing the row's title onto two lines.
         .fixedSize(horizontal: maxWidth == nil, vertical: true)
@@ -114,7 +114,7 @@ private struct DropdownAnchor: NSViewRepresentable {
 
 @MainActor @Observable
 private final class DropdownState {
-    var entries: [BrutalMenuEntry] = []
+    var entries: [ThemeMenuEntry] = []
     var highlighted: Int?
 }
 
@@ -122,7 +122,7 @@ private final class DropdownState {
 /// system menu, while its parent stays key.
 @MainActor
 private final class DropdownMenu {
-    private static let gap = Brutal.minGap + 3
+    private static let gap = Theme.minGap + 3
     private static let typeAheadPause: TimeInterval = 1
 
     weak var anchor: NSView?
@@ -133,7 +133,7 @@ private final class DropdownMenu {
     private var typed = ""
     private var lastTyped = Date.distantPast
 
-    func open(_ title: String, _ entries: [BrutalMenuEntry]) {
+    func open(_ title: String, _ entries: [ThemeMenuEntry]) {
         guard panel == nil, let window = anchor?.window else {
             return
         }
@@ -299,12 +299,12 @@ private struct DropdownList: View {
                         case .header(let header):
                             Text(header)
                                 .font(.scaled(11, weight: .semibold))
-                                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                                 .padding(.horizontal, 10)
                                 .padding(.top, 4)
                                 .padding(.bottom, 2)
                         case .divider:
-                            Rectangle().fill(ContrastAware(standard: Brutal.separator, increased: Brutal.ink.opacity(0.6)))
+                            Rectangle().fill(ContrastAware(standard: Theme.separator, increased: Theme.ink.opacity(0.6)))
                                 .frame(height: 1)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
@@ -342,16 +342,16 @@ private struct MenuSurface: ViewModifier {
     @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
-        let edge = contrast == .increased ? Brutal.ink.opacity(0.6) : Color(light: .black.opacity(0.2), dark: .white.opacity(0.14))
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
+        let edge = contrast == .increased ? Theme.ink.opacity(0.6) : Color(light: .black.opacity(0.2), dark: .white.opacity(0.14))
         content
-            .background(Brutal.group, in: shape)
+            .background(Theme.group, in: shape)
             .inkBorder(shape, width: contrast == .increased ? 1 : 0.5, color: edge)
     }
 }
 
 private struct DropdownRow: View {
-    let item: BrutalMenuItem
+    let item: ThemeMenuItem
     let hasSymbols: Bool
     let highlighted: Bool
     let action: () -> Void
@@ -367,27 +367,27 @@ private struct DropdownRow: View {
                         .frame(width: 16)
                 }
                 Text(item.title)
-                    .font(Brutal.body)
+                    .font(Theme.body)
                     .lineLimit(1)
                 Spacer(minLength: 16)
                 if let shortcut = item.shortcut {
                     Text(shortcut)
-                        .font(Brutal.mono)
-                        .foregroundStyle(highlighted ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink)))
+                        .font(Theme.mono)
+                        .foregroundStyle(highlighted ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink)))
                 }
                 Image(systemName: "checkmark")
                     .font(.scaled(11, weight: .semibold))
                     .opacity(item.isSelected ? 1 : 0)
             }
-            .foregroundStyle(item.isEnabled ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(Brutal.disabledText))
+            .foregroundStyle(item.isEnabled ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Theme.disabledText))
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
-            .inkOnFill(lit ? Brutal.accent : nil)
+            .inkOnFill(lit ? Theme.accent : nil)
             .background {
                 // The highlighted row, as the menu bar menu draws it: the accent with a faint ink inner edge.
                 if lit {
-                    let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
-                    shape.fill(Brutal.accent)
+                    let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
+                    shape.fill(Theme.accent)
                         .inkBorder(shape, width: 1, color: Color(hex: 0x16161A).opacity(0.4))
                 }
             }

@@ -35,7 +35,7 @@ struct ShortcutRecorderView: View {
             if isRecording {
                 Text("Esc cancels · ⌫ clears")
                     .font(.scaled(11.5))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .lineLimit(1)
                     .accessibilityHidden(true)
             }
@@ -143,13 +143,13 @@ private struct RecorderButtonStyle: ButtonStyle {
             }
             .overlay {
                 if configuration.isPressed {
-                    shape.fill(Brutal.hover)
+                    shape.fill(Theme.hover)
                 }
             }
             .background {
                 if state == .listening {
                     Color.clear
-                        .inkBorder(RoundedRectangle(cornerRadius: Self.radius + 4, style: .circular), width: 4, color: Brutal.focusRing)
+                        .inkBorder(RoundedRectangle(cornerRadius: Self.radius + 4, style: .circular), width: 4, color: Theme.focusRing)
                         .padding(-4)
                 }
             }
@@ -161,23 +161,23 @@ private struct RecorderButtonStyle: ButtonStyle {
 
     private var fill: Color {
         switch state {
-        case .set: Brutal.fieldFill
+        case .set: Theme.fieldFill
         case .empty: .clear
-        case .listening: Brutal.accent.opacity(0.18)
+        case .listening: Theme.accent.opacity(0.18)
         }
     }
 
     private var edge: Color {
-        if increased { return Brutal.ink.opacity(0.6) }
-        return state == .set ? Brutal.hairline : Brutal.controlEdge
+        if increased { return Theme.ink.opacity(0.6) }
+        return state == .set ? Theme.hairline : Theme.controlEdge
     }
 
     private var foreground: Color {
-        if increased { return Brutal.ink }
+        if increased { return Theme.ink }
         switch state {
-        case .set: return Brutal.ink
-        case .empty: return Brutal.tertiaryText
-        case .listening: return Brutal.accentText
+        case .set: return Theme.ink
+        case .empty: return Theme.tertiaryText
+        case .listening: return Theme.accentText
         }
     }
 }
@@ -190,14 +190,14 @@ private struct RecorderKeycap: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 5, style: .circular)
-        let edge = contrast == .increased ? Brutal.ink.opacity(0.6) : Brutal.controlEdge
+        let edge = contrast == .increased ? Theme.ink.opacity(0.6) : Theme.controlEdge
         Text(verbatim: key)
             .font(.scaled(12, weight: .semibold))
-            .foregroundStyle(Brutal.ink)
+            .foregroundStyle(Theme.ink)
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
             .frame(minWidth: 18)
-            .background(Brutal.secondaryFill, in: shape)
+            .background(Theme.secondaryFill, in: shape)
             .overlay {
                 Color.clear.inkBorder(shape, width: 1, color: edge)
             }

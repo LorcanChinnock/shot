@@ -95,12 +95,12 @@ final class RecordingBorderPanel: NSPanel {
             case .recording, .paused:
                 let ring = RecordingBorder.ring(in: bounds)
                 inner.path = CGPath(roundedRect: ring.rect, cornerWidth: ring.radius, cornerHeight: ring.radius, transform: nil)
-                inner.lineWidth = Brutal.inkWidth(RecordingBorder.lineWidth, scale: scale)
+                inner.lineWidth = Theme.inkWidth(RecordingBorder.lineWidth, scale: scale)
                 if style == .recording {
                     inner.strokeColor = Self.recordRed.cgColor
                     let glow = RecordingBorder.glow(in: bounds)
                     outer.path = CGPath(roundedRect: glow.rect, cornerWidth: glow.radius, cornerHeight: glow.radius, transform: nil)
-                    outer.lineWidth = Brutal.inkWidth(RecordingBorder.glowWidth, scale: scale)
+                    outer.lineWidth = Theme.inkWidth(RecordingBorder.glowWidth, scale: scale)
                     let glowOpacity = contrast ? RecordingBorder.contrastGlowOpacity : RecordingBorder.glowOpacity
                     outer.strokeColor = Self.recordRed.withAlphaComponent(glowOpacity).cgColor
                 } else {
@@ -109,13 +109,13 @@ final class RecordingBorderPanel: NSPanel {
                     outer.isHidden = true
                 }
             case .scrolling:
-                let half = Brutal.inkWidth(1.5, scale: scale)
+                let half = Theme.inkWidth(1.5, scale: scale)
                 outer.path = CGPath(rect: bounds.insetBy(dx: half / 2, dy: half / 2), transform: nil)
                 outer.lineWidth = half
-                outer.strokeColor = Brutal.inkNS.cgColor
+                outer.strokeColor = Theme.inkNS.cgColor
                 inner.path = CGPath(rect: bounds.insetBy(dx: half * 1.5, dy: half * 1.5), transform: nil)
                 inner.lineWidth = half
-                inner.strokeColor = Brutal.yellowNS.cgColor
+                inner.strokeColor = Theme.yellowNS.cgColor
             }
             CATransaction.commit()
         }

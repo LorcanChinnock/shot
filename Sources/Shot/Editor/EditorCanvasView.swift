@@ -326,7 +326,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         (dark ? Self.badgeDarkFill : NSColor.white).setFill()
         circle.fill()
         NSGraphicsContext.restoreGraphicsState()
-        let ink = dark ? Self.lightInk : Brutal.inkNS
+        let ink = dark ? Self.lightInk : Theme.inkNS
         let edge = increased ? ink.withAlphaComponent(0.6) : (dark ? NSColor.white.withAlphaComponent(0.18) : ink.withAlphaComponent(0.2))
         edge.setStroke()
         let rim = NSBezierPath(ovalIn: box.insetBy(dx: 0.5, dy: 0.5))
@@ -389,9 +389,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         let width: CGFloat = dark ? 0.5 : 1
         let color: NSColor = if NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast {
-            (dark ? NSColor.white : Brutal.inkNS).withAlphaComponent(0.5)
+            (dark ? NSColor.white : Theme.inkNS).withAlphaComponent(0.5)
         } else {
-            dark ? NSColor.white.withAlphaComponent(0.1) : Brutal.inkNS.withAlphaComponent(0.08)
+            dark ? NSColor.white.withAlphaComponent(0.1) : Theme.inkNS.withAlphaComponent(0.08)
         }
         color.setStroke()
         let edge = NSBezierPath(rect: rect.insetBy(dx: -width / 2, dy: -width / 2))
@@ -424,7 +424,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
         // The ink, light in dark mode, with an edge of the opposite colour outside it, so the outline and marks show on
         // any screenshot.
-        let ink = dark ? NSColor(srgbRed: 0xED / 255, green: 0xEB / 255, blue: 0xE6 / 255, alpha: 1) : Brutal.inkNS
+        let ink = dark ? NSColor(srgbRed: 0xED / 255, green: 0xEB / 255, blue: 0xE6 / 255, alpha: 1) : Theme.inkNS
         let edge: NSColor = dark ? .black : .white
         edge.setStroke()
         let halo = NSBezierPath(rect: crop.insetBy(dx: -0.5, dy: -0.5))
@@ -1262,7 +1262,7 @@ extension NSView {
         if chip.maxY > bounds.maxY {
             chip.origin.y = point.y - 12 - chip.height
         }
-        Brutal.inkNS.withAlphaComponent(0.9).setFill()
+        Theme.inkNS.withAlphaComponent(0.9).setFill()
         NSBezierPath(roundedRect: chip, xRadius: 4, yRadius: 4).fill()
         text.draw(at: CGPoint(x: chip.minX + 6, y: chip.minY + 3))
     }

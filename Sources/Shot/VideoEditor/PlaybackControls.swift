@@ -8,7 +8,7 @@ enum VideoEditorSurface {
     /// The controls area: the playback row and the lanes.
     static let controls = Color(light: .white, dark: Color(hex: 0x1F1F22))
     /// The hairline over the controls area.
-    static let hairline = ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6))
+    static let hairline = ContrastAware(standard: Theme.hairline, increased: Theme.ink.opacity(0.6))
 }
 
 /// The row over the lanes, from Edit › Video editor and export: Play, the playhead's time, Split, Cut, Trim idle and Add
@@ -58,14 +58,14 @@ struct PlaybackControls: View {
                 .frame(width: 16, height: 24)
         }
         // Export is the screen's ink button, so Play is a plain bordered one in light and dark (rule 1).
-        .buttonStyle(BrutalButtonStyle(.popUp))
-        .brutalTip(model.isPlaying ? "Pause" : "Play", key: "Space")
+        .buttonStyle(ThemeButtonStyle(.popUp))
+        .themeTip(model.isPlaying ? "Pause" : "Play", key: "Space")
         .accessibilityLabel(Text(model.isPlaying ? "Pause" : "Play"))
     }
 
     private var divider: some View {
         Rectangle()
-            .fill(Brutal.controlEdge)
+            .fill(Theme.controlEdge)
             .frame(width: 1, height: 18)
             .accessibilityHidden(true)
     }
@@ -73,12 +73,12 @@ struct PlaybackControls: View {
     private func actions(named: Bool) -> some View {
         HStack(spacing: 2) {
             action("Split", symbol: "scissors", named: named) { model.split() }
-                .brutalTip("Split", key: "S", detail: "Splits the clip at the playhead.")
+                .themeTip("Split", key: "S", detail: "Splits the clip at the playhead.")
             action("Cut", symbol: "trash", named: named) {
                 _ = model.cutSelection() || model.deleteSelectedClip()
             }
             .disabled(model.selection == nil && model.selectedClipID == nil)
-            .brutalTip("Cut", key: "⌫", detail: "Cuts out the selected section or clip and closes the gap. Shift-drag along the lanes to select a section.")
+            .themeTip("Cut", key: "⌫", detail: "Cuts out the selected section or clip and closes the gap. Shift-drag along the lanes to select a section.")
             trimIdleButton(named: named)
             AddMediaMenu(model: model, named: named)
         }
@@ -88,7 +88,7 @@ struct PlaybackControls: View {
         Button(action: perform) {
             label(title, symbol: symbol, named: named)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar))
+        .buttonStyle(ThemeButtonStyle(.toolbar))
         .accessibilityLabel(Text(title))
     }
 
@@ -107,35 +107,35 @@ struct PlaybackControls: View {
                 label("Trim idle", symbol: "clock", named: named)
             }
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar))
+        .buttonStyle(ThemeButtonStyle(.toolbar))
         .disabled(!model.canTrimIdleTime)
-        .brutalTip("Trim idle", detail: "Trims the still start and end of the recording, keeping any speech. It works while the edit is only trims and cuts.")
+        .themeTip("Trim idle", detail: "Trims the still start and end of the recording, keeping any speech. It works while the edit is only trims and cuts.")
         .accessibilityLabel(Text("Trim idle"))
     }
 
     private var snap: some View {
-        Button { model.toggleSnapping() } label: { Image(systemName: "arrow.right.and.line.vertical.and.arrow.left").font(Brutal.toolIcon) }
-            .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.snapping))
-            .brutalTip("Snap", key: "N", detail: "Snaps the playhead and dragged clips to clip edges.")
+        Button { model.toggleSnapping() } label: { Image(systemName: "arrow.right.and.line.vertical.and.arrow.left").font(Theme.toolIcon) }
+            .buttonStyle(ThemeButtonStyle(.toolbar, isOn: model.snapping))
+            .themeTip("Snap", key: "N", detail: "Snaps the playhead and dragged clips to clip edges.")
             .accessibilityLabel(Text("Snap"))
     }
 
     private var zoom: some View {
         HStack(spacing: 2) {
-            Button { model.zoom(bySteps: -1) } label: { Image(systemName: "minus").font(Brutal.toolIcon) }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .brutalTip("Zoom out", key: "⌘−")
+            Button { model.zoom(bySteps: -1) } label: { Image(systemName: "minus").font(Theme.toolIcon) }
+                .buttonStyle(ThemeButtonStyle(.toolbar))
+                .themeTip("Zoom out", key: "⌘−")
                 .accessibilityLabel(Text("Zoom out"))
-            BrutalSlider(value: Binding {
+            ThemeSlider(value: Binding {
                 TimelineZoom.sliderPosition(for: model.zoom)
             } set: {
                 model.setZoom(TimelineZoom.zoom(atSliderPosition: $0))
             }, width: 80)
-            .brutalTip("Zoom", key: "⌘0", detail: "Fits the whole recording in the timeline again.")
+            .themeTip("Zoom", key: "⌘0", detail: "Fits the whole recording in the timeline again.")
             .accessibilityLabel(Text("Zoom"))
-            Button { model.zoom(bySteps: 1) } label: { Image(systemName: "plus").font(Brutal.toolIcon) }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .brutalTip("Zoom in", key: "⌘+")
+            Button { model.zoom(bySteps: 1) } label: { Image(systemName: "plus").font(Theme.toolIcon) }
+                .buttonStyle(ThemeButtonStyle(.toolbar))
+                .themeTip("Zoom in", key: "⌘+")
                 .accessibilityLabel(Text("Zoom in"))
         }
     }
@@ -144,11 +144,11 @@ struct PlaybackControls: View {
     private func label(_ title: LocalizedStringResource, symbol: String, named: Bool) -> some View {
         if named {
             HStack(spacing: 5) {
-                Image(systemName: symbol).font(Brutal.toolIcon)
+                Image(systemName: symbol).font(Theme.toolIcon)
                 Text(title)
             }
         } else {
-            Image(systemName: symbol).font(Brutal.toolIcon)
+            Image(systemName: symbol).font(Theme.toolIcon)
         }
     }
 }
@@ -160,10 +160,10 @@ private struct PlaybackTime: View {
     var body: some View {
         HStack(spacing: 0) {
             Text(verbatim: Timecode.string(model.playhead))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
             Text(verbatim: " / " + Timecode.string(model.keptLength))
                 .fontWeight(.medium)
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
         }
         .font(.scaled(13, weight: .bold, design: .monospaced))
         .monospacedDigit()
@@ -181,22 +181,22 @@ private struct AddMediaMenu: View {
     let named: Bool
 
     var body: some View {
-        BrutalDropdown(title: "Add media", entries: [
+        ThemeDropdown(title: "Add media", entries: [
             .item("Add Video or Audio at Playhead…") { pick(appendToMain: false) },
             .item("Add Video to End…") { pick(appendToMain: true) },
         ]) {
             if named {
                 HStack(spacing: 5) {
-                    Image(systemName: "plus").font(Brutal.toolIcon)
+                    Image(systemName: "plus").font(Theme.toolIcon)
                     Text("Add media")
                 }
             } else {
-                Image(systemName: "plus").font(Brutal.toolIcon)
+                Image(systemName: "plus").font(Theme.toolIcon)
             }
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar))
+        .buttonStyle(ThemeButtonStyle(.toolbar))
         .fixedSize()
-        .brutalTip("Add media", detail: "Adds video or sound files to the timeline, at the playhead or after the recording. You can also drop them on the window.")
+        .themeTip("Add media", detail: "Adds video or sound files to the timeline, at the playhead or after the recording. You can also drop them on the window.")
     }
 
     private func pick(appendToMain: Bool) {

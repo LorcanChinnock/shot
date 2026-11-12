@@ -437,7 +437,7 @@ private final class HandleView: NSView {
     private let handle: RegionHandle
     private let onDrag: (CGVector) -> Void
     private var last: CGPoint?
-    private static let line = NSColor(Brutal.line)
+    private static let line = NSColor(Theme.line)
 
     init(handle: RegionHandle, onDrag: @escaping (CGVector) -> Void) {
         self.handle = handle
@@ -725,8 +725,8 @@ private struct SetupBarView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            BrutalSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: CaptureTarget.allCases.map { ($0, $0.title) })
-                .brutalTip("Switch what to record")
+            ThemeSegmented(selection: Binding(get: { model.mode }, set: { actions.switchMode($0) }), options: CaptureTarget.allCases.map { ($0, $0.title) })
+                .themeTip("Switch what to record")
                 .accessibilityLabel(Text("What to record"))
             FloatingDivider().padding(.horizontal, 4)
             microphone
@@ -741,9 +741,9 @@ private struct SetupBarView: View {
             } label: {
                 Text("Cancel").frame(minHeight: Self.buttonContent)
             }
-            .buttonStyle(BrutalButtonStyle(floating: true))
+            .buttonStyle(ThemeButtonStyle(floating: true))
             .keyboardShortcut(.cancelAction)
-            .brutalTip("Cancel", key: "Esc")
+            .themeTip("Cancel", key: "Esc")
             Button {
                 actions.record()
             } label: {
@@ -754,9 +754,9 @@ private struct SetupBarView: View {
                 }
                 .frame(minHeight: Self.buttonContent)
             }
-            .buttonStyle(BrutalButtonStyle(.main, floating: true))
+            .buttonStyle(ThemeButtonStyle(.main, floating: true))
             .keyboardShortcut(.defaultAction)
-            .brutalTip(recordTip, key: "↩")
+            .themeTip(recordTip, key: "↩")
             .accessibilityLabel(Text("Record"))
         }
         .padding(7)
@@ -777,7 +777,7 @@ private struct SetupBarView: View {
                     .frame(width: (16 * CGFloat(textSize.scale)).rounded())
                 VStack(alignment: .leading, spacing: 3) {
                     Text(verbatim: model.microphoneName)
-                        .font(Brutal.small)
+                        .font(Theme.small)
                         .truncationMode(.tail)
                         .frame(maxWidth: (150 * CGFloat(textSize.scale)).rounded(), alignment: .leading)
                         .fixedSize()
@@ -788,15 +788,15 @@ private struct SetupBarView: View {
             .frame(minHeight: Self.toolbarContent)
             .padding(.horizontal, 5)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on, floating: true))
-        .brutalTip(microphoneTip, detail: microphoneDetail)
+        .buttonStyle(ThemeButtonStyle(.toolbar, isOn: on, floating: true))
+        .themeTip(microphoneTip, detail: microphoneDetail)
         .accessibilityLabel(Text("Microphone"))
         .accessibilityValue((on ? Text("On") : Text("Off")) + Text(verbatim: ", \(model.microphoneName)"))
         .accessibilityAddTraits(.isToggle)
     }
 
     private var frameRate: some View {
-        BrutalDropdown(title: "Frame rate", entries: model.frameRates.map { fps in
+        ThemeDropdown(title: "Frame rate", entries: model.frameRates.map { fps in
             .item("\(fps) fps", selected: fps == model.fps) { actions.setFrameRate(fps) }
         }) {
             HStack(spacing: 4) {
@@ -809,8 +809,8 @@ private struct SetupBarView: View {
             .frame(minHeight: Self.toolbarContent)
             .padding(.horizontal, 3)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, floating: true))
-        .brutalTip("Frame rate", detail: "Just for this recording. Settings › Recording sets the one each recording starts with.")
+        .buttonStyle(ThemeButtonStyle(.toolbar, floating: true))
+        .themeTip("Frame rate", detail: "Just for this recording. Settings › Recording sets the one each recording starts with.")
     }
 
     private var microphoneTip: LocalizedStringResource {
@@ -873,23 +873,23 @@ private struct SetupToggle: View {
                     .frame(width: (16 * CGFloat(textSize.scale)).rounded())
                 // The semibold name holds the button at its on width, so turning it on doesn't shift the bar.
                 ZStack {
-                    Text(title).font(Brutal.small).hidden()
-                    Text(title).font(on ? Brutal.small : .scaled(12))
+                    Text(title).font(Theme.small).hidden()
+                    Text(title).font(on ? Theme.small : .scaled(12))
                 }
             }
             .modifier(SetupToggleForeground(on: on, enabled: isEnabled))
             .frame(minHeight: SetupBarView.toolbarContent)
             .padding(.horizontal, 5)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on, floating: true))
-        .brutalTip(help, detail: detail)
+        .buttonStyle(ThemeButtonStyle(.toolbar, isOn: on, floating: true))
+        .themeTip(help, detail: detail)
         .accessibilityLabel(Text(title))
         .accessibilityValue(on ? Text("On") : Text("Off"))
         .accessibilityAddTraits(.isToggle)
     }
 }
 
-/// Sets the toggle's colour unless it's disabled, when `BrutalButtonStyle`'s disabled colour shows through.
+/// Sets the toggle's colour unless it's disabled, when `ThemeButtonStyle`'s disabled colour shows through.
 private struct SetupToggleForeground: ViewModifier {
     let on: Bool
     let enabled: Bool
@@ -910,7 +910,7 @@ private struct RecordDot: View {
     var body: some View {
         let side = (13 * CGFloat(textSize.scale)).rounded()
         Circle()
-            .fill(Brutal.record)
+            .fill(Theme.record)
             .inkBorder(Circle(), width: 1.5, color: Color(hex: 0x16161A))
             .frame(width: side, height: side)
             .accessibilityHidden(true)
@@ -969,8 +969,8 @@ private struct CountdownView: View {
     static let spacing: CGFloat = 12
     static let digits = ScaledFont.scaled(40, weight: .bold, tabular: true)
     static let hintFont = ScaledFont.scaled(12)
-    /// The Cancel button's text, as `BrutalButtonStyle` draws a floating secondary button.
-    static let buttonFont = Brutal.body
+    /// The Cancel button's text, as `ThemeButtonStyle` draws a floating secondary button.
+    static let buttonFont = Theme.body
     static let buttonPadding: CGFloat = 8
 
     static func hint(_ kind: CountdownPanel.Kind) -> String? {
@@ -1015,7 +1015,7 @@ private struct CountdownView: View {
                     .stroke(Color.white.opacity(contrast == .increased ? 0.4 : 0.14), lineWidth: ringWidth)
                 Circle()
                     .trim(from: 0, to: ring)
-                    .stroke(Brutal.accent, style: StrokeStyle(lineWidth: ringWidth, lineCap: .round))
+                    .stroke(Theme.accent, style: StrokeStyle(lineWidth: ringWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text(verbatim: "\(seconds)")
                     .font(Self.digits)
@@ -1034,7 +1034,7 @@ private struct CountdownView: View {
                     .accessibilityHidden(true)
             }
             Button("Cancel · Esc") { onCancel() }
-                .buttonStyle(BrutalButtonStyle(floating: true))
+                .buttonStyle(ThemeButtonStyle(floating: true))
                 .keyboardShortcut(.cancelAction)
                 .accessibilityLabel(Text("Cancel"))
         }

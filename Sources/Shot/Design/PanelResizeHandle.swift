@@ -21,7 +21,7 @@ struct PanelResizeHandle: View {
             .frame(width: 14)
             .overlay {
                 Capsule()
-                    .fill(Brutal.ink.opacity(hovering || startWidth != nil ? 0.4 : 0))
+                    .fill(Theme.ink.opacity(hovering || startWidth != nil ? 0.4 : 0))
                     .frame(width: 4, height: 40)
             }
             .contentShape(Rectangle())

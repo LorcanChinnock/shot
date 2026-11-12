@@ -395,7 +395,7 @@ final class SelectionOverlayView: NSView {
         // window dims more.
         let hole = holeRect()
         // A whole window keeps rounded corners like the window's own. A page and a screen are square.
-        let radius = controller.target == .window && controller.hoveredPageFrame == nil ? Brutal.Radius.panel : 0
+        let radius = controller.target == .window && controller.hoveredPageFrame == nil ? Theme.Radius.panel : 0
         let dim = CGMutablePath()
         dim.addRect(bounds)
         if let hole {
@@ -456,7 +456,7 @@ final class SelectionOverlayView: NSView {
         ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.95).cgColor)
         ctx.stroke(area.insetBy(dx: -0.5, dy: -0.5))
         let scale = window?.backingScaleFactor ?? 2
-        let edge = Brutal.inkWidth(1.5, scale: scale)
+        let edge = Theme.inkWidth(1.5, scale: scale)
         let radius = AreaHandles.diameter / 2
         ctx.setLineWidth(edge)
         ctx.setStrokeColor(Self.ink.cgColor)
@@ -481,20 +481,20 @@ final class SelectionOverlayView: NSView {
     /// The board's highlight on the window, page or screen a click would capture: the accent at 16% over it, a 3 pt accent
     /// ring just inside its edge and a 1.5 pt ink ring inside that, so it shows on light and dark windows alike.
     private func drawPickHighlight(_ hole: CGRect, radius: CGFloat, in ctx: CGContext) {
-        let ink = Brutal.inkWidth(1.5, scale: window?.backingScaleFactor ?? 2)
+        let ink = Theme.inkWidth(1.5, scale: window?.backingScaleFactor ?? 2)
         let ring: CGFloat = 3
         func path(_ inset: CGFloat) -> CGPath {
             Self.roundedPath(hole.insetBy(dx: inset, dy: inset), radius: radius - inset)
         }
         ctx.addPath(path(0))
-        ctx.setFillColor(Brutal.yellowNS.withAlphaComponent(0.16).cgColor)
+        ctx.setFillColor(Theme.yellowNS.withAlphaComponent(0.16).cgColor)
         ctx.fillPath()
         guard hole.width > (ring + ink) * 2, hole.height > (ring + ink) * 2 else {
             return
         }
         ctx.addPath(path(0))
         ctx.addPath(path(ring))
-        ctx.setFillColor(Brutal.yellowNS.cgColor)
+        ctx.setFillColor(Theme.yellowNS.cgColor)
         ctx.fillPath(using: .evenOdd)
         ctx.addPath(path(ring))
         ctx.addPath(path(ring + ink))
@@ -569,7 +569,7 @@ final class SelectionOverlayView: NSView {
                     camera.draw(in: CGRect(x: (frame.midX - s.width / 2).rounded(), y: (frame.midY - s.height / 2).rounded(), width: s.width, height: s.height))
                 }
             case .name:
-                drawPanel(frame, radius: Brutal.Radius.panel, opacity: FloatingPanel.Opacity.standard, shadow: false, increased: increased, in: ctx)
+                drawPanel(frame, radius: Theme.Radius.panel, opacity: FloatingPanel.Opacity.standard, shadow: false, increased: increased, in: ctx)
                 let nameRect = CGRect(x: (frame.midX - nameSize.width / 2).rounded(), y: frame.maxY - 8 - nameSize.height, width: nameSize.width, height: nameSize.height)
                 name.draw(with: nameRect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
                 size.draw(at: CGPoint(x: (frame.midX - sizeSize.width / 2).rounded(), y: nameRect.minY - 2 - sizeSize.height))
@@ -642,7 +642,7 @@ final class SelectionOverlayView: NSView {
         let textSize = Preferences().textSize
         let scale = window?.backingScaleFactor ?? 2
         let side = textSize.points(Loupe.side).rounded()
-        let inkRing = Brutal.inkWidth(1.5, scale: scale)
+        let inkRing = Theme.inkWidth(1.5, scale: scale)
         let outset = 3 + inkRing
         let loupe = Loupe.frame(side: side, outset: outset, at: point, right: right, up: up, in: bounds, avoiding: avoiding)
         let imageSize = CGSize(width: image.width, height: image.height)
@@ -683,7 +683,7 @@ final class SelectionOverlayView: NSView {
             ctx.fill(CGRect(x: loupe.minX, y: loupe.minY + offset - hairline / 2, width: side, height: hairline))
         }
         // The row and column lit, leaving the pointer's own pixel its true colour.
-        ctx.setFillColor(Brutal.yellowNS.withAlphaComponent(0.35).cgColor)
+        ctx.setFillColor(Theme.yellowNS.withAlphaComponent(0.35).cgColor)
         ctx.fill([
             CGRect(x: centre.minX, y: loupe.minY, width: cell, height: centre.minY - loupe.minY),
             CGRect(x: centre.minX, y: centre.maxY, width: cell, height: loupe.maxY - centre.maxY),
@@ -712,7 +712,7 @@ final class SelectionOverlayView: NSView {
         ctx.restoreGState()
     }
 
-    private static let ink = Brutal.inkNS
+    private static let ink = Theme.inkNS
     /// The capture bar is too tall for a pill, so it has its own radius.
     private static let barRadius: CGFloat = 16
     /// The size, ratio and loupe position chips are a touch more solid than the bar, as the board draws them.
@@ -735,7 +735,7 @@ final class SelectionOverlayView: NSView {
             NSColor.white.setStroke()
             path.stroke()
             path.lineWidth = 1.2
-            Brutal.inkNS.setStroke()
+            Theme.inkNS.setStroke()
             path.stroke()
             return true
         }
@@ -986,13 +986,13 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawButton(_ button: BarButton, in box: CGRect, hovered: Bool, increased: Bool, scale: CGFloat, font: NSFont, icon: (BarButton, NSColor) -> NSImage?) {
-        let radius = min(Brutal.Radius.group, box.height / 2)
+        let radius = min(Theme.Radius.group, box.height / 2)
         let content: NSColor
         switch button.look {
         case .picked:
             // The ink control: the accent with a 1.5 pt black outline and a 2 pt black drop, on whole device pixels.
-            let line = Brutal.inkWidth(1.5, scale: scale)
-            let drop = Brutal.inkOffset(2, scale: scale)
+            let line = Theme.inkWidth(1.5, scale: scale)
+            let drop = Theme.inkOffset(2, scale: scale)
             NSColor.black.setFill()
             NSBezierPath(roundedRect: box.offsetBy(dx: 0, dy: -drop), xRadius: radius, yRadius: radius).fill()
             FloatingPanel.accentNS.setFill()

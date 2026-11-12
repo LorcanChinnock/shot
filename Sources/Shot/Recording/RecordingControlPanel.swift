@@ -109,8 +109,8 @@ private struct RecordingControlView: View {
             .frame(minHeight: Self.toolbarContent)
             .padding(.horizontal, 3)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, floating: true))
-        .brutalTip(microphoneTip)
+        .buttonStyle(ThemeButtonStyle(.toolbar, floating: true))
+        .themeTip(microphoneTip)
         .accessibilityLabel(Text("Microphone"))
         .accessibilityValue(muted ? Text("Muted") : Text("On"))
         .accessibilityAddTraits(.isToggle)
@@ -123,8 +123,8 @@ private struct RecordingControlView: View {
                 .font(.scaled(14, weight: .semibold))
                 .frame(minWidth: Self.toolbarContent, minHeight: Self.toolbarContent)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: on, floating: true))
-        .brutalTip(cameraTip, detail: "Double-click the bubble to change its size.")
+        .buttonStyle(ThemeButtonStyle(.toolbar, isOn: on, floating: true))
+        .themeTip(cameraTip, detail: "Double-click the bubble to change its size.")
         .accessibilityLabel(Text("Camera bubble"))
         .accessibilityValue(on ? Text("On") : Text("Off"))
         .accessibilityAddTraits(.isToggle)
@@ -136,8 +136,8 @@ private struct RecordingControlView: View {
                 .font(.scaled(13, weight: .semibold))
                 .frame(minWidth: Self.toolbarContent, minHeight: Self.toolbarContent)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, floating: true))
-        .brutalTip("Pause recording")
+        .buttonStyle(ThemeButtonStyle(.toolbar, floating: true))
+        .themeTip("Pause recording")
         .accessibilityLabel(Text("Pause"))
     }
 
@@ -151,8 +151,8 @@ private struct RecordingControlView: View {
             }
             .frame(minHeight: Self.buttonContent)
         }
-        .buttonStyle(BrutalButtonStyle(.main, floating: true))
-        .brutalTip("Resume recording")
+        .buttonStyle(ThemeButtonStyle(.main, floating: true))
+        .themeTip("Resume recording")
     }
 
     private var discard: some View {
@@ -163,8 +163,8 @@ private struct RecordingControlView: View {
                 .font(.scaled(14, weight: .semibold))
                 .frame(minWidth: Self.toolbarContent, minHeight: Self.toolbarContent)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, floating: true))
-        .brutalTip("Discard recording")
+        .buttonStyle(ThemeButtonStyle(.toolbar, floating: true))
+        .themeTip("Discard recording")
         .accessibilityLabel(Text("Discard"))
     }
 
@@ -185,8 +185,8 @@ private struct RecordingControlView: View {
             }
             .frame(minHeight: Self.buttonContent)
         }
-        .buttonStyle(BrutalButtonStyle(paused ? .secondary : .main, destructive: !paused, floating: true))
-        .brutalTip("Stop and save")
+        .buttonStyle(ThemeButtonStyle(paused ? .secondary : .main, destructive: !paused, floating: true))
+        .themeTip("Stop and save")
     }
 
     private var microphoneTip: LocalizedStringResource {

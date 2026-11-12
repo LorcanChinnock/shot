@@ -220,16 +220,16 @@ private struct StepPage<Content: View, Picture: View, Leading: View, Trailing: V
             HStack(alignment: .top, spacing: 40) {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(title)
-                        .font(Brutal.display)
+                        .font(Theme.display)
                         .tracking(-0.56)
-                        .foregroundStyle(Brutal.ink)
+                        .foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityFocused($titleFocused)
                     Text(subtitle)
                         .font(.scaled(14))
                         .lineSpacing(3)
-                        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                         .fixedSize(horizontal: false, vertical: true)
                     content
                         .padding(.top, 10)
@@ -247,7 +247,7 @@ private struct StepPage<Content: View, Picture: View, Leading: View, Trailing: V
             HStack(spacing: 8) {
                 if model.canGoBack {
                     Button("Back") { model.back() }
-                        .buttonStyle(BrutalButtonStyle(.plain, large: true))
+                        .buttonStyle(ThemeButtonStyle(.plain, large: true))
                         .fixedSize()
                 }
                 leading
@@ -316,7 +316,7 @@ private struct PermissionStep: View {
                     Permissions.openSettings()
                     model.visitedSettings = true
                 }
-                .buttonStyle(BrutalButtonStyle(large: true))
+                .buttonStyle(ThemeButtonStyle(large: true))
                 .fixedSize()
             }
         } trailing: {
@@ -324,7 +324,7 @@ private struct PermissionStep: View {
             // macOS can keep reporting access as missing until the relaunch, and asking again would wipe the grant.
             let asks = !model.hasPermission && !model.requestedAccess
             Button("Relaunch") { Permissions.relaunch() }
-                .buttonStyle(BrutalButtonStyle(asks ? .secondary : .main, large: true))
+                .buttonStyle(ThemeButtonStyle(asks ? .secondary : .main, large: true))
                 .keyboardShortcut(asks ? nil : .defaultAction)
                 .fixedSize()
             if asks {
@@ -333,7 +333,7 @@ private struct PermissionStep: View {
                     model.requestedAccess = true
                     model.visitedSettings = true
                 }
-                .buttonStyle(BrutalButtonStyle(.main, large: true))
+                .buttonStyle(ThemeButtonStyle(.main, large: true))
                 .keyboardShortcut(.defaultAction)
                 .fixedSize()
             }
@@ -363,15 +363,15 @@ private struct AccessibilityStep: View {
         } trailing: {
             if model.hasAccessibility {
                 Button("Continue") { model.next() }
-                    .buttonStyle(BrutalButtonStyle(.main, large: true))
+                    .buttonStyle(ThemeButtonStyle(.main, large: true))
                     .keyboardShortcut(.defaultAction)
                     .fixedSize()
             } else {
                 Button("Skip") { model.next() }
-                    .buttonStyle(BrutalButtonStyle(.plain, large: true))
+                    .buttonStyle(ThemeButtonStyle(.plain, large: true))
                     .fixedSize()
                 Button("Grant") { Permissions.requestAccessibility() }
-                    .buttonStyle(BrutalButtonStyle(.main, large: true))
+                    .buttonStyle(ThemeButtonStyle(.main, large: true))
                     .keyboardShortcut(.defaultAction)
                     .fixedSize()
             }
@@ -404,7 +404,7 @@ private struct SetupStep: View {
             ShortcutPicture(usesSystemKeys: model.usesSystemKeys)
         } trailing: {
             Button("Continue") { model.finishSetup() }
-                .buttonStyle(BrutalButtonStyle(.main, large: true))
+                .buttonStyle(ThemeButtonStyle(.main, large: true))
                 .keyboardShortcut(.defaultAction)
                 .fixedSize()
         }
@@ -434,7 +434,7 @@ private struct TryItStep: View {
                 TryItPicture(keys: area?.keycaps, captured: true)
             } trailing: {
                 Button("Done") { WelcomeWindow.close() }
-                    .buttonStyle(BrutalButtonStyle(.main, large: true))
+                    .buttonStyle(ThemeButtonStyle(.main, large: true))
                     .keyboardShortcut(.defaultAction)
                     .fixedSize()
             }
@@ -443,13 +443,13 @@ private struct TryItStep: View {
                 SettingsCard {
                     Group {
                         if let area {
-                            Text("Press \(Text(area.displayString).font(Brutal.label.resolved(textSize))), then drag out any area.")
+                            Text("Press \(Text(area.displayString).font(Theme.label.resolved(textSize))), then drag out any area.")
                         } else {
                             Text("Click the Shot icon in the menu bar, then Screenshot, and drag out any area.")
                         }
                     }
-                    .font(Brutal.body)
-                    .foregroundStyle(Brutal.ink)
+                    .font(Theme.body)
+                    .foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 12)
@@ -459,7 +459,7 @@ private struct TryItStep: View {
                 TryItPicture(keys: area?.keycaps, captured: false)
             } trailing: {
                 Button("Skip") { WelcomeWindow.close() }
-                    .buttonStyle(BrutalButtonStyle(.plain, large: true))
+                    .buttonStyle(ThemeButtonStyle(.plain, large: true))
                     .fixedSize()
             }
         }
@@ -475,13 +475,13 @@ private struct Instruction: View {
         HStack(spacing: 12) {
             Text(number, format: .number)
                 .font(.scaled(11, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .frame(width: 20, height: 20)
-                .background(Brutal.fieldFill, in: Circle())
+                .background(Theme.fieldFill, in: Circle())
                 .accessibilityHidden(true)
             Text(text)
-                .font(Brutal.body)
-                .foregroundStyle(Brutal.ink)
+                .font(Theme.body)
+                .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -500,12 +500,12 @@ private struct Tip: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Image(systemName: symbol)
                 .font(.scaled(13, weight: .medium))
-                .foregroundStyle(Brutal.ink.opacity(0.85))
+                .foregroundStyle(Theme.ink.opacity(0.85))
                 .frame(width: 18)
                 .accessibilityHidden(true)
             Text(text)
-                .font(Brutal.body)
-                .foregroundStyle(Brutal.ink)
+                .font(Theme.body)
+                .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -532,7 +532,7 @@ private struct StepIndicator: View {
         HStack(spacing: 10) {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 if index > 0 {
-                    Rectangle().fill(Brutal.faint(0.2)).frame(width: 24, height: 1.5)
+                    Rectangle().fill(Theme.faint(0.2)).frame(width: 24, height: 1.5)
                 }
                 StepIndicatorItem(number: index + 1, item: item)
             }
@@ -559,9 +559,9 @@ private struct StepIndicatorItem: View {
 
     private var labelColor: AnyShapeStyle {
         switch item.state {
-        case .current: AnyShapeStyle(Brutal.ink)
-        case .done: AnyShapeStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
-        case .upcoming: AnyShapeStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+        case .current: AnyShapeStyle(Theme.ink)
+        case .done: AnyShapeStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
+        case .upcoming: AnyShapeStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
         }
     }
 
@@ -571,22 +571,22 @@ private struct StepIndicatorItem: View {
         case .done:
             Image(systemName: "checkmark")
                 .font(.system(size: 9, weight: .heavy))
-                .foregroundStyle(Brutal.window)
+                .foregroundStyle(Theme.window)
                 .frame(width: 18, height: 18)
-                .background(Brutal.ink, in: Circle())
+                .background(Theme.ink, in: Circle())
         case .current:
             Text(number, format: .number)
                 .font(.system(size: 10.5, weight: .heavy))
                 .foregroundStyle(Color(hex: 0x16161A))
                 .frame(width: 18, height: 18)
-                .background(Brutal.accent, in: Circle())
+                .background(Theme.accent, in: Circle())
                 .inkBorder(Circle(), width: 1.5)
         case .upcoming:
             Text(number, format: .number)
                 .font(.system(size: 10.5, weight: .bold))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .frame(width: 18, height: 18)
-                .inkBorder(Circle(), width: 1.5, color: Brutal.ink.opacity(0.25))
+                .inkBorder(Circle(), width: 1.5, color: Theme.ink.opacity(0.25))
         }
     }
 }
@@ -614,13 +614,13 @@ private struct BigKeycap: View {
         let shape = RoundedRectangle(cornerRadius: 12, style: .circular)
         Text(label)
             .font(.system(size: 26, weight: .semibold))
-            .foregroundStyle(Brutal.ink)
+            .foregroundStyle(Theme.ink)
             .padding(.horizontal, 14)
             .frame(minWidth: 64, minHeight: 64)
-            .background(Brutal.group, in: shape)
+            .background(Theme.group, in: shape)
             .inkBorder(shape, width: 1.5)
             .background {
-                shape.fill(Brutal.line).offset(y: Brutal.inkOffset(4, scale: scale))
+                shape.fill(Theme.line).offset(y: Theme.inkOffset(4, scale: scale))
             }
             .padding(.bottom, 4)
     }
@@ -647,12 +647,12 @@ private struct PictureLine: View {
         HStack(spacing: 10) {
             Image(systemName: symbol)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .frame(width: 34, height: 34)
-                .background(Brutal.controlFill, in: RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+                .background(Theme.controlFill, in: RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular))
             Text(text)
                 .font(.scaled(13))
-                .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: 260, alignment: .leading)
@@ -702,33 +702,33 @@ private struct PermissionPicture: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(list)
-                .font(Brutal.small)
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .font(Theme.small)
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .padding(.leading, 12)
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 6, style: .circular).fill(Brutal.fieldFill).frame(width: 28, height: 28)
-                    Capsule().fill(Brutal.fieldFill).frame(width: 84, height: 8)
+                    RoundedRectangle(cornerRadius: 6, style: .circular).fill(Theme.fieldFill).frame(width: 28, height: 28)
+                    Capsule().fill(Theme.fieldFill).frame(width: 84, height: 8)
                     Spacer()
                     PictureSwitch(isOn: false)
                 }
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
-                Brutal.separator.frame(height: 1)
+                Theme.separator.frame(height: 1)
                 HStack(spacing: 10) {
                     AppIconView(size: 28)
-                    Text(verbatim: "Shot").font(Brutal.label).foregroundStyle(Brutal.ink)
+                    Text(verbatim: "Shot").font(Theme.label).foregroundStyle(Theme.ink)
                     Spacer()
                     PictureSwitch(isOn: true)
                 }
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
             }
-            .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
+            .depth(.group, fill: Theme.group, radius: Theme.Radius.group)
             if isOn {
                 Label("Shot is on", systemImage: "checkmark")
                     .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                     .padding(.leading, 12)
             }
         }
@@ -737,14 +737,14 @@ private struct PermissionPicture: View {
     }
 }
 
-/// A drawn switch, which nothing can press: `BrutalToggleStyle`'s look without the control.
+/// A drawn switch, which nothing can press: `ThemeToggleStyle`'s look without the control.
 private struct PictureSwitch: View {
     let isOn: Bool
 
     var body: some View {
         if isOn {
             ZStack(alignment: .trailing) {
-                Capsule().fill(Brutal.accent)
+                Capsule().fill(Theme.accent)
                 Circle().fill(.white)
                     .inkBorder(Circle(), width: 1.5)
                     .frame(width: 17, height: 17)
@@ -754,7 +754,7 @@ private struct PictureSwitch: View {
             .inkBorder(Capsule(), width: 1.5)
         } else {
             ZStack(alignment: .leading) {
-                Capsule().fill(Brutal.quietTrack)
+                Capsule().fill(Theme.quietTrack)
                 Circle().fill(.white)
                     .frame(width: 18, height: 18)
                     .shadow(color: .black.opacity(0.25), radius: 1, y: 1)
@@ -778,14 +778,14 @@ private struct TryItPicture: View {
             let shape = RoundedRectangle(cornerRadius: 4, style: .circular)
             ZStack {
                 if captured {
-                    shape.fill(Brutal.group)
+                    shape.fill(Theme.group)
                     Image(systemName: "checkmark")
                         .font(.system(size: 26, weight: .bold))
-                        .foregroundStyle(Brutal.ink)
+                        .foregroundStyle(Theme.ink)
                 }
             }
             .frame(width: 200, height: 112)
-            .inkBorder(shape, width: 1.5, color: Brutal.ink.opacity(captured ? 0.14 : 0.6), dash: captured ? [] : [5, 4])
+            .inkBorder(shape, width: 1.5, color: Theme.ink.opacity(captured ? 0.14 : 0.6), dash: captured ? [] : [5, 4])
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

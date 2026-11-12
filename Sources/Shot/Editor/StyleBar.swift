@@ -80,7 +80,7 @@ struct StyleBar<Model: StyleBarEditing>: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
         HStack(spacing: 8) {
             switch content {
             case .colorAndWidth:
@@ -119,10 +119,10 @@ struct StyleBar<Model: StyleBarEditing>: View {
         }
         .padding(.vertical, 5)
         .padding(.horizontal, 7)
-        .depth(.float, fill: solid ? AnyShapeStyle(Brutal.group) : AnyShapeStyle(styleBarFill), radius: Brutal.Radius.group)
+        .depth(.float, fill: solid ? AnyShapeStyle(Theme.group) : AnyShapeStyle(styleBarFill), radius: Theme.Radius.group)
         .overlay {
             if contrast == .increased {
-                Color.clear.inkBorder(shape, width: 1, color: Brutal.ink.opacity(0.6))
+                Color.clear.inkBorder(shape, width: 1, color: Theme.ink.opacity(0.6))
             }
         }
         .contentShape(shape)
@@ -174,7 +174,7 @@ private struct GlyphSegmented<Value: Hashable, Glyph: View>: View {
     @ViewBuilder let glyph: (Value, Bool) -> Glyph
 
     var body: some View {
-        BrutalSegmented(
+        ThemeSegmented(
             selection: Binding(get: { selection }, set: { choose($0) }),
             options: options.map { (value: $0.0, label: $0.1) },
             glyphSize: CGSize(width: 26, height: 20),
@@ -193,14 +193,14 @@ private struct StyleBarGlyph: View {
     }
 
     static func color(selected: Bool) -> ContrastAware {
-        selected ? ContrastAware(standard: Brutal.ink, increased: Brutal.ink) : ContrastAware(standard: Brutal.ink.opacity(0.85), increased: Brutal.ink)
+        selected ? ContrastAware(standard: Theme.ink, increased: Theme.ink) : ContrastAware(standard: Theme.ink.opacity(0.85), increased: Theme.ink)
     }
 }
 
 private struct StyleBarDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Brutal.controlEdge)
+            .fill(Theme.controlEdge)
             .frame(width: 1, height: 18)
             .accessibilityHidden(true)
     }
@@ -229,12 +229,12 @@ private struct StyleBarSwatch: View {
                 .frame(width: 20, height: 20)
                 .background {
                     if selected {
-                        Color.clear.inkBorder(Circle(), width: 1.5, color: Brutal.ink).padding(-3.5)
+                        Color.clear.inkBorder(Circle(), width: 1.5, color: Theme.ink).padding(-3.5)
                     }
                 }
                 .background {
                     if focused {
-                        Color.clear.inkBorder(Circle(), width: 4, color: Brutal.focusRing).padding(selected ? -7.5 : -4)
+                        Color.clear.inkBorder(Circle(), width: 4, color: Theme.focusRing).padding(selected ? -7.5 : -4)
                     }
                 }
                 .contentShape(Circle())
@@ -242,7 +242,7 @@ private struct StyleBarSwatch: View {
         .buttonStyle(.plain)
         .focusEffectDisabled()
         .focused($focused)
-        .brutalTip(name)
+        .themeTip(name)
         .accessibilityLabel(Text(name))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
@@ -256,11 +256,11 @@ private struct MoreStyleButton<Model: StyleBarEditing>: View {
         Button {
             model.showsMoreStyle.toggle()
         } label: {
-            Image(systemName: "ellipsis").font(Brutal.toolIcon)
+            Image(systemName: "ellipsis").font(Theme.toolIcon)
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsMoreStyle))
+        .buttonStyle(ThemeButtonStyle(.toolbar, isOn: model.showsMoreStyle))
         .accessibilityLabel(Text("More style"))
-        .brutalTip("More style", detail: "Shows the rest of this mark's options, such as white, custom colours and Reset.")
+        .themeTip("More style", detail: "Shows the rest of this mark's options, such as white, custom colours and Reset.")
         .popover(isPresented: $model.showsMoreStyle, arrowEdge: .bottom) {
             MoreStyle(model: model)
         }
@@ -277,16 +277,16 @@ private struct MoreStyle<Model: StyleBarEditing>: View {
             if model.showsStyle {
                 if let shape = model.paletteShape {
                     row("Shape") {
-                        BrutalDropdown(title: "Shape", entries: BoxShape.allCases.map { option in
+                        ThemeDropdown(title: "Shape", entries: BoxShape.allCases.map { option in
                             .item(option.title, symbol: option.symbol, selected: option == shape) { model.setShape(option) }
                         }) {
                             HStack(spacing: 6) {
-                                Image(systemName: shape.symbol).font(Brutal.toolIcon)
+                                Image(systemName: shape.symbol).font(Theme.toolIcon)
                                 Text(shape.title)
                                 Image(systemName: "chevron.up.chevron.down").font(.scaled(9, weight: .bold))
                             }
                         }
-                        .buttonStyle(BrutalButtonStyle(.popUp))
+                        .buttonStyle(ThemeButtonStyle(.popUp))
                         .fixedSize()
                     }
                 }
@@ -324,7 +324,7 @@ private struct MoreStyle<Model: StyleBarEditing>: View {
                                 Tile(selected: alignment == option, help: option.title) {
                                     model.setAlignment(option)
                                 } label: {
-                                    Image(systemName: option.symbol).font(Brutal.toolIcon)
+                                    Image(systemName: option.symbol).font(Theme.toolIcon)
                                 }
                             }
                             if let vertical = model.paletteVerticalAlignment {
@@ -333,7 +333,7 @@ private struct MoreStyle<Model: StyleBarEditing>: View {
                                     Tile(selected: vertical == option, help: option.title) {
                                         model.setVerticalAlignment(option)
                                     } label: {
-                                        Image(systemName: option.symbol).font(Brutal.toolIcon)
+                                        Image(systemName: option.symbol).font(Theme.toolIcon)
                                     }
                                 }
                             }
@@ -349,18 +349,18 @@ private struct MoreStyle<Model: StyleBarEditing>: View {
                 row("Strength") {
                     slider(value: spotlight.strength, range: SpotlightStyle.strengths) { model.setSpotlightLook(effect: spotlight.effect, strength: $0) }
                         .accessibilityLabel(Text("Strength"))
-                        .brutalTip("Strength", detail: "Applies to every spotlight in the image.")
+                        .themeTip("Strength", detail: "Applies to every spotlight in the image.")
                 }
                 row("Soft edge") {
                     slider(value: spotlight.softEdge, range: 0...1, set: model.setSpotlightSoftEdge)
                         .accessibilityLabel(Text("Soft edge"))
-                        .brutalTip("Soft edge", detail: "Fades the spotlight into the dim.")
+                        .themeTip("Soft edge", detail: "Fades the spotlight into the dim.")
                 }
             }
             Button("Reset", action: model.resetToolOptions)
-                .buttonStyle(BrutalButtonStyle(.plain))
+                .buttonStyle(ThemeButtonStyle(.plain))
                 .disabled(!model.canResetToolOptions)
-                .brutalTip("Reset", detail: "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay.")
+                .themeTip("Reset", detail: "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay.")
         }
         .padding(14)
         .frame(minWidth: 240, alignment: .leading)
@@ -368,13 +368,13 @@ private struct MoreStyle<Model: StyleBarEditing>: View {
 
     private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(Brutal.small).foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            Text(title).font(Theme.small).foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             content()
         }
     }
 
     private func slider(value: Double, range: ClosedRange<Double>, set: @escaping (Double) -> Void) -> some View {
-        BrutalSlider(value: Binding(get: { value }, set: set), range: range, width: 200, onEditingChanged: model.setDraggingStyle)
+        ThemeSlider(value: Binding(get: { value }, set: set), range: range, width: 200, onEditingChanged: model.setDraggingStyle)
             .frame(height: 24)
     }
 }

@@ -255,7 +255,7 @@ private struct PinBar: View {
             row(label: false, slider: false)
         }
         .padding(3)
-        .floatingPanel(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular), opacity: FloatingPanel.Opacity.pinBar)
+        .floatingPanel(RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular), opacity: FloatingPanel.Opacity.pinBar)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { state.barHeight = $0 }
     }
 
@@ -264,8 +264,8 @@ private struct PinBar: View {
             Button { state.close() } label: {
                 Image(systemName: "xmark").font(.system(size: 10, weight: .bold))
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar, floating: true))
-            .brutalTip("Close")
+            .buttonStyle(ThemeButtonStyle(.toolbar, floating: true))
+            .themeTip("Close")
             .accessibilityLabel(Text("Close"))
             if label {
                 Text("Pinned · \(PinOpacity.percent(state.opacity))%")
@@ -277,7 +277,7 @@ private struct PinBar: View {
             }
             Spacer(minLength: 0)
             if slider {
-                BrutalSlider(
+                ThemeSlider(
                     value: Binding(get: { state.opacity }, set: { state.setOpacity($0) }),
                     range: PinOpacity.range,
                     width: 60,
@@ -289,8 +289,8 @@ private struct PinBar: View {
             Button { state.toggleClickThrough() } label: {
                 Image(systemName: "cursorarrow").font(.system(size: 12, weight: .semibold))
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar, isOn: state.clickThrough, floating: true))
-            .brutalTip(clickThroughTip)
+            .buttonStyle(ThemeButtonStyle(.toolbar, isOn: state.clickThrough, floating: true))
+            .themeTip(clickThroughTip)
             .accessibilityLabel(Text("Click Through"))
         }
     }
@@ -311,7 +311,7 @@ private struct PinFrame: ViewModifier {
         if frameless {
             content
         } else {
-            let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+            let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
             content
                 .clipShape(shape)
                 .inkBorder(shape, width: 1, color: Color(hex: 0x16161A).opacity(contrast == .increased ? 0.6 : 0.18))

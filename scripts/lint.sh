@@ -11,8 +11,8 @@ if [ -n "$hits" ]; then
     exit 1
 fi
 
-# Any Brutal colour, so a ternary such as `strokeBorder(selected ? Brutal.yellow : Brutal.ink, …)` is caught too.
-hits=$(grep -rnE 'strokeBorder\(.*Brutal\.' Sources | grep -v 'Sources/Shot/Design/BrutalStyle.swift' || true)
+# Any Theme colour, so a ternary such as `strokeBorder(selected ? Theme.yellow : Theme.ink, …)` is caught too.
+hits=$(grep -rnE 'strokeBorder\(.*Theme\.' Sources | grep -v 'Sources/Shot/Design/ThemeStyle.swift' || true)
 if [ -n "$hits" ]; then
     echo "Use inkBorder(_:width:) instead; content under a plain ink stroke bleeds through its anti-aliased outer edge:"
     echo "$hits"

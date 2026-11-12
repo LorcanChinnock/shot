@@ -56,7 +56,7 @@ private struct QuickAccessCardView: View {
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular) }
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: Theme.Radius.panel, style: .circular) }
 
     var body: some View {
         ZStack {
@@ -71,7 +71,7 @@ private struct QuickAccessCardView: View {
                     .transition(.opacity)
             }
             if !isBehind, card.isVideo, let duration = card.duration {
-                BrutalBadge(text: Gallery.duration(duration), style: .strong)
+                ThemeBadge(text: Gallery.duration(duration), style: .strong)
                     .monospacedDigit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     .padding(10)
@@ -166,7 +166,7 @@ private struct QuickAccessCardView: View {
                         .font(.scaled(14, weight: .semibold))
                         .frame(minWidth: 104)
                 }
-                .buttonStyle(BrutalButtonStyle(.main, floating: true))
+                .buttonStyle(ThemeButtonStyle(.main, floating: true))
                 // White over any picture, as the board draws it, in both appearances.
                 Button { controller.saveAs(card) } label: {
                     Text("Save As…")
@@ -175,7 +175,7 @@ private struct QuickAccessCardView: View {
                         // As tall as Copy, whose floating style pads it more.
                         .padding(.vertical, 3)
                 }
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(ThemeButtonStyle())
                 .environment(\.colorScheme, .light)
             }
             VStack {
@@ -236,7 +236,7 @@ struct CornerButton: View {
                 .font(.system(size: iconSize, weight: .bold))
         }
         .buttonStyle(CornerButtonStyle())
-        .brutalTip(help)
+        .themeTip(help)
         .accessibilityLabel(Text(help))
     }
 }

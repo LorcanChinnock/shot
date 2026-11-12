@@ -281,36 +281,36 @@ private struct RecordingRecoveryView: View {
 
     var body: some View {
         let scale = CGFloat(textSize.scale)
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.panel, style: .circular)
         VStack(spacing: Self.spacing) {
             Image(systemName: "record.circle")
                 .font(.scaled(22, weight: .medium))
-                .foregroundStyle(Brutal.SidebarTint.recording.icon)
+                .foregroundStyle(Theme.SidebarTint.recording.icon)
                 .frame(width: (Self.tile * scale).rounded(), height: (Self.tile * scale).rounded())
-                .background(Brutal.SidebarTint.recording.tile, in: RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+                .background(Theme.SidebarTint.recording.tile, in: RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular))
                 .accessibilityHidden(true)
             Text(Self.title)
                 .font(.scaled(15, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             Text(Self.detail(leftover))
                 .font(.scaled(12.5))
                 .lineSpacing(3)
-                .foregroundStyle(increased ? Brutal.ink : Brutal.secondaryText)
+                .foregroundStyle(increased ? Theme.ink : Theme.secondaryText)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             ButtonRow(shares: [1, 1], gap: Self.buttonGap) {
                 Button { actions.showParts() } label: {
                     (leftover.parts == 1 ? Text("Show File") : Text("Show Parts")).frame(maxWidth: .infinity)
                 }
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(ThemeButtonStyle())
                 .help(String(localized: "Show what was recorded in Finder"))
                 Button { actions.recover() } label: {
                     Text("Recover").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(BrutalButtonStyle(.main))
+                .buttonStyle(ThemeButtonStyle(.main))
                 .keyboardShortcut(.defaultAction)
                 .help(String(localized: "Save the recording to your save folder"))
             }
@@ -318,13 +318,13 @@ private struct RecordingRecoveryView: View {
             Button { actions.discard() } label: {
                 Text("Discard recording")
             }
-            .buttonStyle(BrutalButtonStyle(.plain, destructive: true))
+            .buttonStyle(ThemeButtonStyle(.plain, destructive: true))
             .help(String(localized: "Delete what was recorded. Undo brings it back for 5 seconds."))
         }
         .padding(Self.padding)
         .frame(width: Self.width(textSize))
         .fixedSize(horizontal: false, vertical: true)
-        .background(Brutal.group, in: shape)
+        .background(Theme.group, in: shape)
         .inkBorder(shape, width: increased ? 1 : 0.5, color: edge)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Self.title)
@@ -334,7 +334,7 @@ private struct RecordingRecoveryView: View {
     /// The Float edge: black at 20% in light and white at 14% in dark, and 60% ink with Increase Contrast.
     private var edge: Color {
         if increased {
-            return Brutal.ink.opacity(0.6)
+            return Theme.ink.opacity(0.6)
         }
         return colorScheme == .dark ? .white.opacity(0.14) : .black.opacity(0.2)
     }

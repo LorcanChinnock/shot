@@ -142,12 +142,12 @@ struct LayersPanel: View {
         HStack {
             Text("Layers")
                 .font(.scaled(13, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             Text(verbatim: "⌘L")
                 .font(.scaled(11))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .accessibilityHidden(true)
         }
         .padding(.horizontal, 6)
@@ -167,10 +167,10 @@ struct LayersPanel: View {
             Spacer(minLength: 4)
             Image(systemName: "lock.fill")
                 .font(.scaled(10, weight: .semibold))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .frame(width: 20)
         }
-        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
         .accessibilityElement(children: .ignore)
@@ -441,7 +441,7 @@ private struct FrameRowView: View {
                 .font(.scaled(11, weight: .medium))
                 .monospacedDigit()
                 .lineLimit(1)
-                .foregroundStyle(row.isSelected ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink)))
+                .foregroundStyle(row.isSelected ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink)))
             HStack(spacing: 0) {
                 RowButton(symbol: row.isHidden ? "eye.slash" : "eye", isOn: row.isHidden, label: row.isHidden ? "Show" : "Hide", action: onHide)
                 RowButton(symbol: "trash", isOn: false, label: "Delete", isShown: isHovered, action: onDelete)
@@ -451,15 +451,15 @@ private struct FrameRowView: View {
         .padding(.leading, 8)
         .padding(.trailing, 4)
         .frame(height: layerRowHeight)
-        .foregroundStyle(Brutal.ink)
+        .foregroundStyle(Theme.ink)
         .opacity(row.isHidden ? (contrast == .increased ? 0.8 : 0.5) : 1)
-        .inkOnFill(row.isSelected ? Brutal.yellow : nil)
+        .inkOnFill(row.isSelected ? Theme.yellow : nil)
         .background {
-            let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+            let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
             if row.isSelected {
-                shape.fill(Brutal.yellow).inkBorder(shape, width: 1.5)
+                shape.fill(Theme.yellow).inkBorder(shape, width: 1.5)
             } else if isHovered {
-                shape.fill(Brutal.hover)
+                shape.fill(Theme.hover)
             }
         }
         .contentShape(Rectangle())
@@ -481,7 +481,7 @@ private struct FrameRowView: View {
 private struct PanelHairline: View {
     var body: some View {
         Rectangle()
-            .fill(ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6)))
+            .fill(ContrastAware(standard: Theme.hairline, increased: Theme.ink.opacity(0.6)))
             .frame(height: 1)
             .accessibilityHidden(true)
     }
@@ -563,7 +563,7 @@ private struct LayerRowView<Grip: Gesture>: View {
     var body: some View {
         HStack(spacing: 9) {
             GripDots()
-                .foregroundStyle(Brutal.faded(isLifted ? 0.8 : 0.4))
+                .foregroundStyle(Theme.faded(isLifted ? 0.8 : 0.4))
                 .frame(width: 10, height: layerRowHeight)
                 .contentShape(Rectangle())
                 .pointerStyle(isLifted ? .grabActive : .grabIdle)
@@ -572,7 +572,7 @@ private struct LayerRowView<Grip: Gesture>: View {
                 .accessibilityHidden(true)
             Image(systemName: row.symbol)
                 .font(.scaled(12, weight: .medium))
-                .foregroundStyle(ContrastAware(standard: Brutal.ink.opacity(0.85), increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.ink.opacity(0.85), increased: Theme.ink))
                 .frame(width: 16)
                 .accessibilityHidden(true)
             if isRenaming {
@@ -599,7 +599,7 @@ private struct LayerRowView<Grip: Gesture>: View {
         .padding(.leading, 8)
         .padding(.trailing, 4)
         .frame(height: layerRowHeight)
-        .foregroundStyle(Brutal.ink)
+        .foregroundStyle(Theme.ink)
         // Lighter under Increase Contrast too, but enough that the eye in a hidden row keeps 3:1.
         .opacity(row.isHidden && !isLifted ? (contrast == .increased ? 0.8 : 0.5) : 1)
         .background { background }
@@ -619,23 +619,23 @@ private struct LayerRowView<Grip: Gesture>: View {
 
     @ViewBuilder
     private var background: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         if isLifted {
             Color.clear
-                .depth(.float, fill: Brutal.group, radius: Brutal.Radius.control)
+                .depth(.float, fill: Theme.group, radius: Theme.Radius.control)
                 .overlay { if isSelected { selectionFill(shape) } }
         } else if isSelected {
             selectionFill(shape)
         } else if isHovered {
-            shape.fill(Brutal.hover)
+            shape.fill(Theme.hover)
         }
     }
 
     /// Selection blue at 14% with a 1 pt edge at 35%, solid under Increase Contrast.
     private func selectionFill(_ shape: RoundedRectangle) -> some View {
         shape
-            .fill(Brutal.selection.opacity(0.14))
-            .inkBorder(shape, width: 1, color: Brutal.selection.opacity(contrast == .increased ? 1 : 0.35))
+            .fill(Theme.selection.opacity(0.14))
+            .inkBorder(shape, width: 1, color: Theme.selection.opacity(contrast == .increased ? 1 : 0.35))
     }
 }
 
@@ -663,16 +663,16 @@ private struct CropBadge: View {
         Button(action: action) {
             Text("Crop")
                 .font(.scaled(10, weight: .semibold))
-                .foregroundStyle(ContrastAware(standard: Brutal.ink.opacity(0.85), increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.ink.opacity(0.85), increased: Theme.ink))
                 .padding(.horizontal, 5)
                 .padding(.vertical, 1)
-                .background(Brutal.ink.opacity(contrast == .increased ? 0.16 : 0.08), in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .background(Theme.ink.opacity(contrast == .increased ? 0.16 : 0.08), in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
                 .opacity(isEnabled ? 1 : 0.5)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Adjust crop"))
-        .brutalTip("Adjust crop")
+        .themeTip("Adjust crop")
     }
 }
 
@@ -701,7 +701,7 @@ struct LayerNameField: View {
             .font(.scaled(fontSize, weight: .semibold))
             .lineLimit(1)
             .focused($isFocused)
-            .brutalField(focused: isFocused)
+            .themeField(focused: isFocused)
             .onSubmit { finish(commit: true) }
             .onExitCommand { finish(commit: false) }
             .onChange(of: isFocused) { _, focused in
@@ -743,7 +743,7 @@ private struct RowButton: View {
             Image(systemName: symbol)
                 .font(.scaled(11, weight: .semibold))
                 .frame(width: 20, height: 20)
-                .foregroundStyle(Brutal.ink.opacity(opacity))
+                .foregroundStyle(Theme.ink.opacity(opacity))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -751,7 +751,7 @@ private struct RowButton: View {
         .allowsHitTesting(isShown)
         .onHover { isHovered = $0 }
         .accessibilityLabel(Text(label))
-        .brutalTip(label)
+        .themeTip(label)
     }
 
     private var opacity: Double {

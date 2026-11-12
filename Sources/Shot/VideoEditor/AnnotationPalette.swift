@@ -60,7 +60,7 @@ struct DrawToolColumn: View {
         VStack(spacing: 2) {
             ForEach(VideoDrawTools.drawing, id: \.self) { tile($0) }
             Rectangle()
-                .fill(Brutal.controlEdge)
+                .fill(Theme.controlEdge)
                 .frame(width: 18, height: 1)
                 .padding(.vertical, 3)
                 .accessibilityHidden(true)
@@ -69,14 +69,14 @@ struct DrawToolColumn: View {
     }
 
     private func panel(@ViewBuilder _ content: () -> some View) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
         return content()
             .padding(4)
             .fixedSize(horizontal: true, vertical: false)
-            .depth(.float, fill: solid ? AnyShapeStyle(Brutal.group) : AnyShapeStyle(columnFill), radius: Brutal.Radius.group)
+            .depth(.float, fill: solid ? AnyShapeStyle(Theme.group) : AnyShapeStyle(columnFill), radius: Theme.Radius.group)
             .overlay {
                 if contrast == .increased {
-                    Color.clear.inkBorder(shape, width: 1, color: Brutal.ink.opacity(0.6))
+                    Color.clear.inkBorder(shape, width: 1, color: Theme.ink.opacity(0.6))
                 }
             }
             .contentShape(shape)
@@ -118,7 +118,7 @@ struct DrawToolColumn: View {
     /// The board's 32 × 30 buttons: the tile's padding around an 18 × 20 label.
     private func icon(_ symbol: String) -> some View {
         Image(systemName: symbol)
-            .font(Brutal.toolIcon)
+            .font(Theme.toolIcon)
             .frame(minWidth: 18, minHeight: 20)
     }
 

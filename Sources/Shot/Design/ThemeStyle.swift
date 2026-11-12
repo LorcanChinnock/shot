@@ -3,7 +3,7 @@ import ShotCore
 import SwiftUI
 
 /// Design tokens and components. The values come from `docs/redesign/spec.md` (#1068).
-enum Brutal {
+enum Theme {
     // MARK: Colour
     // Warm neutrals in both appearances, with yellow the only interface accent. Dark shows depth by lightness: the window is
     // darkest, groups sit a step lighter and control fills lighter still. Text on an accent fill stays near-black either way,
@@ -72,7 +72,7 @@ enum Brutal {
     /// A toggle's knob while it's off.
     static let knob = Color(light: .white, dark: Color(hex: 0x8E8B93))
     /// `ink`, `yellow`, `red` and `mint` for AppKit drawing, in their light-mode colours, for marks drawn over a capture or the screen.
-    /// `inkNS` is also `line` in either appearance. Chrome that follows the appearance uses `NSColor(Brutal.paper)` and friends.
+    /// `inkNS` is also `line` in either appearance. Chrome that follows the appearance uses `NSColor(Theme.paper)` and friends.
     static var inkNS: NSColor { NSColor(srgbRed: 0x16 / 255, green: 0x16 / 255, blue: 0x1A / 255, alpha: 1) }
     static var yellowNS: NSColor { NSColor(srgbRed: 1, green: 0xD4 / 255, blue: 0x3B / 255, alpha: 1) }
     static var redNS: NSColor { NSColor(srgbRed: 0xE5 / 255, green: 0x35 / 255, blue: 0x2B / 255, alpha: 1) }
@@ -300,7 +300,7 @@ private struct InkOnFill: ViewModifier {
 }
 
 extension View {
-    /// For content drawn straight over a fill rather than through `brutalSurface`, such as a selected segment.
+    /// For content drawn straight over a fill rather than through `themeSurface`, such as a selected segment.
     func inkOnFill(_ fill: Color?) -> some View {
         modifier(InkOnFill(fill: fill))
     }
@@ -328,19 +328,19 @@ private struct InkOutline<S: InsettableShape>: Shape {
     }
 }
 
-struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
+struct ThemeSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
     let shape: S
     let fill: Fill
     var glass = false
-    var shadow = Brutal.shadow
-    var border = Brutal.border
+    var shadow = Theme.shadow
+    var border = Theme.border
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.displayScale) private var scale
 
     func body(content: Content) -> some View {
-        let border = Brutal.inkWidth(border, scale: scale)
-        let shadow = Brutal.inkOffset(shadow, scale: scale)
+        let border = Theme.inkWidth(border, scale: scale)
+        let shadow = Theme.inkOffset(shadow, scale: scale)
         return content
             .inkOnFill(fill as? Color)
             .background {
@@ -348,20 +348,20 @@ struct BrutalSurface<S: InsettableShape, Fill: ShapeStyle>: ViewModifier {
                     // Over a material, glass turns solid with Increase Contrast or Reduce Transparency on, so text over it
                     // holds its contrast.
                     if glass, contrast == .increased || reduceTransparency {
-                        shape.inset(by: Brutal.underInk(border, scale: scale)).fill(Brutal.group)
+                        shape.inset(by: Theme.underInk(border, scale: scale)).fill(Theme.group)
                     } else if glass {
-                        shape.inset(by: Brutal.underInk(border, scale: scale)).fill(.ultraThinMaterial)
+                        shape.inset(by: Theme.underInk(border, scale: scale)).fill(.ultraThinMaterial)
                     }
-                    shape.inset(by: Brutal.underInk(border, scale: scale)).fill(fill)
+                    shape.inset(by: Theme.underInk(border, scale: scale)).fill(fill)
                 }
             }
-            .overlay(InkOutline(shape: shape, border: border, shadow: shadow).fill(Brutal.line))
+            .overlay(InkOutline(shape: shape, border: border, shadow: shadow).fill(Theme.line))
     }
 }
 
 /// The Rest, Group and Float levels from the spec. In dark, Rest is a 0.5 pt edge with a darker shadow.
 private struct DepthSurface<Fill: ShapeStyle>: ViewModifier {
-    let level: Brutal.Depth
+    let level: Theme.Depth
     let fill: Fill
     let radius: CGFloat
     @Environment(\.colorScheme) private var colorScheme
@@ -378,8 +378,8 @@ private struct DepthSurface<Fill: ShapeStyle>: ViewModifier {
 
     private var edge: Color {
         switch level {
-        case .rest: Brutal.controlEdge
-        case .group: Brutal.hairline
+        case .rest: Theme.controlEdge
+        case .group: Theme.hairline
         case .float: Color(light: .black.opacity(0.2), dark: .white.opacity(0.14))
         }
     }
@@ -402,32 +402,32 @@ private struct DepthSurface<Fill: ShapeStyle>: ViewModifier {
 }
 
 extension View {
-    func brutalSurface<Fill: ShapeStyle>(_ fill: Fill, glass: Bool = false, radius: CGFloat = Brutal.radius, shadow: CGFloat = Brutal.shadow, border: CGFloat = Brutal.border) -> some View {
-        modifier(BrutalSurface(shape: RoundedRectangle(cornerRadius: radius, style: .circular), fill: fill, glass: glass, shadow: shadow, border: border))
+    func themeSurface<Fill: ShapeStyle>(_ fill: Fill, glass: Bool = false, radius: CGFloat = Theme.radius, shadow: CGFloat = Theme.shadow, border: CGFloat = Theme.border) -> some View {
+        modifier(ThemeSurface(shape: RoundedRectangle(cornerRadius: radius, style: .circular), fill: fill, glass: glass, shadow: shadow, border: border))
     }
 
     /// Round variant; a circular-cornered rounded rectangle at half its size is not a true circle.
-    func brutalCircle<Fill: ShapeStyle>(_ fill: Fill, shadow: CGFloat = Brutal.shadow) -> some View {
-        modifier(BrutalSurface(shape: Circle(), fill: fill, shadow: shadow))
+    func themeCircle<Fill: ShapeStyle>(_ fill: Fill, shadow: CGFloat = Theme.shadow) -> some View {
+        modifier(ThemeSurface(shape: Circle(), fill: fill, shadow: shadow))
     }
 
     func glassCard() -> some View {
-        brutalSurface(Brutal.glass, glass: true)
+        themeSurface(Theme.glass, glass: true)
     }
 
     /// A rest, group or float surface: the quiet depths, with no ink outline. `fill` is the surface's colour.
-    func depth<Fill: ShapeStyle>(_ level: Brutal.Depth, fill: Fill, radius: CGFloat = Brutal.Radius.group) -> some View {
+    func depth<Fill: ShapeStyle>(_ level: Theme.Depth, fill: Fill, radius: CGFloat = Theme.Radius.group) -> some View {
         modifier(DepthSurface(level: level, fill: fill, radius: radius))
     }
 
     /// A section's small capitals heading, as the image picker and the video crop bar have.
     func sectionCaption() -> some View {
-        font(Brutal.sectionCaption).tracking(1.2).foregroundStyle(Brutal.faded(0.75))
+        font(Theme.sectionCaption).tracking(1.2).foregroundStyle(Theme.faded(0.75))
     }
 
     /// An ink border with the content stopping under the line, so no colour bleeds through its anti-aliased outer edge.
     /// `dash` draws it as dashes, as `StrokeStyle` takes them.
-    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat, color: Color = Brutal.line, dash: [CGFloat] = []) -> some View {
+    func inkBorder<S: InsettableShape>(_ shape: S, width: CGFloat, color: Color = Theme.line, dash: [CGFloat] = []) -> some View {
         modifier(InkBorder(shape: shape, width: width, color: color, dash: dash))
     }
 }
@@ -441,9 +441,9 @@ private struct InkBorder<S: InsettableShape>: ViewModifier {
     @Environment(\.displayScale) private var scale
 
     func body(content: Content) -> some View {
-        let width = Brutal.inkWidth(width, scale: scale)
+        let width = Theme.inkWidth(width, scale: scale)
         content
-            .clipShape(shape.inset(by: Brutal.underInk(width, scale: scale)))
+            .clipShape(shape.inset(by: Theme.underInk(width, scale: scale)))
             .overlay(shape.strokeBorder(color, style: StrokeStyle(lineWidth: width, dash: dash)))
     }
 }
@@ -453,7 +453,7 @@ private struct InkBorder<S: InsettableShape>: ViewModifier {
 /// The window's background: one solid, neutral surface, so the capture in it is the most colourful thing on screen.
 struct GlassBackdrop: View {
     var body: some View {
-        Brutal.window
+        Theme.window
     }
 }
 
@@ -461,13 +461,13 @@ struct GlassBackdrop: View {
 
 /// Shot's buttons, from Components › Buttons. A screen or panel has at most one ink button, `.main`: the action you'll
 /// take next, such as Copy, Save, Record, Stop or Continue. Every other button is `.secondary`, `.plain` or `.toolbar`.
-struct BrutalButtonStyle: PrimitiveButtonStyle {
+struct ThemeButtonStyle: PrimitiveButtonStyle {
     enum Kind {
         /// The one ink button per screen: accent fill, 1.5 pt ink outline and a 2 pt drop it sinks into when pressed.
         case main
         /// A white button at the Rest depth, like a native bordered button.
         case secondary
-        /// A pop-up menu's button: the secondary look, tighter, for `BrutalPopUp`.
+        /// A pop-up menu's button: the secondary look, tighter, for `ThemePopUp`.
         case popUp
         /// Text only, in accent text.
         case plain
@@ -496,37 +496,37 @@ struct BrutalButtonStyle: PrimitiveButtonStyle {
     }
 
     func makeBody(configuration: Configuration) -> some View {
-        BrutalButtonFocus(style: self, configuration: configuration)
+        ThemeButtonFocus(style: self, configuration: configuration)
     }
 }
 
 /// Swaps the system's blue focus ring for the accent halo. A `ButtonStyle` can't see whether its button has keyboard
 /// focus, so this wraps the button and tracks it.
-private struct BrutalButtonFocus: View {
-    let style: BrutalButtonStyle
+private struct ThemeButtonFocus: View {
+    let style: ThemeButtonStyle
     let configuration: PrimitiveButtonStyleConfiguration
     @FocusState private var focused: Bool
 
     var body: some View {
         Button(configuration)
-            .buttonStyle(BrutalButtonLook(style: style, focused: focused))
+            .buttonStyle(ThemeButtonLook(style: style, focused: focused))
             .focusEffectDisabled()
             .focused($focused)
     }
 }
 
-private struct BrutalButtonLook: ButtonStyle {
-    let style: BrutalButtonStyle
+private struct ThemeButtonLook: ButtonStyle {
+    let style: ThemeButtonStyle
     let focused: Bool
 
     func makeBody(configuration: Configuration) -> some View {
-        BrutalButtonBody(style: style, label: configuration.label, pressed: configuration.isPressed, isFocused: focused)
+        ThemeButtonBody(style: style, label: configuration.label, pressed: configuration.isPressed, isFocused: focused)
     }
 }
 
-/// `BrutalButtonStyle`'s view, which reads hover and the accessibility settings.
-private struct BrutalButtonBody: View {
-    let style: BrutalButtonStyle
+/// `ThemeButtonStyle`'s view, which reads hover and the accessibility settings.
+private struct ThemeButtonBody: View {
+    let style: ThemeButtonStyle
     let label: ButtonStyleConfiguration.Label
     let pressed: Bool
     let isFocused: Bool
@@ -554,9 +554,9 @@ private struct BrutalButtonBody: View {
     private var borderless: Bool { style.kind == .toolbar || (style.kind == .tool && !inked) }
     private var toolbarSized: Bool { style.kind == .toolbar || style.kind == .tool }
 
-    private var radius: CGFloat { floating ? Brutal.Radius.group : Brutal.Radius.control }
-    private var inkColor: Color { floating ? .black : Brutal.line }
-    private var drop: CGFloat { Brutal.inkOffset(style.kind == .tool ? 1.5 : 2, scale: scale) }
+    private var radius: CGFloat { floating ? Theme.Radius.group : Theme.Radius.control }
+    private var inkColor: Color { floating ? .black : Theme.line }
+    private var drop: CGFloat { Theme.inkOffset(style.kind == .tool ? 1.5 : 2, scale: scale) }
     /// Reduce Motion keeps the drop still and darkens the fill instead.
     private var sinks: Bool { inked && pressed && !reduceMotion }
 
@@ -573,7 +573,7 @@ private struct BrutalButtonBody: View {
             .background(fill, in: shape)
             .overlay {
                 if pressed, style.kind != .plain, !sinks {
-                    shape.fill(inked ? Brutal.line.opacity(0.12) : (floating ? Color.white.opacity(0.08) : Brutal.hover))
+                    shape.fill(inked ? Theme.line.opacity(0.12) : (floating ? Color.white.opacity(0.08) : Theme.hover))
                 }
             }
             .modifier(ButtonEdge(shape: shape, width: edgeWidth, color: edgeColor))
@@ -588,7 +588,7 @@ private struct BrutalButtonBody: View {
                 // A secondary button that's on, such as a shortcut recorder listening for keys, wears the focus halo too.
                 if isEnabled, isFocused || (bordered && style.isOn) {
                     Color.clear
-                        .inkBorder(RoundedRectangle(cornerRadius: radius + 4, style: .circular), width: 4, color: Brutal.focusRing)
+                        .inkBorder(RoundedRectangle(cornerRadius: radius + 4, style: .circular), width: 4, color: Theme.focusRing)
                         .padding(-4)
                 }
             }
@@ -601,8 +601,8 @@ private struct BrutalButtonBody: View {
 
     private var font: ScaledFont {
         switch style.kind {
-        case .main: Brutal.label
-        case .secondary, .popUp: Brutal.body
+        case .main: Theme.label
+        case .secondary, .popUp: Theme.body
         case .plain: .scaled(13, weight: .medium)
         case .toolbar, .tool: .scaled(12, weight: .medium)
         }
@@ -627,42 +627,42 @@ private struct BrutalButtonBody: View {
 
     private var fill: AnyShapeStyle {
         if inked {
-            guard style.kind == .main, style.destructive else { return AnyShapeStyle(Brutal.accent) }
+            guard style.kind == .main, style.destructive else { return AnyShapeStyle(Theme.accent) }
             // White on record red is under 4.5:1, so Increase Contrast darkens the red.
-            return AnyShapeStyle(increased ? Color(hex: 0xC4271E) : Brutal.record)
+            return AnyShapeStyle(increased ? Color(hex: 0xC4271E) : Theme.record)
         }
         if bordered {
-            return AnyShapeStyle(floating ? Color.white.opacity(0.12) : Brutal.secondaryFill)
+            return AnyShapeStyle(floating ? Color.white.opacity(0.12) : Theme.secondaryFill)
         }
         if borderless, isEnabled, style.isOn {
-            return AnyShapeStyle(floating ? Color.white.opacity(0.16) : Brutal.hover)
+            return AnyShapeStyle(floating ? Color.white.opacity(0.16) : Theme.hover)
         }
         if borderless, isEnabled, hovering {
-            return AnyShapeStyle(Brutal.hover)
+            return AnyShapeStyle(Theme.hover)
         }
         return AnyShapeStyle(Color.clear)
     }
 
     private var foreground: AnyShapeStyle {
         if !isEnabled {
-            return AnyShapeStyle(floating ? Color.white.opacity(0.35) : Brutal.disabledText)
+            return AnyShapeStyle(floating ? Color.white.opacity(0.35) : Theme.disabledText)
         }
         if inked {
             return AnyShapeStyle(style.kind == .main && style.destructive ? Color.white : Self.onAccent)
         }
         if style.destructive {
-            return AnyShapeStyle(Brutal.destructiveText)
+            return AnyShapeStyle(Theme.destructiveText)
         }
         switch style.kind {
         case .main, .secondary, .popUp:
-            return AnyShapeStyle(floating ? Color.white : Brutal.ink)
+            return AnyShapeStyle(floating ? Color.white : Theme.ink)
         case .plain:
-            return floating ? AnyShapeStyle(Color.white.opacity(increased ? 1 : 0.8)) : AnyShapeStyle(Brutal.accentText)
+            return floating ? AnyShapeStyle(Color.white.opacity(increased ? 1 : 0.8)) : AnyShapeStyle(Theme.accentText)
         case .toolbar, .tool:
             if floating {
                 return AnyShapeStyle(Color.white.opacity(style.isOn || increased ? 1 : 0.82))
             }
-            return style.isOn ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(Brutal.faded(0.85))
+            return style.isOn ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Theme.faded(0.85))
         }
     }
 
@@ -676,8 +676,8 @@ private struct BrutalButtonBody: View {
     private var edgeColor: Color {
         if inked { return inkColor }
         if style.destructive, isEnabled { return Color(hex: 0xC4271E).opacity(increased ? 1 : 0.4) }
-        if increased { return Brutal.ink.opacity(0.6) }
-        return isEnabled ? Brutal.controlEdge : Brutal.hairline
+        if increased { return Theme.ink.opacity(0.6) }
+        return isEnabled ? Theme.controlEdge : Theme.hairline
     }
 
     private var restShadow: Color {
@@ -703,20 +703,20 @@ private struct ButtonEdge<S: InsettableShape>: ViewModifier {
 
 // MARK: Choice
 
-extension Brutal {
+extension Theme {
     /// The track behind a switch that's off, and a slider's unfilled part.
     static let quietTrack = Color(light: Color(hex: 0x16161A).opacity(0.12), dark: .white.opacity(0.16))
 }
 
 /// A switch, from Components › Choice. On, it's the accent with a 1.5 pt ink outline and an inked knob; off, a grey track
 /// with a white knob. It draws the switch only, so put the label beside it and hide the toggle's own with `labelsHidden()`.
-struct BrutalToggleStyle: ToggleStyle {
+struct ThemeToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
-        BrutalSwitch(configuration: configuration)
+        ThemeSwitch(configuration: configuration)
     }
 }
 
-private struct BrutalSwitch: View {
+private struct ThemeSwitch: View {
     let configuration: ToggleStyleConfiguration
     @FocusState private var focused: Bool
     @Environment(\.isEnabled) private var isEnabled
@@ -745,14 +745,14 @@ private struct BrutalSwitch: View {
         let on = configuration.isOn
         let increased = contrast == .increased
         return ZStack(alignment: on ? .trailing : .leading) {
-            Capsule().fill(on ? Brutal.accent : Brutal.quietTrack)
+            Capsule().fill(on ? Theme.accent : Theme.quietTrack)
             knob(on: on, increased: increased)
         }
         .frame(width: 38, height: 22)
-        .modifier(ButtonEdge(shape: Capsule(), width: on ? 1.5 : (increased ? 1 : 0), color: on ? Brutal.line : Brutal.ink.opacity(0.6)))
+        .modifier(ButtonEdge(shape: Capsule(), width: on ? 1.5 : (increased ? 1 : 0), color: on ? Theme.line : Theme.ink.opacity(0.6)))
         .background {
             if focused, isEnabled {
-                Color.clear.inkBorder(Capsule(), width: 4, color: Brutal.focusRing).padding(-4)
+                Color.clear.inkBorder(Capsule(), width: 4, color: Theme.focusRing).padding(-4)
             }
         }
         .opacity(isEnabled ? 1 : 0.45)
@@ -778,13 +778,13 @@ private struct BrutalSwitch: View {
 }
 
 /// A checkbox, from Components › Choice: a 16 pt box, the accent with a 1.5 pt ink inner edge and an ink tick when checked.
-struct BrutalCheckboxStyle: ToggleStyle {
+struct ThemeCheckboxStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
-        BrutalCheckbox(configuration: configuration)
+        ThemeCheckbox(configuration: configuration)
     }
 }
 
-private struct BrutalCheckbox: View {
+private struct ThemeCheckbox: View {
     let configuration: ToggleStyleConfiguration
     @FocusState private var focused: Bool
     @Environment(\.isEnabled) private var isEnabled
@@ -796,8 +796,8 @@ private struct BrutalCheckbox: View {
             HStack(spacing: 7) {
                 CheckboxMark(checked: configuration.isOn, focused: focused)
                 configuration.label
-                    .font(Brutal.body)
-                    .foregroundStyle(isEnabled ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(Brutal.disabledText))
+                    .font(Theme.body)
+                    .foregroundStyle(isEnabled ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Theme.disabledText))
             }
             .contentShape(Rectangle())
         }
@@ -822,7 +822,7 @@ struct CheckboxMark: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: size / 4, style: .circular)
-        shape.fill(checked ? Brutal.accent : Brutal.secondaryFill)
+        shape.fill(checked ? Theme.accent : Theme.secondaryFill)
             .overlay {
                 if checked {
                     // The tick stays near-black on the accent in both appearances.
@@ -836,21 +836,21 @@ struct CheckboxMark: View {
             .frame(width: size, height: size)
             .background {
                 if focused, isEnabled {
-                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: size / 4 + 4, style: .circular), width: 4, color: Brutal.focusRing).padding(-4)
+                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: size / 4 + 4, style: .circular), width: 4, color: Theme.focusRing).padding(-4)
                 }
             }
             .opacity(isEnabled ? 1 : 0.45)
     }
 
     private var edge: Color {
-        if checked { return Brutal.line }
-        return contrast == .increased ? Brutal.ink.opacity(0.6) : Brutal.controlEdge
+        if checked { return Theme.line }
+        return contrast == .increased ? Theme.ink.opacity(0.6) : Theme.controlEdge
     }
 }
 
 /// A Mac segmented control: a quiet white thumb on a field-fill track, with no ink. Once focused, the arrow keys move the
 /// selection, and VoiceOver reads it as a segmented control.
-struct BrutalSegmented<Value: Hashable>: View {
+struct ThemeSegmented<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(value: Value, label: String)]
     /// Draws each segment as a picture instead of its label, given whether it's selected, in a segment `glyphSize` big.
@@ -902,13 +902,13 @@ struct BrutalSegmented<Value: Hashable>: View {
             }
         }
         .padding(2)
-        .background(Brutal.fieldFill, in: track)
-        .modifier(ButtonEdge(shape: track, width: contrast == .increased ? 1 : 0, color: Brutal.ink.opacity(0.6)))
+        .background(Theme.fieldFill, in: track)
+        .modifier(ButtonEdge(shape: track, width: contrast == .increased ? 1 : 0, color: Theme.ink.opacity(0.6)))
         .opacity(isEnabled ? 1 : 0.5)
         .fixedSize(horizontal: !fills, vertical: true)
         .background {
             if focused, isEnabled {
-                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Self.trackRadius + 4, style: .circular), width: 4, color: Brutal.focusRing).padding(-4)
+                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Self.trackRadius + 4, style: .circular), width: 4, color: Theme.focusRing).padding(-4)
             }
         }
         .focusable(interactions: .activate)
@@ -943,7 +943,7 @@ struct BrutalSegmented<Value: Hashable>: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { select(option.value) }
-                .brutalTip(option.label)
+                .themeTip(option.label)
         } else {
             textSegment(option)
         }
@@ -953,10 +953,10 @@ struct BrutalSegmented<Value: Hashable>: View {
         let selected = option.value == selection
         return ZStack {
             // The semibold label holds each segment at its selected width, so picking one doesn't shift the others.
-            Text(option.label).font(Brutal.small).hidden()
+            Text(option.label).font(Theme.small).hidden()
             Text(option.label)
-                .font(selected ? Brutal.small : .scaled(12))
-                .foregroundStyle(selected ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink)))
+                .font(selected ? Theme.small : .scaled(12))
+                .foregroundStyle(selected ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink)))
         }
         .lineLimit(1)
         .padding(.horizontal, fills ? 4 : 12)
@@ -995,10 +995,10 @@ private struct SegmentThumb: View {
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         let dark = colorScheme == .dark
-        shape.fill(Brutal.selectedSegment)
-            .modifier(ButtonEdge(shape: shape, width: contrast == .increased ? 1 : (dark ? 0 : 0.5), color: contrast == .increased ? Brutal.ink.opacity(0.6) : Color(hex: 0x16161A).opacity(0.12)))
+        shape.fill(Theme.selectedSegment)
+            .modifier(ButtonEdge(shape: shape, width: contrast == .increased ? 1 : (dark ? 0 : 0.5), color: contrast == .increased ? Theme.ink.opacity(0.6) : Color(hex: 0x16161A).opacity(0.12)))
             .shadow(color: dark ? .black.opacity(0.3) : Color(hex: 0x16161A).opacity(0.14), radius: 1, y: 1)
     }
 }
@@ -1028,7 +1028,7 @@ struct SettingsGroupHeading: View {
     var body: some View {
         Text(title)
             .font(.scaled(12, weight: .semibold))
-            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             .padding(.leading, 12)
             .accessibilityAddTraits(.isHeader)
     }
@@ -1054,16 +1054,16 @@ struct SettingsCard<Content: View>: View {
                     VStack(spacing: 0) {
                         ForEach(rows) { row in
                             if row.id != first.id {
-                                Brutal.separator.frame(height: 1)
+                                Theme.separator.frame(height: 1)
                             }
                             row
                         }
                     }
-                    .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
+                    .depth(.group, fill: Theme.group, radius: Theme.Radius.group)
                     if let note, SettingsSearch.terms(query).isEmpty {
                         Text(note)
-                            .font(Brutal.caption)
-                            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                            .font(Theme.caption)
+                            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                             .lineSpacing(1.5)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 12)
@@ -1083,7 +1083,7 @@ struct SettingRow<Control: View>: View {
     /// A 16 pt line icon before the name, 12 pt from it, as Settings › Shortcuts gives each action.
     struct Icon {
         let symbol: String
-        var tint: Color = Brutal.ink.opacity(0.85)
+        var tint: Color = Theme.ink.opacity(0.85)
     }
 
     let title: String
@@ -1118,11 +1118,11 @@ struct SettingRow<Control: View>: View {
                             .accessibilityHidden(true)
                     }
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(title).font(Brutal.body).foregroundStyle(Brutal.ink)
+                        Text(title).font(Theme.body).foregroundStyle(Theme.ink)
                         if let subtitle {
                             Text(subtitle)
-                                .font(Brutal.caption)
-                                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                                .font(Theme.caption)
+                                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -1205,7 +1205,7 @@ struct ToggleRow: View {
 
     var body: some View {
         SettingRow(title: title, subtitle: subtitle) {
-            Toggle(String(localized: title), isOn: $isOn).toggleStyle(BrutalToggleStyle()).labelsHidden()
+            Toggle(String(localized: title), isOn: $isOn).toggleStyle(ThemeToggleStyle()).labelsHidden()
                 .accessibilityLabel(Text(title))
                 .accessibilityHint(subtitle.map { Text($0) } ?? Text(verbatim: ""))
         }

@@ -29,7 +29,7 @@ struct StylePanel: View {
                     }
                     ForEach(sections.target.filter { $0 != .newCaptures }, id: \.self) { section(for: $0) }
                     if !sections.canvas.isEmpty {
-                        Divider().overlay(Brutal.separator)
+                        Divider().overlay(Theme.separator)
                         groupTitle(Text("Canvas"))
                         ForEach(sections.canvas, id: \.self) { section(for: $0) }
                     }
@@ -59,13 +59,13 @@ struct StylePanel: View {
         HStack {
             Text("Style")
                 .font(.scaled(13, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             Button("Reset") { model.resetTargetStyle() }
                 .buttonStyle(PanelLinkStyle())
                 .disabled(model.isTargetStyleDefault)
-                .brutalTip("Reset", detail: resetDetail)
+                .themeTip("Reset", detail: resetDetail)
         }
         .padding(.horizontal, 16)
         .padding(.top, 14)
@@ -81,7 +81,7 @@ struct StylePanel: View {
     private func groupTitle(_ text: Text) -> some View {
         text
             .font(.scaled(12, weight: .bold))
-            .foregroundStyle(Brutal.ink)
+            .foregroundStyle(Theme.ink)
             .accessibilityAddTraits(.isHeader)
     }
 
@@ -100,7 +100,7 @@ struct StylePanel: View {
         case .size: sizeSection
         case .windowShadowNote:
             note("Uses macOS window shadow")
-                .brutalTip("This window was captured with its own shadow, so it takes no other shadow, border or corners")
+                .themeTip("This window was captured with its own shadow, so it takes no other shadow, border or corners")
         case .noTargetNote:
             note("Select an image, shape, arrow or text, or nothing to style the screenshot.")
         case .newCaptures:
@@ -110,8 +110,8 @@ struct StylePanel: View {
 
     private func note(_ text: LocalizedStringResource) -> some View {
         Text(text)
-            .font(Brutal.caption)
-            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            .font(Theme.caption)
+            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -173,7 +173,7 @@ struct StylePanel: View {
     private var sizeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Size").panelHeading()
-            BrutalSegmented(
+            ThemeSegmented(
                 selection: Binding(get: { model.document.frame.aspect }, set: { model.setCanvasAspect($0) }),
                 options: CanvasAspect.allCases.map { (value: $0, label: $0.title) }
             )
@@ -210,7 +210,7 @@ private struct BackgroundTile<Swatch: View>: View {
         }
         .buttonStyle(.plain)
         .opacity(isEnabled ? 1 : 0.35)
-        .brutalTip(name)
+        .themeTip(name)
         .accessibilityLabel(Text(verbatim: name))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
@@ -223,14 +223,14 @@ private struct BackgroundSwatchShape<Content: View>: View {
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         Color.clear
             .aspectRatio(1, contentMode: .fit)
             .overlay { content }
             .clipShape(shape)
             .overlay {
                 if contrast == .increased {
-                    Color.clear.inkBorder(shape, width: 1, color: Brutal.ink.opacity(0.6))
+                    Color.clear.inkBorder(shape, width: 1, color: Theme.ink.opacity(0.6))
                 } else {
                     shape.strokeBorder(backgroundSwatchEdge, lineWidth: 1)
                 }
@@ -239,7 +239,7 @@ private struct BackgroundSwatchShape<Content: View>: View {
             .overlay {
                 if selected {
                     // The text colour rather than the ink line, which disappears on the dark panel.
-                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.control + 3.5, style: .circular), width: 1.5, color: Brutal.ink)
+                    Color.clear.inkBorder(RoundedRectangle(cornerRadius: Theme.Radius.control + 3.5, style: .circular), width: 1.5, color: Theme.ink)
                 }
             }
             .padding(-3.5)
@@ -311,7 +311,7 @@ private struct CustomBackgroundTile: View {
             }
         }
         .buttonStyle(.plain)
-        .brutalTip("Custom background colour")
+        .themeTip("Custom background colour")
         .accessibilityLabel(Text("Custom background colour"))
         .accessibilityAddTraits(custom != nil ? .isSelected : [])
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
@@ -343,23 +343,23 @@ private struct NewCaptureCard: View {
             HStack(spacing: 10) {
                 Text("Use for new captures")
                     .font(.scaled(12.5))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .accessibilityHidden(true)
                 Spacer(minLength: 8)
                 Toggle("Use for new captures", isOn: isOn)
-                    .toggleStyle(BrutalToggleStyle())
+                    .toggleStyle(ThemeToggleStyle())
                     .labelsHidden()
                     .accessibilityLabel(Text("Use for new captures"))
             }
             if otherStyleSaved {
                 Text("New captures keep a different saved style.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .font(Theme.caption)
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             }
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
-        .depth(.rest, fill: Brutal.group, radius: Brutal.Radius.group)
-        .brutalTip("Use for new captures", detail: "New captures open and copy with this screenshot's background, padding, size, shadow, border and corners.")
+        .depth(.rest, fill: Theme.group, radius: Theme.Radius.group)
+        .themeTip("Use for new captures", detail: "New captures open and copy with this screenshot's background, padding, size, shadow, border and corners.")
     }
 }

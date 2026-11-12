@@ -128,7 +128,7 @@ private struct CropFrameMarks: View {
     let size: CGSize
     let increased: Bool
 
-    private static let ink = Color(light: Brutal.line, dark: Color(hex: 0xEDEBE6))
+    private static let ink = Color(light: Theme.line, dark: Color(hex: 0xEDEBE6))
     private static let edge = Color(light: .white, dark: .black)
 
     var body: some View {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-extension Brutal {
+extension Theme {
     /// The side panels beside a canvas, such as the editor's Style and Layers panels.
     static let sidePanel = Color(light: Color(hex: 0xF1EFEA), dark: Color(hex: 0x242427))
 }
@@ -21,10 +21,10 @@ private struct SidePanelSurface: ViewModifier {
             .frame(width: width)
             .frame(maxHeight: .infinity)
             // Not into the title bar's safe area, which a plain colour background fills.
-            .background(Brutal.sidePanel, ignoresSafeAreaEdges: [])
+            .background(Theme.sidePanel, ignoresSafeAreaEdges: [])
             .overlay(alignment: .leading) {
                 Rectangle()
-                    .fill(ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6)))
+                    .fill(ContrastAware(standard: Theme.hairline, increased: Theme.ink.opacity(0.6)))
                     .frame(width: 1)
                     .accessibilityHidden(true)
             }
@@ -39,7 +39,7 @@ struct PanelLinkStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.scaled(12, weight: .medium))
-            .foregroundStyle(isEnabled ? (contrast == .increased ? Brutal.ink : Brutal.accentText) : Brutal.disabledText)
+            .foregroundStyle(isEnabled ? (contrast == .increased ? Theme.ink : Theme.accentText) : Theme.disabledText)
             .opacity(configuration.isPressed ? 0.6 : 1)
             .padding(.vertical, 2)
             .contentShape(Rectangle())
@@ -51,7 +51,7 @@ extension Text {
     /// which Increase Contrast takes to the text colour.
     @MainActor func panelHeading() -> some View {
         font(.scaled(11.5, weight: .semibold))
-            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -75,16 +75,16 @@ struct PanelSliderRow<Accessory: View>: View {
             HStack(spacing: 6) {
                 Text(name)
                     .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .accessibilityHidden(true)
                 Spacer(minLength: 8)
                 Text(verbatim: shown)
                     .font(.scaled(12, tabular: true))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .accessibilityHidden(true)
                 accessory
             }
-            BrutalSlider(value: Binding(get: { value }, set: { set($0) }), range: range, width: width, onEditingChanged: editing)
+            ThemeSlider(value: Binding(get: { value }, set: { set($0) }), range: range, width: width, onEditingChanged: editing)
                 .frame(height: 18)
                 .accessibilityLabel(Text(name))
                 .accessibilityValue(Text(verbatim: shown))

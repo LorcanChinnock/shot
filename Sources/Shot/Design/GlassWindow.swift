@@ -27,7 +27,7 @@ enum GlassWindow {
         window.title = title
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
-        window.backgroundColor = NSColor(Brutal.window)
+        window.backgroundColor = NSColor(Theme.window)
         window.isReleasedWhenClosed = false
         window.toolbar = NSToolbar(identifier: "glass")
         window.toolbarStyle = .unified
@@ -156,7 +156,7 @@ struct SidebarMaterial: View {
 
     var body: some View {
         if contrast == .increased || reduceTransparency {
-            Brutal.sidebar
+            Theme.sidebar
         } else {
             SidebarEffect()
         }
@@ -183,18 +183,18 @@ struct SidebarRowBackground: ViewModifier {
     var targeted = false
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         content
-            .inkOnFill(selected && !targeted ? Brutal.accent : nil)
+            .inkOnFill(selected && !targeted ? Theme.accent : nil)
             .background {
                 if targeted {
-                    shape.fill(Brutal.selection.opacity(0.18))
-                        .inkBorder(shape, width: 1.5, color: Brutal.selection)
+                    shape.fill(Theme.selection.opacity(0.18))
+                        .inkBorder(shape, width: 1.5, color: Theme.selection)
                 } else if selected {
-                    shape.fill(Brutal.accent)
-                        .inkBorder(shape, width: 1.5, color: Brutal.line)
+                    shape.fill(Theme.accent)
+                        .inkBorder(shape, width: 1.5, color: Theme.line)
                 } else if hovering {
-                    shape.fill(Brutal.hover)
+                    shape.fill(Theme.hover)
                 }
             }
     }

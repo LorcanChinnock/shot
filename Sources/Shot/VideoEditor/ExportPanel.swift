@@ -37,13 +37,13 @@ struct ExportPanel: View {
         HStack {
             Text("Export")
                 .font(.scaled(13, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             Button("Reset") { model.setOptions(.default) }
                 .buttonStyle(PanelLinkStyle())
                 .disabled(model.options.isDefault || model.isExporting)
-                .brutalTip("Reset", detail: "Puts the format, GIF size, mute and speed back to how new exports start.")
+                .themeTip("Reset", detail: "Puts the format, GIF size, mute and speed back to how new exports start.")
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
@@ -55,44 +55,44 @@ struct ExportPanel: View {
         switch group {
         case .format:
             section("Format") {
-                BrutalSegmented(selection: option(\.format), options: [(.mp4, "MP4"), (.gif, "GIF")])
+                ThemeSegmented(selection: option(\.format), options: [(.mp4, "MP4"), (.gif, "GIF")])
                     .fillingWidth()
-                    .brutalTip("Export format")
+                    .themeTip("Export format")
                     .accessibilityLabel(Text("Format"))
             }
         case .frameRate:
             section("Frames per second") {
-                BrutalSegmented(selection: option(\.gifFrameRate), options: VideoExportOptions.gifFrameRates.map { ($0, "\($0)") })
+                ThemeSegmented(selection: option(\.gifFrameRate), options: VideoExportOptions.gifFrameRates.map { ($0, "\($0)") })
                     .fillingWidth()
-                    .brutalTip("GIF frames per second")
+                    .themeTip("GIF frames per second")
                     .accessibilityLabel(Text("Frames per second"))
             }
         case .width:
             section("Width") {
-                BrutalSegmented(selection: option(\.gifWidth), options: VideoExportOptions.gifWidths.map { ($0, VideoExportPanel.widthLabel($0)) })
+                ThemeSegmented(selection: option(\.gifWidth), options: VideoExportOptions.gifWidths.map { ($0, VideoExportPanel.widthLabel($0)) })
                     .fillingWidth()
-                    .brutalTip("GIF width in pixels; it's never made wider than the video")
+                    .themeTip("GIF width in pixels; it's never made wider than the video")
                     .accessibilityLabel(Text("Width"))
             }
         case .mute:
             HStack(spacing: 10) {
                 Text("Mute")
                     .font(.scaled(12.5))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .accessibilityHidden(true)
                 Spacer(minLength: 8)
                 Toggle("Mute", isOn: option(\.muted))
-                    .toggleStyle(BrutalToggleStyle())
+                    .toggleStyle(ThemeToggleStyle())
                     .labelsHidden()
                     .accessibilityLabel(Text("Mute"))
             }
-            .brutalTip("Leave the sound out")
+            .themeTip("Leave the sound out")
         case .speed:
             section("Speed") {
-                BrutalSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, VideoExportPanel.speedLabel($0)) })
+                ThemeSegmented(selection: option(\.speed), options: VideoExportOptions.speeds.map { ($0, VideoExportPanel.speedLabel($0)) })
                     .fillingWidth()
                     .disabled(speedIsLocked)
-                    .brutalTip(speedIsLocked ? Self.speedLockedReason : "Playback speed")
+                    .themeTip(speedIsLocked ? Self.speedLockedReason : "Playback speed")
                     .accessibilityLabel(Text("Speed"))
                 if speedIsLocked {
                     note(Self.speedLockedReason)
@@ -112,7 +112,7 @@ struct ExportPanel: View {
         VStack(alignment: .leading, spacing: 7) {
             Text(title)
                 .font(.scaled(11.5, weight: .semibold))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .accessibilityAddTraits(.isHeader)
             content()
         }
@@ -120,8 +120,8 @@ struct ExportPanel: View {
 
     private func note(_ text: LocalizedStringResource) -> some View {
         Text(text)
-            .font(Brutal.caption)
-            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            .font(Theme.caption)
+            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -149,15 +149,15 @@ private struct SummaryCard: View {
                 Text(verbatim: model.estimatedSize.map { "≈ " + ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "≈ …")
                     .font(.scaled(12, weight: .bold, design: .monospaced, tabular: true))
             }
-            .brutalTip("Estimated size of the exported file")
+            .themeTip("Estimated size of the exported file")
             row("Length") {
                 Text(verbatim: Timecode.string(length.seconds))
                     .font(.scaled(12, design: .monospaced, tabular: true))
             }
             if length.truncated {
                 Text("A GIF keeps the first \(Int(GIFExporter.maxDuration)) seconds.")
-                    .font(Brutal.caption)
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .font(Theme.caption)
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -168,17 +168,17 @@ private struct SummaryCard: View {
             }
         }
         .padding(12)
-        .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
+        .depth(.group, fill: Theme.group, radius: Theme.Radius.group)
     }
 
     private func row(_ title: LocalizedStringResource, @ViewBuilder value: () -> some View) -> some View {
         HStack {
             Text(title)
                 .font(.scaled(12))
-                .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
             Spacer(minLength: 8)
             value()
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .fixedSize()
         }
@@ -193,11 +193,11 @@ private struct SummaryCard: View {
                     .padding(.vertical, 2)
             }
             // The panel's button is the next step once it's open; in crop mode the crop bar's Apply is (rule 1).
-            .buttonStyle(BrutalButtonStyle(model.isCropping ? .secondary : .main))
-            .brutalTip(title, detail: detail)
+            .buttonStyle(ThemeButtonStyle(model.isCropping ? .secondary : .main))
+            .themeTip(title, detail: detail)
             Text("Saved beside the recording and copied")
-                .font(Brutal.caption)
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .font(Theme.caption)
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -209,12 +209,12 @@ private struct SummaryCard: View {
             HStack(spacing: 8) {
                 Text("Exporting…")
                     .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
                 if let fraction = model.exportFraction {
                     Text(fraction, format: .percent.precision(.fractionLength(0)))
                         .font(.scaled(12, design: .monospaced, tabular: true))
-                        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                 } else {
                     ProgressView()
                         .controlSize(.small)
@@ -222,15 +222,15 @@ private struct SummaryCard: View {
             }
             .accessibilityElement(children: .combine)
             if let fraction = model.exportFraction {
-                BrutalProgressBar(value: fraction)
+                ThemeProgressBar(value: fraction)
             }
             Button { model.cancelExport() } label: {
                 Text("Cancel")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 2)
             }
-            .buttonStyle(BrutalButtonStyle())
-            .brutalTip("Cancel", key: "esc", detail: "Stops exporting.")
+            .buttonStyle(ThemeButtonStyle())
+            .themeTip("Cancel", key: "esc", detail: "Stops exporting.")
         }
     }
 

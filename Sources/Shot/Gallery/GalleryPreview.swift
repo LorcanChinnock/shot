@@ -26,7 +26,7 @@ struct GalleryPreviewView: View {
                         .accessibilityLabel(Text("Details"))
                 }
                 // Not into the title bar's safe area, where it would cover the toolbar.
-                .background(Brutal.window, ignoresSafeAreaEdges: [])
+                .background(Theme.window, ignoresSafeAreaEdges: [])
             }
             .task(id: GalleryPreviewLoader.Request(item: item, query: query, revision: model.textRevision)) {
                 await loader.load(item, query: query, revision: model.textRevision)
@@ -176,19 +176,19 @@ private struct GalleryPreviewToolbar: View {
                 Image(systemName: "chevron.left")
                     .font(.scaled(13, weight: .semibold))
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar))
-            .brutalTip("Back to the grid", key: "Space")
+            .buttonStyle(ThemeButtonStyle(.toolbar))
+            .themeTip("Back to the grid", key: "Space")
             .accessibilityLabel(Text("Back to grid"))
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(verbatim: item.name)
                     .font(.scaled(13, weight: .semibold))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .accessibilityAddTraits(.isHeader)
                 Text("\(position) of \(model.visible.count)")
                     .font(.scaled(12, tabular: true))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .lineLimit(1)
                     .fixedSize()
             }
@@ -196,20 +196,20 @@ private struct GalleryPreviewToolbar: View {
             .allowsHitTesting(false)
             Spacer(minLength: 8)
             Button("Edit") { model.edit([item]) }
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(ThemeButtonStyle())
                 // Whether a GIF has a project is read from the store only on a click, so one never greys it out.
                 .disabled(!Gallery.canEdit([item]) { _ in true })
-                .brutalTip("Open in the editor", key: "↩")
+                .themeTip("Open in the editor", key: "↩")
             Button("Copy") { model.copy([item]) }
-                .buttonStyle(BrutalButtonStyle(.main))
-                .brutalTip("Copy", key: "⌘C")
+                .buttonStyle(ThemeButtonStyle(.main))
+                .themeTip("Copy", key: "⌘C")
         }
         .padding(.leading, GlassWindow.trafficLightsWidth)
         .padding(.trailing, 14)
         .frame(maxWidth: .infinity)
         .frame(height: GlassWindow.titlebarHeight)
         .overlay(alignment: .bottom) {
-            Brutal.separator.frame(height: 1)
+            Theme.separator.frame(height: 1)
         }
     }
 }
@@ -228,7 +228,7 @@ private struct GalleryPreviewStage: View {
     private static let hintRoom: CGFloat = 20
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         GeometryReader { geometry in
             let room = CGSize(width: max(geometry.size.width, 1), height: max(geometry.size.height, 1))
             let size = fitted(in: room)
@@ -236,7 +236,7 @@ private struct GalleryPreviewStage: View {
                 .frame(width: size.width, height: size.height)
                 .overlay { highlights(in: size) }
                 .clipShape(shape)
-                .overlay { Color.clear.inkBorder(shape, width: 1, color: Brutal.hairline) }
+                .overlay { Color.clear.inkBorder(shape, width: 1, color: Theme.hairline) }
                 .shadow(color: .black.opacity(0.16), radius: 16, y: 14)
                 .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -244,7 +244,7 @@ private struct GalleryPreviewStage: View {
         .padding(.bottom, Self.hintRoom)
         .overlay(alignment: .bottom) { hints }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Brutal.well, ignoresSafeAreaEdges: [])
+        .background(Theme.well, ignoresSafeAreaEdges: [])
     }
 
     /// The capture's shape scaled to fit `room`, and no larger than its pixels shown at 2x.
@@ -289,7 +289,7 @@ private struct GalleryPreviewStage: View {
                 .accessibilityLabel(Text("Preview of \(item.name)"))
         } else {
             ZStack {
-                Brutal.group
+                Theme.group
                 ProgressView().controlSize(.small)
             }
         }
@@ -303,7 +303,7 @@ private struct GalleryPreviewStage: View {
             ZStack(alignment: .topLeading) {
                 ForEach(Array(loader.matches.enumerated()), id: \.offset) { _, box in
                     RoundedRectangle(cornerRadius: 2, style: .circular)
-                        .fill(Brutal.selection.opacity(0.22))
+                        .fill(Theme.selection.opacity(0.22))
                         .frame(width: box.width * scale + 4, height: box.height * scale + 2)
                         .offset(x: box.minX * scale - 2, y: box.minY * scale - 1)
                 }
@@ -325,7 +325,7 @@ private struct GalleryPreviewStage: View {
             Text("close")
         }
         .font(.scaled(11.5))
-        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
         .padding(.bottom, 14)
         .accessibilityHidden(true)
     }
@@ -410,27 +410,27 @@ private struct GalleryPreviewDetails: View {
                 } label: {
                     actionLabel("Copy path for an AI assistant", symbol: "sparkles")
                 }
-                .brutalTip("Copy where the file is, for an assistant that can open files")
+                .themeTip("Copy where the file is, for an assistant that can open files")
                 Button {
                     model.reveal([item])
                 } label: {
                     actionLabel("Show in Finder", symbol: "folder")
                 }
-                .brutalTip("Show in Finder", key: "⌘R")
+                .themeTip("Show in Finder", key: "⌘R")
             }
-            .buttonStyle(BrutalButtonStyle())
+            .buttonStyle(ThemeButtonStyle())
             .padding([.horizontal, .bottom], 16)
             .padding(.top, 8)
         }
         .font(.scaled(12.5))
-        .foregroundStyle(Brutal.ink)
+        .foregroundStyle(Theme.ink)
     }
 
     private func actionLabel(_ title: LocalizedStringResource, symbol: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: symbol)
                 .font(.scaled(12, weight: .medium))
-                .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                 .accessibilityHidden(true)
             // Wraps rather than shrinking or truncating, so a larger text size or a long translation still reads in full.
             Text(title)
@@ -469,7 +469,7 @@ private struct GalleryPreviewDetails: View {
     private func fact(_ name: LocalizedStringResource, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(name)
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .fixedSize()
             Spacer(minLength: 0)
             Text(verbatim: value)
@@ -496,8 +496,8 @@ private struct GalleryPreviewDetails: View {
                     .padding(.leading, 7)
                     .padding(.trailing, 9)
                     .padding(.vertical, 2)
-                    .background(Brutal.group, in: Capsule())
-                    .inkBorder(Capsule(), width: 1, color: Brutal.controlEdge)
+                    .background(Theme.group, in: Capsule())
+                    .inkBorder(Capsule(), width: 1, color: Theme.controlEdge)
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(Text("Tag \(tag)"))
                 }
@@ -506,14 +506,14 @@ private struct GalleryPreviewDetails: View {
                 } label: {
                     Text("+ Add tag")
                         .font(.scaled(11.5))
-                        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                         .padding(.horizontal, 9)
                         .padding(.vertical, 2)
-                        .inkBorder(Capsule(), width: 1, color: Brutal.controlEdge)
+                        .inkBorder(Capsule(), width: 1, color: Theme.controlEdge)
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .brutalTip("Add or remove tags, which show in Finder too")
+                .themeTip("Add or remove tags, which show in Finder too")
                 .accessibilityLabel(Text("Add tag"))
                 .popover(isPresented: $tagging, arrowEdge: .bottom) {
                     GalleryTagPopover(model: model, targets: [item.url])
@@ -543,15 +543,15 @@ private struct GalleryPreviewDetails: View {
             case .empty:
                 note("Shot found no text in this screenshot.")
             case let .read(text):
-                let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+                let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
                 Text(highlighted(text))
                     .lineSpacing(3)
-                    .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Brutal.group, in: shape)
-                    .inkBorder(shape, width: 1, color: Brutal.hairline)
+                    .background(Theme.group, in: shape)
+                    .inkBorder(shape, width: 1, color: Theme.hairline)
             }
         }
     }
@@ -559,7 +559,7 @@ private struct GalleryPreviewDetails: View {
     private func note(_ text: LocalizedStringResource) -> some View {
         Text(text)
             .font(.scaled(11.5))
-            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -570,8 +570,8 @@ private struct GalleryPreviewDetails: View {
         for range in TextSearch.ranges(of: query, in: joined) {
             if let lower = AttributedString.Index(range.lowerBound, within: attributed),
                let upper = AttributedString.Index(range.upperBound, within: attributed) {
-                attributed[lower..<upper].backgroundColor = Brutal.selection.opacity(0.22)
-                attributed[lower..<upper].foregroundColor = Brutal.ink
+                attributed[lower..<upper].backgroundColor = Theme.selection.opacity(0.22)
+                attributed[lower..<upper].foregroundColor = Theme.ink
             }
         }
         return attributed

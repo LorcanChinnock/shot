@@ -94,14 +94,14 @@ private final class ClickRingPanel: NSPanel {
         let contrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        halo.lineWidth = Brutal.inkWidth(ClickRing.haloWidth, scale: scale)
-        halo.strokeColor = Brutal.yellowNS.withAlphaComponent(contrast ? ClickRing.contrastHaloOpacity : ClickRing.haloOpacity).cgColor
-        accent.lineWidth = Brutal.inkWidth(ClickRing.ringWidth, scale: scale)
-        accent.strokeColor = Brutal.yellowNS.withAlphaComponent(ClickRing.ringOpacity).cgColor
+        halo.lineWidth = Theme.inkWidth(ClickRing.haloWidth, scale: scale)
+        halo.strokeColor = Theme.yellowNS.withAlphaComponent(contrast ? ClickRing.contrastHaloOpacity : ClickRing.haloOpacity).cgColor
+        accent.lineWidth = Theme.inkWidth(ClickRing.ringWidth, scale: scale)
+        accent.strokeColor = Theme.yellowNS.withAlphaComponent(ClickRing.ringOpacity).cgColor
         // Increase Contrast adds an ink edge inside the ring, so it reads on white.
         edge.isHidden = !contrast
-        edge.lineWidth = Brutal.inkWidth(ClickRing.contrastEdgeWidth, scale: scale)
-        edge.strokeColor = Brutal.inkNS.cgColor
+        edge.lineWidth = Theme.inkWidth(ClickRing.contrastEdgeWidth, scale: scale)
+        edge.strokeColor = Theme.inkNS.cgColor
         for shape in [halo, accent, edge] {
             shape.contentsScale = scale
         }

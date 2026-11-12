@@ -31,7 +31,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     }
 
     /// The tile and glyph behind the section's icon in the sidebar.
-    var tint: Brutal.SidebarTint {
+    var tint: Theme.SidebarTint {
         switch self {
         case .general: .general
         case .capture: .capture
@@ -94,7 +94,7 @@ struct SettingsView: View {
                 .frame(maxHeight: .infinity)
                 .background { SidebarMaterial() }
                 .overlay(alignment: .trailing) {
-                    Brutal.separator.frame(width: 1)
+                    Theme.separator.frame(width: 1)
                 }
                 .overlay(alignment: .trailing) {
                     PanelResizeHandle(width: $sidebarWidth, range: Self.sidebarWidths, defaultWidth: Self.defaultSidebarWidth)
@@ -162,8 +162,8 @@ struct SettingsView: View {
                     Text(navigation.section.title)
                 }
             }
-            .font(Brutal.section)
-            .foregroundStyle(Brutal.ink)
+            .font(Theme.section)
+            .foregroundStyle(Theme.ink)
             .lineLimit(1)
             .truncationMode(.middle)
             .accessibilityAddTraits(.isHeader)
@@ -177,7 +177,7 @@ struct SettingsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: GlassWindow.titlebarHeight)
         .overlay(alignment: .bottom) {
-            Brutal.separator.frame(height: 1)
+            Theme.separator.frame(height: 1)
         }
     }
 }
@@ -255,8 +255,8 @@ private struct SectionResults: View {
         HStack(spacing: 10) {
             SettingsSectionTile(section: section, selected: false)
             Text(section.title)
-                .font(Brutal.section)
-                .foregroundStyle(Brutal.ink)
+                .font(Theme.section)
+                .foregroundStyle(Theme.ink)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             Button("Show All", action: open)
@@ -303,10 +303,10 @@ private struct GeneralSettings: View {
             ToggleRow(title: "Play capture sound", isOn: $playSound)
             ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off full-screen captures.", isOn: $excludesMenuBar)
             SettingRow(title: "Appearance", subtitle: "Captures look the same either way.") {
-                BrutalSegmented(selection: $appearance, options: AppearanceMode.allCases.map { ($0, Self.title(of: $0)) })
+                ThemeSegmented(selection: $appearance, options: AppearanceMode.allCases.map { ($0, Self.title(of: $0)) })
             }
             SettingRow(title: "Text size", subtitle: "Shot’s windows, panels and toasts.") {
-                BrutalPopUp(title: "Text size", entries: TextSize.allCases.map { size in
+                ThemePopUp(title: "Text size", entries: TextSize.allCases.map { size in
                     .item(Self.title(of: size), selected: size == textSize) { textSize = size }
                 }, value: Self.title(of: textSize))
             }
@@ -315,21 +315,21 @@ private struct GeneralSettings: View {
             SettingRow(title: String(localized: "Save folder"), subtitle: (saveFolder as NSString).abbreviatingWithTildeInPath) {
                 HStack(spacing: 8) {
                     Button("Show in Finder") { NSWorkspace.shared.open(URL(fileURLWithPath: saveFolder)) }
-                        .buttonStyle(BrutalButtonStyle())
+                        .buttonStyle(ThemeButtonStyle())
                     Button("Choose…", action: chooseFolder)
-                        .buttonStyle(BrutalButtonStyle())
+                        .buttonStyle(ThemeButtonStyle())
                 }
             }
             SettingRow(title: "File name", subtitle: "\(previewName).\(imageFormat.fileExtension)") {
                 TextField("Shot", text: $filePrefix)
-                    .font(Brutal.body)
+                    .font(Theme.body)
                     .focused($prefixFocused)
-                    .brutalField(focused: prefixFocused)
+                    .themeField(focused: prefixFocused)
                     .frame(width: 180)
                     .accessibilityLabel(Text("File name"))
             }
             SettingRow(title: "Image format", subtitle: "Clipboard copies always use PNG.") {
-                BrutalSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")])
+                ThemeSegmented(selection: $imageFormat, options: [(ImageFormat.png, "PNG"), (.jpeg, "JPEG")])
             }
             ToggleRow(title: "Scale Retina captures to 1×", subtitle: "Halves pixel size on 2× displays.", isOn: $downscaleRetina)
             ToggleRow(title: "Save edits over the original", subtitle: "Off keeps the original and saves a copy.", isOn: $savesOverOriginal)
@@ -530,14 +530,14 @@ private struct SelectionAidsPreview: View {
                 }
             }
             .frame(height: Self.height)
-            .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular))
             .overlay {
-                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular), width: 1, color: Self.ink.opacity(0.08))
+                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular), width: 1, color: Self.ink.opacity(0.08))
             }
             .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: [magnifier, crosshair, sizeLabel])
             Text("Move the pointer over the preview to drag the area.")
-                .font(Brutal.caption)
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .font(Theme.caption)
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 12)
                 .padding(.top, 2)
@@ -777,10 +777,10 @@ private struct QuickAccessSettings: View {
     var body: some View {
         SettingsCard(title: "Placement") {
             SettingRow(title: "Screen corner") {
-                BrutalSegmented(selection: $position, options: [(QuickAccessPosition.left, "Bottom left"), (.right, "Bottom right")])
+                ThemeSegmented(selection: $position, options: [(QuickAccessPosition.left, "Bottom left"), (.right, "Bottom right")])
             }
             SettingRow(title: "Auto-close", subtitle: "Hovering a card pauses the timer.") {
-                BrutalSegmented(selection: $duration, options: [(4.0, "4s"), (8.0, "8s"), (15.0, "15s"), (30.0, "30s"), (0.0, "Never")])
+                ThemeSegmented(selection: $duration, options: [(4.0, "4s"), (8.0, "8s"), (15.0, "15s"), (30.0, "30s"), (0.0, "Never")])
             }
         }
         QuickAccessPreview(position: position, duration: duration)
@@ -825,14 +825,14 @@ private struct QuickAccessPreview: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .frame(height: height)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-            .clipShape(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular))
             .overlay {
-                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular), width: 1, color: Self.ink.opacity(0.08))
+                Color.clear.inkBorder(RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular), width: 1, color: Self.ink.opacity(0.08))
             }
             caption
-                .font(Brutal.caption)
+                .font(Theme.caption)
                 .monospacedDigit()
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 12)
                 .padding(.top, 2)
@@ -964,7 +964,7 @@ private struct QuickAccessPreviewHover: View {
     }
 
     private func button(_ title: LocalizedStringResource, fill: Color, weight: Font.Weight, edge: Color, edgeWidth: CGFloat) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control * scale, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control * scale, style: .circular)
         return Text(title)
             .font(.system(size: 14 * scale, weight: weight))
             .foregroundStyle(Color(hex: 0x16161A))
@@ -1098,7 +1098,7 @@ private struct RecordingSettings: View {
     private var quality: some View {
         SettingsCard(title: "Quality") {
             SettingRow(title: "Frame rate", subtitle: frameRateSubtitle) {
-                BrutalSegmented(selection: $fps, options: frameRates.map { ($0, String($0)) })
+                ThemeSegmented(selection: $fps, options: frameRates.map { ($0, String($0)) })
             }
             SettingRow(title: String(localized: "GIF from Quick Access"), subtitle: String(localized: "Export GIF on the card uses the video editor’s last settings: \(Preferences().videoExportOptions.gifSummary)")) {
                 EmptyView()
@@ -1127,7 +1127,7 @@ private struct SoundSettings: View {
                             Task { await preview.start(deviceID: deviceID) }
                         }
                     }
-                    .buttonStyle(BrutalButtonStyle())
+                    .buttonStyle(ThemeButtonStyle())
                     .fixedSize()
                     .accessibilityLabel(Text(preview.isRunning ? "Stop the microphone test" : "Test the microphone"))
                     DevicePicker(title: "Microphone", devices: devices, selection: $deviceID, maxWidth: 120)
@@ -1171,7 +1171,7 @@ private struct CameraPreviewCard: View {
                     .foregroundStyle(.white)
                     .lineLimit(2)
                 Text(subtitle)
-                    .font(Brutal.caption)
+                    .font(Theme.caption)
                     .foregroundStyle(.white.opacity(0.7))
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -1184,7 +1184,7 @@ private struct CameraPreviewCard: View {
                     Task { await preview.start(deviceID: deviceID) }
                 }
             }
-            .buttonStyle(BrutalButtonStyle())
+            .buttonStyle(ThemeButtonStyle())
             .fixedSize()
             .accessibilityLabel(Text(preview.isRunning ? "Stop the camera preview" : "Preview the camera"))
         }
@@ -1242,7 +1242,7 @@ private struct CameraSettings: View {
                 DevicePicker(title: "Camera", devices: devices, selection: $deviceID)
             }
             SettingRow(title: "Size") {
-                BrutalSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.title) })
+                ThemeSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.title) })
             }
         }
         .onAppear {
@@ -1270,7 +1270,7 @@ private struct DevicePicker: View {
     var maxWidth: CGFloat = 150
 
     var body: some View {
-        BrutalPopUp(title: title, entries: [
+        ThemePopUp(title: title, entries: [
             .item("System default", selected: !devices.contains { $0.uniqueID == selection }) { selection = "" },
             .divider,
         ] + devices.map { device in
@@ -1305,7 +1305,7 @@ private struct ShortcutSettings: View {
             if replacesSystemScreenshots && macOSOwnsKeys {
                 SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.") {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
-                        .buttonStyle(BrutalButtonStyle())
+                        .buttonStyle(ThemeButtonStyle())
                         .fixedSize()
                 }
             }
@@ -1330,7 +1330,7 @@ private struct ShortcutSettings: View {
 
     /// The menu bar menu's icon for the action, with Record in record red as it is there.
     private func icon(for action: ShotAction) -> SettingRow<ShortcutRecorderView>.Icon {
-        action.isRecording ? .init(symbol: action.symbol, tint: Brutal.record) : .init(symbol: action.symbol)
+        action.isRecording ? .init(symbol: action.symbol, tint: Theme.record) : .init(symbol: action.symbol)
     }
 }
 
@@ -1348,7 +1348,7 @@ private struct RestoreShortcutsButton: View {
             SystemShortcuts.useShot(true)
             NotificationCenter.default.post(name: .shortcutsRestored, object: nil)
         }
-        .buttonStyle(BrutalButtonStyle())
+        .buttonStyle(ThemeButtonStyle())
         .fixedSize()
         .accessibilityLabel(Text("Restore the default shortcuts"))
     }
@@ -1368,7 +1368,7 @@ private struct PickingKeysCard: View {
                         Keycap(item.key)
                         Text(item.label)
                             .font(.scaled(12.5))
-                            .foregroundStyle(Brutal.ink)
+                            .foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .accessibilityElement(children: .combine)
@@ -1377,7 +1377,7 @@ private struct PickingKeysCard: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
+            .depth(.group, fill: Theme.group, radius: Theme.Radius.group)
             .onGeometryChange(for: Int.self) { $0.size.width >= 480 ? 3 : 2 } action: { columns = $0 }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1441,10 +1441,10 @@ private struct AboutHeader: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(verbatim: "Shot")
                     .font(.scaled(20, weight: .bold))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                 Text(verbatim: version)
                     .font(.scaled(12, design: .monospaced))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .textSelection(.enabled)
                     .accessibilityLabel(Text("Version \(version)"))
                 UpdateStatusLine(status: updater.status)
@@ -1453,7 +1453,7 @@ private struct AboutHeader: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .depth(.group, fill: Brutal.group, radius: 12)
+        .depth(.group, fill: Theme.group, radius: 12)
         .accessibilityElement(children: .combine)
         .hiddenWhileSearching()
     }
@@ -1466,14 +1466,14 @@ private struct UpdateStatusLine: View {
     var body: some View {
         HStack(spacing: 6) {
             if status == .upToDate {
-                Circle().fill(Brutal.success).frame(width: 7, height: 7)
+                Circle().fill(Theme.success).frame(width: 7, height: 7)
                     .accessibilityHidden(true)
             }
             Text(text)
                 .font(.scaled(12, weight: .semibold))
                 .foregroundStyle(status.availableVersion == nil
-                    ? ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink)
-                    : ContrastAware(standard: Brutal.accentText, increased: Brutal.ink))
+                    ? ContrastAware(standard: Theme.secondaryText, increased: Theme.ink)
+                    : ContrastAware(standard: Theme.accentText, increased: Theme.ink))
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -1497,7 +1497,7 @@ private struct UpdatesCard: View {
             ToggleRow(title: "Check automatically", subtitle: "Shot looks for a new version once a day. It’s the only time Shot goes online.", isOn: $updater.automaticallyChecks)
             SettingRow(title: "Check now") {
                 Button("Check for Updates") { updater.checkForUpdates() }
-                    .buttonStyle(BrutalButtonStyle())
+                    .buttonStyle(ThemeButtonStyle())
                     .fixedSize()
                     .disabled(!updater.canCheckForUpdates)
             }
@@ -1545,7 +1545,7 @@ private struct LinkRow: View {
                 SettingRow(title: title, icon: SettingRow.Icon(symbol: symbol)) {
                     Image(systemName: "arrow.up.right")
                         .font(.scaled(10, weight: .bold))
-                        .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                        .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                         .accessibilityHidden(true)
                 }
                 .contentShape(Rectangle())
@@ -1592,7 +1592,7 @@ private struct PermissionsCard: View {
                     HStack(spacing: 8) {
                         if screenRequested {
                             Button("Relaunch") { Permissions.relaunch() }
-                                .buttonStyle(BrutalButtonStyle())
+                                .buttonStyle(ThemeButtonStyle())
                                 .fixedSize()
                         }
                         // Asking a second time would wipe a grant macOS hasn't applied yet, so after the first it opens System Settings.
@@ -1672,10 +1672,10 @@ private struct AllowedTag: View {
             Text("Allowed")
                 .font(.scaled(11.5, weight: .bold))
         }
-        .foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.successText)
+        .foregroundStyle(contrast == .increased ? Theme.ink : Theme.successText)
         .padding(.horizontal, 9)
         .padding(.vertical, 2)
-        .background(Brutal.successFill, in: Capsule())
+        .background(Theme.successFill, in: Capsule())
         .fixedSize()
     }
 }
@@ -1687,7 +1687,7 @@ private struct AllowButton: View {
 
     var body: some View {
         Button("Allow…", action: action)
-            .buttonStyle(BrutalButtonStyle())
+            .buttonStyle(ThemeButtonStyle())
             .fixedSize()
             .accessibilityHint(opensSettings ? Text("Opens System Settings") : Text("Asks macOS for access"))
     }
@@ -1719,7 +1719,7 @@ private struct DataCard: View {
                     try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
                     NSWorkspace.shared.open(folder)
                 }
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(ThemeButtonStyle())
                 .fixedSize()
             }
             SettingRow(title: "Kept originals", subtitle: keptSubtitle) {
@@ -1732,7 +1732,7 @@ private struct DataCard: View {
                         confirmingClear = true
                     }
                 }
-                .buttonStyle(BrutalButtonStyle(confirmingClear ? .main : .secondary, destructive: confirmingClear))
+                .buttonStyle(ThemeButtonStyle(confirmingClear ? .main : .secondary, destructive: confirmingClear))
                 .fixedSize()
                 .disabled(keptBytes == 0 && !confirmingClear)
             }
@@ -1747,7 +1747,7 @@ private struct DataCard: View {
                         confirmingReset = true
                     }
                 }
-                .buttonStyle(BrutalButtonStyle(confirmingReset ? .main : .secondary, destructive: true))
+                .buttonStyle(ThemeButtonStyle(confirmingReset ? .main : .secondary, destructive: true))
                 .fixedSize()
             }
         }

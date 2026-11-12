@@ -331,14 +331,14 @@ private struct ScrollCaptureView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Brutal.separator.frame(height: 1)
+            Theme.separator.frame(height: 1)
             HStack(alignment: .top, spacing: 12) {
                 ScrollPreview(model: model)
                 facts
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            Brutal.separator.frame(height: 1)
+            Theme.separator.frame(height: 1)
             footer
         }
         // Wider at larger text sizes, so the facts and the footer keep their size rather than shrinking or truncating.
@@ -362,11 +362,11 @@ private struct ScrollCaptureView: View {
                 StatusDot(live: model.status == .live)
                 Text(model.status.heading)
                     .font(.scaled(14, weight: .bold))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
             }
             Text(model.status.detail)
                 .font(.scaled(12))
-                .foregroundStyle(Brutal.tertiaryText)
+                .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -379,10 +379,10 @@ private struct ScrollCaptureView: View {
     private var facts: some View {
         VStack(alignment: .leading, spacing: 14) {
             Fact(label: "Size") {
-                Text(sizeText).font(Brutal.numbers)
+                Text(sizeText).font(Theme.numbers)
             }
             Fact(label: "Frames kept") {
-                Text(model.framesKept.formatted()).font(Brutal.numbers)
+                Text(model.framesKept.formatted()).font(Theme.numbers)
             }
             Fact(label: "Sticky header") {
                 Text(model.hasStickyHeader ? "Kept once" : "None found").font(.scaled(12, weight: .semibold))
@@ -399,12 +399,12 @@ private struct ScrollCaptureView: View {
     private var footer: some View {
         HStack(spacing: 8) {
             Text("Esc discards")
-                .font(Brutal.caption)
-                .foregroundStyle(Brutal.tertiaryText)
+                .font(Theme.caption)
+                .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button("Cancel") { actions.cancel() }
-                .buttonStyle(BrutalButtonStyle())
-                .brutalTip("Discard the capture", key: "Esc")
+                .buttonStyle(ThemeButtonStyle())
+                .themeTip("Discard the capture", key: "Esc")
             Button {
                 actions.done()
             } label: {
@@ -414,9 +414,9 @@ private struct ScrollCaptureView: View {
                 }
                 .fixedSize()
             }
-            .buttonStyle(BrutalButtonStyle(.main))
+            .buttonStyle(ThemeButtonStyle(.main))
             .accessibilityLabel(Text("Done"))
-            .brutalTip("Save and copy", key: "↩")
+            .themeTip("Save and copy", key: "↩")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -450,9 +450,9 @@ private struct StatusDot: View {
 
     var body: some View {
         Circle()
-            .fill(live ? Brutal.success : Brutal.tertiaryText)
+            .fill(live ? Theme.success : Theme.tertiaryText)
             .frame(width: 8, height: 8)
-            .background(Circle().fill(Brutal.success.opacity(live ? 0.22 : 0)).frame(width: 14, height: 14))
+            .background(Circle().fill(Theme.success.opacity(live ? 0.22 : 0)).frame(width: 14, height: 14))
             .accessibilityHidden(true)
     }
 }
@@ -466,9 +466,9 @@ private struct Fact<Value: View>: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.scaled(12))
-                .foregroundStyle(Brutal.tertiaryText)
+                .foregroundStyle(Theme.tertiaryText)
             value
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -486,7 +486,7 @@ private struct WarningCard: View {
     private static let text = Color(light: Color(hex: 0x6B4F00), dark: Color(hex: 0xF2CC4A))
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         let edge = contrast == .increased ? 0.6 : 0.25
         VStack(alignment: .leading, spacing: 3) {
             Text(title).font(.scaled(12, weight: .semibold))
@@ -512,7 +512,7 @@ private struct ScrollPreview: View {
 
     var body: some View {
         let layout = ScrollPreviewLayout(size: model.size, viewport: model.viewport, frontier: model.frontier, box: Self.size, reserve: Self.reserve, growing: model.status != .sizeLimit)
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
         ZStack(alignment: .topLeading) {
             Hatching()
             if let image = model.preview {
@@ -525,23 +525,23 @@ private struct ScrollPreview: View {
             if let notYet = layout.notYet, notYet.height >= 22, notYet.width >= 52 {
                 Text("Not yet")
                     .font(.scaled(10, weight: .semibold))
-                    .foregroundStyle(Brutal.secondaryText)
+                    .foregroundStyle(Theme.secondaryText)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Brutal.window, in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                    .background(Theme.window, in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
                     .frame(width: notYet.width, height: notYet.height)
                     .offset(x: notYet.minX, y: notYet.minY)
             }
             if let edge = layout.edge {
-                Brutal.accent
-                    .inkBorder(Rectangle(), width: 0.5, color: Brutal.line)
+                Theme.accent
+                    .inkBorder(Rectangle(), width: 0.5, color: Theme.line)
                     .frame(width: edge.width, height: edge.height)
                     .offset(x: edge.minX, y: edge.minY)
             }
         }
         .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
         .clipShape(shape)
-        .depth(.group, fill: Brutal.group, radius: Brutal.Radius.group)
+        .depth(.group, fill: Theme.group, radius: Theme.Radius.group)
         .accessibilityElement()
         .accessibilityLabel(Text("Preview of the image so far"))
     }
@@ -553,7 +553,7 @@ private struct Hatching: View {
 
     var body: some View {
         Canvas { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Brutal.window))
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Theme.window))
             var path = Path()
             // 6 pt stripes every 12 pt, measured across them, as the board's 135° gradient draws them.
             let step = 12 * 2.squareRoot()
@@ -563,7 +563,7 @@ private struct Hatching: View {
                 path.addLine(to: CGPoint(x: x + size.height, y: 0))
                 x += step
             }
-            context.stroke(path, with: .color(Brutal.ink.opacity(contrast == .increased ? 0.22 : 0.1)), lineWidth: 6)
+            context.stroke(path, with: .color(Theme.ink.opacity(contrast == .increased ? 0.22 : 0.1)), lineWidth: 6)
         }
     }
 }

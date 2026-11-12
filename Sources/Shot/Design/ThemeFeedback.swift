@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: Fields
 
-extension Brutal {
+extension Theme {
     /// A quiet badge, such as Edited, and a keycap's face.
     static let badgeFill = Color(light: Color(hex: 0x16161A).opacity(0.08), dark: .white.opacity(0.1))
     /// A keycap's bottom edge.
@@ -12,7 +12,7 @@ extension Brutal {
     static let progressTrack = Color(light: Color(hex: 0x16161A).opacity(0.08), dark: .white.opacity(0.12))
 }
 
-enum BrutalFieldKind {
+enum ThemeFieldKind {
     /// A box for typing a name or a number: the group fill with the Rest edge.
     case text
     /// A search field, or a field inside a row: the field fill with no edge.
@@ -22,33 +22,33 @@ enum BrutalFieldKind {
 extension View {
     /// Draws the box around a `.plain` text field, with the accent focus halo while `focused`. Pass the field's own
     /// `@FocusState`, since a modifier can't see the focus of the field inside it.
-    func brutalField(_ kind: BrutalFieldKind = .text, focused: Bool) -> some View {
-        modifier(BrutalField(kind: kind, focused: focused))
+    func themeField(_ kind: ThemeFieldKind = .text, focused: Bool) -> some View {
+        modifier(ThemeField(kind: kind, focused: focused))
     }
 }
 
-private struct BrutalField: ViewModifier {
-    let kind: BrutalFieldKind
+private struct ThemeField: ViewModifier {
+    let kind: ThemeFieldKind
     let focused: Bool
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.isEnabled) private var isEnabled
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         content
             .textFieldStyle(.plain)
             .focusEffectDisabled()
-            .foregroundStyle(isEnabled ? Brutal.ink : Brutal.disabledText)
+            .foregroundStyle(isEnabled ? Theme.ink : Theme.disabledText)
             .padding(.horizontal, 8)
             .frame(minHeight: 24)
-            .background(kind == .text ? Brutal.group : Brutal.fieldFill, in: shape)
+            .background(kind == .text ? Theme.group : Theme.fieldFill, in: shape)
             .modifier(FieldEdge(shape: shape, width: edgeWidth, color: edgeColor))
             .shadow(color: kind == .text && isEnabled ? restShadow : .clear, radius: 0.5, y: 1)
             .background {
                 if focused, isEnabled {
                     Color.clear
-                        .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.control + 4, style: .circular), width: 4, color: Brutal.focusRing)
+                        .inkBorder(RoundedRectangle(cornerRadius: Theme.Radius.control + 4, style: .circular), width: 4, color: Theme.focusRing)
                         .padding(-4)
                 }
             }
@@ -64,8 +64,8 @@ private struct BrutalField: ViewModifier {
     }
 
     private var edgeColor: Color {
-        if increased { return Brutal.ink.opacity(0.6) }
-        return isEnabled ? Brutal.controlEdge : Brutal.hairline
+        if increased { return Theme.ink.opacity(0.6) }
+        return isEnabled ? Theme.controlEdge : Theme.hairline
     }
 
     private var restShadow: Color { colorScheme == .dark ? .black.opacity(0.3) : Color(hex: 0x16161A).opacity(0.06) }
@@ -86,7 +86,7 @@ private struct FieldEdge<S: InsettableShape>: ViewModifier {
 }
 
 /// A search field: a magnifying glass, the prompt in tertiary text, and a button that clears it once there's text.
-struct BrutalSearchField: View {
+struct ThemeSearchField: View {
     let prompt: LocalizedStringResource
     @Binding var text: String
     var focus: FocusState<Bool>.Binding
@@ -96,20 +96,20 @@ struct BrutalSearchField: View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .font(.scaled(12, weight: .medium))
-                .foregroundStyle(Brutal.tertiaryText)
+                .foregroundStyle(Theme.tertiaryText)
                 .accessibilityHidden(true)
             // The prompt is drawn behind the field rather than as its placeholder, which AppKit clips mid-letter when a
             // long translation doesn't fit; this one ends in "…".
             TextField(text: $text, prompt: Text(verbatim: "")) {
                 Text(prompt)
             }
-            .font(Brutal.body)
+            .font(Theme.body)
             .frame(maxWidth: .infinity)
             .background(alignment: .leading) {
                 if text.isEmpty {
                     Text(prompt)
-                        .font(Brutal.body)
-                        .foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.tertiaryText)
+                        .font(Theme.body)
+                        .foregroundStyle(contrast == .increased ? Theme.ink : Theme.tertiaryText)
                         .lineLimit(1)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
@@ -122,13 +122,13 @@ struct BrutalSearchField: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.scaled(12))
-                        .foregroundStyle(Brutal.tertiaryText)
+                        .foregroundStyle(Theme.tertiaryText)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Clear search"))
             }
         }
-        .brutalField(.search, focused: focus.wrappedValue)
+        .themeField(.search, focused: focus.wrappedValue)
     }
 }
 
@@ -150,18 +150,18 @@ struct TagChip: View {
             Text(verbatim: name).lineLimit(1)
         }
         .font(.scaled(11.5, weight: isOn ? .semibold : .regular))
-        .foregroundStyle(Brutal.ink)
+        .foregroundStyle(Theme.ink)
         .padding(.leading, color == nil ? 9 : 7)
         .padding(.trailing, 9)
         .padding(.vertical, 3)
-        .background(isOn ? Brutal.selection.opacity(0.14) : Brutal.fieldFill, in: Capsule())
-        .modifier(FieldEdge(shape: Capsule(), width: isOn || contrast == .increased ? 1 : 0, color: isOn ? Brutal.selection.opacity(contrast == .increased ? 1 : 0.35) : Brutal.ink.opacity(0.6)))
+        .background(isOn ? Theme.selection.opacity(0.14) : Theme.fieldFill, in: Capsule())
+        .modifier(FieldEdge(shape: Capsule(), width: isOn || contrast == .increased ? 1 : 0, color: isOn ? Theme.selection.opacity(contrast == .increased ? 1 : 0.35) : Theme.ink.opacity(0.6)))
         .contentShape(Capsule())
     }
 }
 
 /// A small label on a tile or beside a title, such as GIF, Edited or a version number.
-struct BrutalBadge: View {
+struct ThemeBadge: View {
     enum Style {
         /// A faint fill with secondary text, beside titles and in rows.
         case quiet
@@ -201,12 +201,12 @@ struct BrutalBadge: View {
         .foregroundStyle(foreground)
         .padding(.horizontal, 7)
         .padding(.vertical, 2)
-        .background(style == .strong ? Color(hex: 0x16161A) : Brutal.badgeFill, in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+        .background(style == .strong ? Color(hex: 0x16161A) : Theme.badgeFill, in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
     }
 
     private var foreground: Color {
         if style == .strong { return .white }
-        return contrast == .increased ? Brutal.ink : Brutal.secondaryText
+        return contrast == .increased ? Theme.ink : Theme.secondaryText
     }
 }
 
@@ -219,17 +219,17 @@ struct Keycap: View {
     }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular)
         Text(verbatim: key)
-            .font(Brutal.keycap)
-            .foregroundStyle(Brutal.ink)
+            .font(Theme.keycap)
+            .foregroundStyle(Theme.ink)
             .lineLimit(1)
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
             .frame(minWidth: 18)
-            .background(Brutal.badgeFill, in: shape)
+            .background(Theme.badgeFill, in: shape)
             .overlay(alignment: .bottom) {
-                Rectangle().fill(Brutal.keycapEdge).frame(height: 1)
+                Rectangle().fill(Theme.keycapEdge).frame(height: 1)
             }
             .clipShape(shape)
             .fixedSize()
@@ -239,7 +239,7 @@ struct Keycap: View {
 // MARK: Progress
 
 /// A 6 pt bar filled in ink to `value`, from 0 to 1. VoiceOver reads it as a progress indicator with its percentage.
-struct BrutalProgressBar: View {
+struct ThemeProgressBar: View {
     let value: Double
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -247,11 +247,11 @@ struct BrutalProgressBar: View {
     var body: some View {
         let fraction = min(max(value, 0), 1)
         Capsule()
-            .fill(contrast == .increased ? Brutal.ink.opacity(0.25) : Brutal.progressTrack)
+            .fill(contrast == .increased ? Theme.ink.opacity(0.25) : Theme.progressTrack)
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
                     Capsule()
-                        .fill(Brutal.ink)
+                        .fill(Theme.ink)
                         .frame(width: max(proxy.size.width * fraction, fraction > 0 ? proxy.size.height : 0))
                 }
             }
@@ -290,11 +290,11 @@ struct EmptyState<Actions: View>: View {
             EmptyStateTile(symbol: symbol)
             Text(title)
                 .font(.scaled(14, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
             if let message {
                 Text(message)
                     .font(.scaled(12))
-                    .foregroundStyle(Brutal.tertiaryText)
+                    .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             actions
@@ -313,15 +313,15 @@ private struct EmptyStateTile: View {
     @Environment(\.displayScale) private var scale
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
         Image(systemName: symbol)
             .font(.system(size: 20, weight: .semibold))
             .foregroundStyle(Color(hex: 0x16161A))
             .frame(width: 44, height: 44)
-            .background(Brutal.accent, in: shape)
+            .background(Theme.accent, in: shape)
             .inkBorder(shape, width: 1.5)
             .background {
-                shape.fill(Brutal.line).offset(y: Brutal.inkOffset(2, scale: scale))
+                shape.fill(Theme.line).offset(y: Theme.inkOffset(2, scale: scale))
             }
             .padding(.bottom, 2)
             .accessibilityHidden(true)

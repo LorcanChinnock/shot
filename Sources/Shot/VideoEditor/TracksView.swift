@@ -164,8 +164,8 @@ struct TracksView: View {
             }
             if let selection = model.selection, let main = layout.lane(ofTrack: 0) {
                 let from = timeline.x(for: selection.lowerBound), to = timeline.x(for: selection.upperBound)
-                Rectangle().fill(Brutal.selection.opacity(0.2))
-                    .inkBorder(Rectangle(), width: 1.5, color: Brutal.selection)
+                Rectangle().fill(Theme.selection.opacity(0.2))
+                    .inkBorder(Rectangle(), width: 1.5, color: Theme.selection)
                     .frame(width: max(0, to - from), height: layout.height - (layout.lanes.first?.y ?? main.y))
                     .offset(x: from, y: layout.lanes.first?.y ?? main.y)
                     .allowsHitTesting(false)
@@ -201,9 +201,9 @@ struct TracksView: View {
         let width = max(CGFloat(preview.range.upperBound - preview.range.lowerBound) * pointsPerSecond, 8)
         let onto: Int? = if case let .onto(track) = preview.drop, preview.result.trackID(of: preview.clip) == project.tracks[track].id { track } else { nil }
         if let onto, let lane = layout.lane(ofTrack: onto) {
-            RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular)
-                .fill(Brutal.yellow.opacity(0.45))
-                .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular), width: 2, dash: [4, 3])
+            RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular)
+                .fill(Theme.yellow.opacity(0.45))
+                .inkBorder(RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular), width: 2, dash: [4, 3])
                 .frame(width: width, height: lane.height)
                 .offset(x: x, y: lane.y)
                 .allowsHitTesting(false)
@@ -215,7 +215,7 @@ struct TracksView: View {
             // A new track at `index` goes just over the lane of the stacked track below it, or the main one.
             let below = project.stackedTrackIndices.last { $0 < index } ?? 0
             let y = layout.lane(ofTrack: below)?.y ?? 0
-            Capsule().fill(Brutal.pink)
+            Capsule().fill(Theme.pink)
                 .inkBorder(Capsule(), width: 2)
                 .frame(width: width, height: 8)
                 .offset(x: x, y: y - LaneLayout.gap / 2 - 4)
@@ -258,7 +258,7 @@ struct TracksView: View {
                 HStack(spacing: 0) {
                     Text(Self.title(model.project.laneName(ofTrack: lane.track)))
                         .font(.scaled(10.5))
-                        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                         .lineLimit(1)
                         .fixedSize()
                     Spacer(minLength: 2)
@@ -300,13 +300,13 @@ struct TracksView: View {
         Button { model.toggle(control.flag, ofTrack: track) } label: {
             Image(systemName: control.symbol(isOn: isOn))
                 .font(.scaled(10, weight: .semibold))
-                .foregroundStyle(isOn ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink)))
+                .foregroundStyle(isOn ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink)))
                 .frame(width: 14, height: 16)
-                .background(isOn ? Brutal.hover : .clear, in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .background(isOn ? Theme.hover : .clear, in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .brutalTip(control.tip(isOn: isOn))
+        .themeTip(control.tip(isOn: isOn))
         .accessibilityLabel(Text(control.menuTitle(isOn: isOn)))
     }
 
@@ -316,8 +316,8 @@ struct TracksView: View {
         return Canvas { context, size in
             for time in ticks {
                 let x = timeline.x(for: time)
-                context.fill(Path(CGRect(x: x, y: size.height - 4, width: 1, height: 4)), with: .color(Brutal.tertiaryText.opacity(0.6)))
-                context.draw(Text(TimelineRuler.label(time, interval: interval)).font(ScaledFont.scaled(10, weight: .medium, design: .monospaced).resolved(textSize)).foregroundStyle(Brutal.tertiaryText), at: CGPoint(x: x + 3, y: size.height / 2 - 1), anchor: .leading)
+                context.fill(Path(CGRect(x: x, y: size.height - 4, width: 1, height: 4)), with: .color(Theme.tertiaryText.opacity(0.6)))
+                context.draw(Text(TimelineRuler.label(time, interval: interval)).font(ScaledFont.scaled(10, weight: .medium, design: .monospaced).resolved(textSize)).foregroundStyle(Theme.tertiaryText), at: CGPoint(x: x + 3, y: size.height / 2 - 1), anchor: .leading)
             }
         }
         .frame(width: timeline.width, height: Self.rulerHeight)
@@ -350,12 +350,12 @@ struct TracksView: View {
     private static let clipGap: CGFloat = 1
 
     private func clipShape() -> RoundedRectangle {
-        RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
     }
 
     /// A clip's edge: selection blue while it's selected, a hairline otherwise.
     private func clipEdge(selected: Bool) -> (width: CGFloat, color: Color) {
-        selected ? (2, Brutal.selection) : (1, Color(light: Brutal.line.opacity(0.12), dark: .white.opacity(0.2)))
+        selected ? (2, Theme.selection) : (1, Color(light: Theme.line.opacity(0.12), dark: .white.opacity(0.2)))
     }
 
     private func pictureClip(_ clip: Clip, height: CGFloat, pointsPerSecond: CGFloat, trimmed: Bool) -> some View {
@@ -425,9 +425,9 @@ struct TracksView: View {
         .foregroundStyle(selected ? Color.white : annotationText)
         .padding(.horizontal, 8)
         .frame(width: width, height: height, alignment: .leading)
-        .background(selected ? Brutal.selection : annotationFill, in: clipShape())
+        .background(selected ? Theme.selection : annotationFill, in: clipShape())
         .clipShape(clipShape())
-        .inkBorder(clipShape(), width: selected ? 1.5 : 1, color: selected ? .white : Color(light: Brutal.line.opacity(0.1), dark: .white.opacity(0.14)))
+        .inkBorder(clipShape(), width: selected ? 1.5 : 1, color: selected ? .white : Color(light: Theme.line.opacity(0.1), dark: .white.opacity(0.14)))
         .allowsHitTesting(false)
         .offset(x: Self.clipGap)
         // Over the clip rather than in it, so a short clip doesn't squeeze the field.
@@ -450,8 +450,8 @@ struct TracksView: View {
     /// A keyframe on the lane's bottom edge: the accent with an ink edge, or selection blue with a white edge once it's selected.
     private func diamond(selected: Bool) -> some View {
         Rectangle()
-            .fill(selected ? Brutal.selection : Brutal.yellow)
-            .inkBorder(Rectangle(), width: 1.5, color: selected ? .white : Brutal.line)
+            .fill(selected ? Theme.selection : Theme.yellow)
+            .inkBorder(Rectangle(), width: 1.5, color: selected ? .white : Theme.line)
             .frame(width: 9, height: 9)
             .rotationEffect(.degrees(45))
             .frame(width: 12, height: 12)
@@ -460,11 +460,11 @@ struct TracksView: View {
 
     /// A yellow trim handle at one end of the Video lane, rounded on its outer side, with an ink edge in light.
     private func handle(_ edge: TrimHandle, height: CGFloat) -> some View {
-        let r = Brutal.Radius.control
+        let r = Theme.Radius.control
         let shape = UnevenRoundedRectangle(topLeadingRadius: edge == .start ? r : 0, bottomLeadingRadius: edge == .start ? r : 0,
                                            bottomTrailingRadius: edge == .end ? r : 0, topTrailingRadius: edge == .end ? r : 0, style: .circular)
-        return shape.fill(Brutal.yellow)
-            .inkBorder(shape, width: 1.5, color: Color(light: Brutal.line, dark: .clear))
+        return shape.fill(Theme.yellow)
+            .inkBorder(shape, width: 1.5, color: Color(light: Theme.line, dark: .clear))
             .frame(width: TrimTimeline.handleWidth, height: height)
             .allowsHitTesting(false)
     }
@@ -597,7 +597,7 @@ struct Playhead: View {
     let timeline: TrimTimeline
     let height: CGFloat
 
-    private static let color = Color(light: Brutal.line, dark: .white)
+    private static let color = Color(light: Theme.line, dark: .white)
 
     var body: some View {
         VStack(spacing: -2) {
@@ -630,7 +630,7 @@ private struct CutBadge: View {
         .foregroundStyle(.white)
         .padding(.horizontal, 5)
         .padding(.vertical, 1)
-        .background(Brutal.line, in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+        .background(Theme.line, in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
         .fixedSize()
     }
 }

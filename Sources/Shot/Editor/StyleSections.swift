@@ -38,7 +38,7 @@ struct StyleSection<Model: StyleEditing>: View {
             HStack(spacing: 6) {
                 Text("Shadow").panelHeading()
                 if let shadow = style.shadow, ShadowPreset.matching(shadow, scale: model.scale) == nil {
-                    BrutalBadge(text: "CUSTOM")
+                    ThemeBadge(text: "CUSTOM")
                 }
             }
             grid(shadows)
@@ -97,7 +97,7 @@ struct StyleSection<Model: StyleEditing>: View {
             HStack(spacing: 4) {
                 Text("Width")
                     .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     // At least 60 pt so the sizes line up, and wider for a long name such as "Épaisseur" at a larger text size.
                     .frame(minWidth: 60, alignment: .leading)
                     .fixedSize()
@@ -112,7 +112,7 @@ struct StyleSection<Model: StyleEditing>: View {
             }
             Text("Colour")
                 .font(.scaled(12, weight: .semibold))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             HStack(spacing: 2) {
                 ColorSwatches(
                     selected: border.paint,
@@ -145,7 +145,7 @@ private struct StylePresetTile<Model: StyleEditing>: View {
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
         Button {
             model.setTargetStyle(preset.style)
         } label: {
@@ -156,22 +156,22 @@ private struct StylePresetTile<Model: StyleEditing>: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(Brutal.ink)
+            .foregroundStyle(Theme.ink)
             .padding(.top, 8)
             .padding(.bottom, 6)
             .frame(maxWidth: .infinity)
             .background {
                 if preset.selected {
-                    shape.fill(Brutal.group)
+                    shape.fill(Theme.group)
                 } else if hovering {
-                    shape.fill(Brutal.hover)
+                    shape.fill(Theme.hover)
                 }
             }
             .overlay {
                 if preset.selected {
-                    Color.clear.inkBorder(shape, width: 1.5, color: Brutal.ink)
+                    Color.clear.inkBorder(shape, width: 1.5, color: Theme.ink)
                 } else if contrast == .increased {
-                    Color.clear.inkBorder(shape, width: 1, color: Brutal.ink.opacity(0.6))
+                    Color.clear.inkBorder(shape, width: 1, color: Theme.ink.opacity(0.6))
                 }
             }
             .contentShape(shape)

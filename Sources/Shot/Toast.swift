@@ -302,7 +302,7 @@ private struct ToastView: View {
                     .lineLimit(1)
             }
             if let fraction = text.fraction {
-                BrutalProgressBar(value: fraction)
+                ThemeProgressBar(value: fraction)
                     .frame(width: Toast.barWidth)
                 Text(fraction, format: .percent.precision(.fractionLength(0)))
                     .font(.scaled(12, weight: .semibold, tabular: true))
@@ -358,7 +358,7 @@ private struct ToastTickMark: View {
 
     var body: some View {
         Circle()
-            .fill(Brutal.accent)
+            .fill(Theme.accent)
             .frame(width: ToastView.tickSize, height: ToastView.tickSize)
             .overlay {
                 TickShape()

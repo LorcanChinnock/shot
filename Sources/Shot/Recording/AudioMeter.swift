@@ -87,7 +87,7 @@ struct LevelMeter: View {
     }
 
     private func color(_ index: Int) -> Color {
-        index >= LevelBars.loudFrom(of: Self.bars) ? MicLevelBars.loud : Brutal.success
+        index >= LevelBars.loudFrom(of: Self.bars) ? MicLevelBars.loud : Theme.success
     }
 }
 
@@ -121,7 +121,7 @@ struct MicLevelBars: View {
         guard lit else {
             return Color.white.opacity(contrast == .increased ? 0.4 : 0.18)
         }
-        return index >= LevelBars.loudFrom ? Self.loud : Brutal.success
+        return index >= LevelBars.loudFrom ? Self.loud : Theme.success
     }
 }
 
@@ -156,6 +156,6 @@ struct MicLevelColumns: View {
         guard lit else {
             return Color.white.opacity(contrast == .increased ? 0.4 : 0.25)
         }
-        return index == Self.heights.count - 1 ? MicLevelBars.loud : Brutal.success
+        return index == Self.heights.count - 1 ? MicLevelBars.loud : Theme.success
     }
 }

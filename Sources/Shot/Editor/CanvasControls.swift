@@ -35,13 +35,13 @@ private struct CanvasPillSurface: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
         let dark = scheme == .dark
         content
-            .background(solid ? AnyShapeStyle(Brutal.group) : AnyShapeStyle(Self.fill), in: shape)
+            .background(solid ? AnyShapeStyle(Theme.group) : AnyShapeStyle(Self.fill), in: shape)
             .overlay {
                 if contrast == .increased {
-                    Color.clear.inkBorder(shape, width: 1, color: Brutal.ink.opacity(0.6))
+                    Color.clear.inkBorder(shape, width: 1, color: Theme.ink.opacity(0.6))
                 } else {
                     shape.strokeBorder(dark ? Color.white.opacity(0.12) : Color(hex: 0x16161A).opacity(0.1), lineWidth: dark ? 0.5 : 1)
                 }
@@ -75,11 +75,11 @@ private struct CanvasZoomControl: View {
             Button { canvas.zoomOut() } label: {
                 Image(systemName: "minus").font(.scaled(12, weight: .semibold))
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar))
+            .buttonStyle(ThemeButtonStyle(.toolbar))
             .disabled(!ZoomControl.canZoomOut(model.zoom))
-            .brutalTip("Zoom Out", key: "⌘−")
+            .themeTip("Zoom Out", key: "⌘−")
             .accessibilityLabel(Text("Zoom Out"))
-            BrutalDropdown(title: "Zoom", entries: [
+            ThemeDropdown(title: "Zoom", entries: [
                 .item("Zoom In", shortcut: "⌘+") { canvas.zoomIn() },
                 .item("Zoom Out", shortcut: "⌘−") { canvas.zoomOut() },
                 .divider,
@@ -88,22 +88,22 @@ private struct CanvasZoomControl: View {
             ]) {
                 Text("\(ZoomControl.percent(model.zoom))%")
                     .font(.scaled(12, tabular: true))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .frame(minWidth: 44)
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar))
+            .buttonStyle(ThemeButtonStyle(.toolbar))
             .accessibilityValue(Text("\(ZoomControl.percent(model.zoom))%"))
-            .brutalTip("Zoom", detail: "Pinch, or scroll with ⌘ held, to zoom. Scroll, Space-drag or press H to move around. Actual Size is ⌘1.")
+            .themeTip("Zoom", detail: "Pinch, or scroll with ⌘ held, to zoom. Scroll, Space-drag or press H to move around. Actual Size is ⌘1.")
             Button { canvas.zoomIn() } label: {
                 Image(systemName: "plus").font(.scaled(12, weight: .semibold))
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar))
+            .buttonStyle(ThemeButtonStyle(.toolbar))
             .disabled(!ZoomControl.canZoomIn(model.zoom))
-            .brutalTip("Zoom In", key: "⌘+")
+            .themeTip("Zoom In", key: "⌘+")
             .accessibilityLabel(Text("Zoom In"))
             Button("Fit") { canvas.zoomToFit() }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .brutalTip("Zoom to Fit", key: "⌘0")
+                .buttonStyle(ThemeButtonStyle(.toolbar))
+                .themeTip("Zoom to Fit", key: "⌘0")
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Zoom"))
@@ -142,8 +142,8 @@ private struct CanvasHintPill: View {
             run.foregroundColor = color
             return run
         }
-        let text = increased ? Brutal.ink : Brutal.secondaryText
-        let key = increased ? Brutal.ink : Self.keyColor
+        let text = increased ? Theme.ink : Theme.secondaryText
+        let key = increased ? Theme.ink : Self.keyColor
         var result = run(hint.lead, font: textFont, color: text)
         for part in hint.parts {
             result += run(" · ", font: textFont, color: text)
@@ -256,7 +256,7 @@ private final class EditorCanvasBackdrop: NSView {
         } else {
             let dark = isDark
             shadowLayer.shadowPath = CGPath(rect: imageRect, transform: nil)
-            shadowLayer.shadowColor = dark ? NSColor.black.cgColor : Brutal.inkNS.cgColor
+            shadowLayer.shadowColor = dark ? NSColor.black.cgColor : Theme.inkNS.cgColor
             shadowLayer.shadowOpacity = dark ? 0.5 : 0.16
             shadowLayer.shadowRadius = 20
             shadowLayer.shadowOffset = CGSize(width: 0, height: -18)
@@ -270,7 +270,7 @@ private final class EditorCanvasBackdrop: NSView {
 
     private static let lightFill = NSColor(srgbRed: 0xEC / 255, green: 0xEA / 255, blue: 0xE5 / 255, alpha: 1)
     private static let darkFill = NSColor(srgbRed: 0x15 / 255, green: 0x15 / 255, blue: 0x17 / 255, alpha: 1)
-    private static let lightDots = dots(Brutal.inkNS.withAlphaComponent(0.08))
+    private static let lightDots = dots(Theme.inkNS.withAlphaComponent(0.08))
     private static let darkDots = dots(NSColor.white.withAlphaComponent(0.07))
 
     /// A 16 pt tile with a 1 pt-radius dot at its centre, as the board's `radial-gradient(… 1px, transparent 1px)`.

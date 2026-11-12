@@ -53,7 +53,7 @@ struct GallerySidebar: View {
         if model.folders.isEmpty && model.folderEdit == nil {
             Text("Make a folder, then drag captures onto it.")
                 .font(.scaled(11.5))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -105,7 +105,7 @@ private struct SidebarHeading<Accessory: View>: View {
         HStack(spacing: 4) {
             Text(title)
                 .font(.scaled(11, weight: .semibold))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
             accessory
@@ -128,14 +128,14 @@ private struct SidebarIconButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.scaled(12, weight: .medium))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .frame(width: 22, height: 20)
-                .background(hovering ? Brutal.hover : .clear, in: RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular))
+                .background(hovering ? Theme.hover : .clear, in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .brutalTip(label)
+        .themeTip(label)
         .accessibilityLabel(Text(label))
     }
 }
@@ -162,14 +162,14 @@ private struct SidebarRowLabel<Icon: View>: View {
             icon.frame(width: 18)
             Text(verbatim: title)
                 .font(.scaled(13, weight: selected ? .semibold : .regular))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer(minLength: 4)
             if let count, count > 0 {
                 Text(count, format: .number)
                     .font(.scaled(11.5, tabular: true))
-                    .foregroundStyle(ContrastAware(standard: selected ? Brutal.ink.opacity(0.7) : Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: selected ? Theme.ink.opacity(0.7) : Theme.tertiaryText, increased: Theme.ink))
                     .opacity(hidesCount ? 0 : 1)
                     .accessibilityHidden(hidesCount)
             }
@@ -192,7 +192,7 @@ private struct GalleryLibraryRow: View {
             SidebarRowLabel(title: filter.libraryTitle, count: count, selected: selected) {
                 Image(systemName: symbol)
                     .font(.scaled(13, weight: .medium))
-                    .foregroundStyle(selected ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(tint))
+                    .foregroundStyle(selected ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(tint))
             }
             .padding(.vertical, 5)
             .padding(.horizontal, rowLeading)
@@ -217,10 +217,10 @@ private struct GalleryLibraryRow: View {
 
     private var tint: Color {
         switch filter {
-        case .all: Brutal.ink
-        case .screenshots: Brutal.screenshotsIcon
-        case .videos: Brutal.recordingsIcon
-        case .gifs: Brutal.gifsIcon
+        case .all: Theme.ink
+        case .screenshots: Theme.screenshotsIcon
+        case .videos: Theme.recordingsIcon
+        case .gifs: Theme.gifsIcon
         }
     }
 }
@@ -301,7 +301,7 @@ private struct GalleryFolderRow: View {
             SidebarRowLabel(title: title, count: model.counts.count(of: .folder(folder)), selected: selected, hidesCount: hovering || selected) {
                 Image(systemName: "folder")
                     .font(.scaled(13, weight: .medium))
-                    .foregroundStyle(selected ? AnyShapeStyle(Brutal.ink) : AnyShapeStyle(Brutal.secondaryText))
+                    .foregroundStyle(selected ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Theme.secondaryText))
             }
             .contentShape(Rectangle())
             .onTapGesture {
@@ -321,9 +321,9 @@ private struct GalleryFolderRow: View {
             if folder == model.captureSubfolder, isFolder {
                 Image(systemName: "arrow.down.circle.fill")
                     .font(.scaled(11, weight: .semibold))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .padding(.leading, 4)
-                    .brutalTip("New captures are saved here")
+                    .themeTip("New captures are saved here")
                     .accessibilityLabel(Text("New captures are saved here"))
             }
         }
@@ -377,7 +377,7 @@ private struct GalleryFolderRow: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.scaled(9, weight: .bold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .rotationEffect(.degrees(open ? 90 : 0))
                     .frame(width: 14, height: 20)
                     .contentShape(Rectangle())
@@ -388,10 +388,10 @@ private struct GalleryFolderRow: View {
     }
 
     private var menu: some View {
-        BrutalDropdown(title: "Folder options", entries: GalleryFolderMenu.entries(model: model, folder: folder)) {
+        ThemeDropdown(title: "Folder options", entries: GalleryFolderMenu.entries(model: model, folder: folder)) {
             Image(systemName: "ellipsis")
                 .font(.scaled(12, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .frame(width: 24, height: 18)
                 .contentShape(Rectangle())
         }
@@ -418,8 +418,8 @@ private struct GalleryFolderMenu: View {
         }
     }
 
-    static func entries(model: GalleryModel, folder: String) -> [BrutalMenuEntry] {
-        var entries: [BrutalMenuEntry] = [
+    static func entries(model: GalleryModel, folder: String) -> [ThemeMenuEntry] {
+        var entries: [ThemeMenuEntry] = [
             .item("New Folder Inside", symbol: "folder.badge.plus") { GallerySidebar.beginNewFolder(model, in: folder) },
         ]
         if !folder.isEmpty {
@@ -462,12 +462,12 @@ private struct FolderNameField: View {
         HStack(spacing: 9) {
             Image(systemName: "folder")
                 .font(.scaled(13, weight: .medium))
-                .foregroundStyle(Brutal.secondaryText)
+                .foregroundStyle(Theme.secondaryText)
                 .frame(width: 18)
             TextField("Folder name", text: $name)
-                .font(Brutal.body)
+                .font(Theme.body)
                 .focused($focused)
-                .brutalField(focused: focused)
+                .themeField(focused: focused)
                 .onSubmit(commit)
                 .onExitCommand { model.folderEdit = nil }
         }
@@ -553,12 +553,12 @@ private struct GalleryStorage: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Text(verbatim: folderName)
-                    .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                     .lineLimit(1)
                     .truncationMode(.head)
                 Spacer(minLength: 4)
                 Text(verbatim: size)
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .monospacedDigit()
             }
             .font(.scaled(11.5))
@@ -566,13 +566,13 @@ private struct GalleryStorage: View {
             .accessibilityLabel(Text("Captures in \(folderName)"))
             .accessibilityValue(Text(verbatim: size))
             Capsule(style: .circular)
-                .fill(Brutal.quietTrack)
+                .fill(Theme.quietTrack)
                 .frame(height: 4)
                 .overlay(alignment: .leading) {
                     GeometryReader { geometry in
                         // A sliver shows even when the captures are a tiny part of the disk.
                         Capsule(style: .circular)
-                            .fill(Brutal.ink)
+                            .fill(Theme.ink)
                             .frame(width: bytes > 0 ? max(4, geometry.size.width * share) : 0)
                     }
                 }
@@ -580,14 +580,14 @@ private struct GalleryStorage: View {
             if bytes > 0 {
                 Button("Make room…") { model.makeRoom() }
                     .buttonStyle(PanelLinkStyle())
-                    .brutalTip("Show every capture, largest first")
+                    .themeTip("Show every capture, largest first")
             }
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
         .padding(.bottom, 12)
         .overlay(alignment: .top) {
-            Brutal.hairline.frame(height: 1).padding(.horizontal, 10)
+            Theme.hairline.frame(height: 1).padding(.horizontal, 10)
         }
     }
 
