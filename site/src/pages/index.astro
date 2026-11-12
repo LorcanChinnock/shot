@@ -6,6 +6,7 @@ import Window from '../components/Window.astro';
 import Copy from '../components/Copy.astro';
 import ForMacs from '../components/ForMacs.astro';
 import HeroStage from '../components/HeroStage.astro';
+import Arrow from '../components/Arrow.astro';
 import { latestRelease } from '../lib/release';
 import editor from '../../../docs/media/editor.png';
 import captureArea from '../../../docs/media/capture-area.png';
@@ -116,7 +117,7 @@ const software = {
     <div class="wrap hero-head">
       <p class="pill pop"><span class="badge dark">Free</span>Open source · No account · macOS 15 or later</p>
       <h1>A <span class="hl">better</span><br />
-        <span class="hero-keys anchor"><kbd class="key big press">⌘</kbd><kbd class="key big accent press">⇧</kbd><kbd class="key big press">4</kbd><span class="hero-note deco" aria-hidden="true"><span class="note pop">The only shortcut you need</span><svg class="arrow" width="70" height="40" viewBox="0 0 70 40"><path class="shaft" d="M4 30 C 24 40, 44 34, 58 18" /><path class="head" d="M66 10 L64 30 L50 20 Z" /></svg></span></span>
+        <span class="hero-keys anchor"><kbd class="key big press">⌘</kbd><kbd class="key big accent press">⇧</kbd><kbd class="key big press">4</kbd><span class="hero-note deco" aria-hidden="true"><span class="note pop">The only shortcut you need</span><Arrow from={[0, 26]} to={[64, 10]} bend={-0.22} /></span></span>
       </h1>
       <p class="lede pop">Shot is a screenshot app that lives in your menu bar. Press the keys you already know, add an arrow if you like, and paste the picture into a chat or an email.</p>
       <div class="actions pop">
@@ -160,7 +161,7 @@ const software = {
               <label><input type="radio" name="capture-mode" value={m.id} checked={i === 0} /><svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d={m.icon} /></svg>{m.label}</label>
             ))}
           </div>
-          <span class="try deco" aria-hidden="true"><svg class="arrow" width="46" height="26" viewBox="0 0 46 26"><path class="shaft" d="M42 18 C 30 26, 16 22, 8 10" /><path class="head" d="M4 2 L16 8 L4 16 Z" /></svg><span class="note">try them</span></span>
+          <span class="try deco" aria-hidden="true"><Arrow from={[52, 18]} to={[0, 10]} bend={0.12} head={14} /><span class="note">try them</span></span>
         </div>
         <div class="modes">
           {modes.map((m) => (
@@ -200,14 +201,14 @@ const software = {
             <div class="crop tilt" style="--tilt: 1deg; --iw: 1600; --x: 470; --y: 39; --w: 910; --h: 696">
               <Image src={editor} alt="Close up of the editor: the highlighted discount line on a support ticket, with a red arrow pointing at it from a sticky note, under the toolbar with Share, Save and Copy" widths={[600, 1200]} sizes="(min-width: 1240px) 760px, 100vw" />
             </div>
-            <span class="editable deco" aria-hidden="true"><svg class="arrow" width="54" height="40" viewBox="0 0 54 40"><path class="shaft" d="M50 6 C 36 4, 18 12, 12 28" /><path class="head" d="M5 38 L7 22 L19 31 Z" /></svg><span class="note wobble">this arrow stays editable</span></span>
+            <span class="editable deco" aria-hidden="true"><Arrow placed from={[44, -42]} to={[2, -4]} bend={-0.2} /><span class="note wobble">this arrow stays editable</span></span>
           </div>
         </div>
         <ul class="tools">
           {tools.map((t) => (
             <li class="ink-card tilt" style={`--tilt: ${t.tilt}`}>
               <div class:list={['demo', `d-${t.id}`]} aria-hidden="true">
-                {t.id === 'arrow' && <svg class="arrow" width="120" height="48" viewBox="0 0 120 48"><path class="shaft" d="M8 40 C 40 44, 80 30, 100 12" /><path class="head" d="M108 4 L106 26 L88 14 Z" /></svg>}
+                {t.id === 'arrow' && <Arrow placed from={[18, 50]} to={[118, 14]} bend={-0.15} />}
                 {t.id === 'blur' && <span class="blurred">jane@example.com</span>}
                 {t.id === 'highlight' && <span class="marker">Discount −$0.00</span>}
                 {t.id === 'spot' && <span class="hole" />}
@@ -327,7 +328,7 @@ const software = {
   <section class="install-section reveal" id="install">
     <div class="wrap">
       <div class="install">
-        <h2>Press <span class="cta-keys anchor"><kbd class="key big press">⌘</kbd><kbd class="key big press">⇧</kbd><kbd class="key big press">4</kbd><span class="tutorial deco" aria-hidden="true"><svg class="arrow" width="54" height="44" viewBox="0 0 54 44"><path class="shaft" d="M50 8 C 36 0, 18 8, 12 30" /><path class="head" d="M4 26 L18 26 L10 40 Z" /></svg><span class="note">that’s the whole tutorial</span></span></span>.</h2>
+        <h2>Press <span class="cta-keys anchor"><kbd class="key big press">⌘</kbd><kbd class="key big press">⇧</kbd><kbd class="key big press">4</kbd><span class="tutorial deco" aria-hidden="true"><Arrow from={[52, 10]} to={[6, 44]} bend={-0.28} /><span class="note">that’s the whole tutorial</span></span></span>.</h2>
         <p>Paste this into Terminal. It downloads the latest release, checks it against the release’s checksum and copies Shot into Applications.</p>
         <Copy command={install} />
         <ForMacs />
@@ -364,7 +365,7 @@ const software = {
   /* The note sits left of the keys and its arrow points right at them. */
   .hero-note { position: absolute; right: calc(100% + 18px); top: 50%; translate: 0 -50%; display: flex; align-items: center; gap: 4px; }
   .hero-note .note { --r: -7deg; --delay: 1100ms; width: 170px; max-width: none; padding: 14px 16px 18px; font-size: 25px; line-height: 1.05; text-align: left; }
-  .hero-note .arrow { --len: 80; --delay: 1500ms; }
+  .hero-note :global(.arrow) { --delay: 1500ms; flex: none; }
   .lede { margin: 0; max-width: 600px; font-size: 21px; color: var(--muted); --delay: 300ms; }
   .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; --delay: 400ms; }
   .button.big { min-height: 52px; padding: 13px 26px; font-size: 17px; }
@@ -375,8 +376,11 @@ const software = {
   }
 
   /* ---------- The scrolling band ---------- */
-  /* It's tilted and wider than the page, so its wrapper clips it, with room above and below for the tilt. */
-  .band-wrap { overflow: clip; padding-block: 40px 8px; margin-top: 20px; }
+  /* It's tilted and wider than the page, so its wrapper clips it, with room above and below for the tilt. The wrapper is
+     pulled up into that room, so the band starts just under the capture bar, which hangs below the sand panel, rather than
+     leaving a gap under the hero. The hero stays on top, so the bar's shadow falls on the band. */
+  .hero { position: relative; z-index: 1; }
+  .band-wrap { overflow: clip; padding-block: 40px 8px; margin-top: -10px; }
   .band { margin-inline: -40px; padding: 18px 0; border-radius: 0; rotate: -1.6deg; transform: none; box-shadow: 0 10px 30px rgb(22 22 26 / 0.2); }
   .band li { display: flex; align-items: center; gap: 10px; padding-right: 44px; font-size: 17px; font-weight: 700; }
   .band svg { fill: none; stroke: var(--icon); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -398,7 +402,7 @@ const software = {
   .capture .tabs label { padding: 10px 18px; font-size: 15px; border-radius: 12px; }
   .capture .tabs svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .try { display: flex; align-items: center; gap: 4px; }
-  .try .arrow { --len: 60; }
+  .try :global(.arrow) { flex: none; }
   .try .note { --r: 4deg; padding: 6px 10px 8px; font-size: 20px; }
   /* Every panel sits in the same cell, so the tallest sets the height and switching never moves the page. */
   .modes { display: grid; }
@@ -434,10 +438,10 @@ const software = {
   .editor-text p { margin: 0; font-size: 16px; line-height: 1.5; }
   .editor-shot { width: 100%; max-width: 563px; align-self: center; }
   .editor-shot .crop { border-radius: 12px; box-shadow: 0 24px 50px rgb(20 40 70 / 0.25); }
-  /* The note sits above and right of the screenshot's arrow, and points down at its middle, at (61%, 80%) of the crop. */
-  .editable { position: absolute; left: 60%; top: calc(80% - 40px); display: flex; align-items: flex-start; gap: 2px; }
-  .editable .arrow { --len: 60; flex: none; }
-  .editable .note { width: 140px; padding: 10px 12px 14px; }
+  /* .editable is the point the arrow's tip lands on: the middle of the screenshot's own arrow, at (61%, 80%) of the crop.
+     The note sits above and right of it, where the drawn arrow starts. */
+  .editable { position: absolute; left: 61%; top: 80%; width: 0; height: 0; }
+  .editable .note { position: absolute; left: 34px; bottom: 32px; width: 140px; padding: 10px 12px 14px; }
   .tools { flex: 1 1 420px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px; margin: 0; padding: 0; list-style: none; }
   .tools li { padding: 18px; display: flex; flex-direction: column; gap: 6px; min-height: 172px; border-radius: 22px; }
   .tools h3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 17px; font-weight: 800; letter-spacing: 0; }
@@ -452,7 +456,6 @@ const software = {
   .demo.d-spot { background: #ecebf2; }
   .demo.d-count { background: #fbe3ec; }
   .demo.d-note { background: #e6f2e1; }
-  .demo .arrow { position: absolute; left: 14px; top: 8px; --len: 110; }
   .blurred { position: absolute; left: 14px; top: 20px; font-size: 15px; font-weight: 600; filter: blur(4px); }
   .marker { position: absolute; left: 14px; top: 20px; padding: 1px 6px; font-size: 15px; font-weight: 700; background: linear-gradient(var(--accent), var(--accent)) no-repeat; background-size: 100% 100%; }
   .hole { position: absolute; left: 22px; top: 12px; width: 70px; height: 40px; border-radius: 50%; box-shadow: 0 0 0 200px rgb(22 22 26 / 0.55); }
@@ -460,8 +463,8 @@ const software = {
   .counts .counter { width: 30px; height: 30px; font-size: 14px; box-shadow: 0 0 0 2px #fff; }
   .mini-note { position: absolute; left: 14px; top: 10px; width: 110px; padding: 6px 8px; font-size: 11.5px; line-height: 1.25; font-weight: 600; background: var(--note); color: var(--note-text); box-shadow: 0 4px 10px rgb(0 0 0 / 0.12); rotate: -3deg; }
   @media (prefers-reduced-motion: no-preference) {
-    .demo .arrow .shaft { animation: draw 1.4s ease-out infinite alternate; }
-    .demo .arrow .head { animation: none; }
+    .demo :global(.arrow .shaft) { animation: draw 1.4s ease-out infinite alternate; }
+    .demo :global(.arrow .head) { animation: none; }
     .blurred { animation: blur-pulse 2.4s ease-in-out infinite alternate; }
     .marker { animation: sweep 1.2s ease-in-out infinite alternate; }
     .hole { animation: spot 3s ease-in-out infinite; }
@@ -557,7 +560,7 @@ const software = {
   .cta-keys kbd:nth-of-type(2) { --delay: 120ms; }
   .cta-keys kbd:nth-of-type(3) { --delay: 240ms; }
   .tutorial { position: absolute; left: calc(100% + 30px); top: -10px; display: flex; align-items: flex-start; gap: 2px; color: #16161a; }
-  .tutorial .arrow { color: #16161a; --len: 60; }
+  .tutorial :global(.arrow) { flex: none; margin-top: 6px; color: #16161a; }
   .tutorial .note { --r: 6deg; width: 150px; max-width: none; font-size: 24px; text-align: left; letter-spacing: 0; }
   .install > p { margin: 0; max-width: 560px; font-size: 19px; line-height: 1.5; }
   .install :global(.copy) { width: 100%; max-width: 640px; text-align: left; }
