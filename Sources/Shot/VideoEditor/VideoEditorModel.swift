@@ -88,6 +88,8 @@ final class VideoEditorModel {
     var annotationStyle = Preferences().editorStyle
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be on the timeline yet.
     var editingText: Annotation?
+    /// Set by the annotation canvas: turns the text or note still being typed into an annotation, as the image editor's does.
+    @ObservationIgnored var commitPendingText: (() -> Void)?
     /// Called when the panel opens, closes or changes height, so the window can grow or shrink to fit.
     @ObservationIgnored var onLayoutChanged: (() -> Void)?
     /// A style the pointer is on in the Inspector's Style section, drawn on the selected annotation or clip until it
@@ -1084,6 +1086,8 @@ extension VideoEditorModel {
         guard tool != annotationTool, tool != .crop, tool != .hand else {
             return
         }
+        // Another tool, or none, keeps the text being typed, as clicking the video does.
+        commitPendingText?()
         player.pause()
         endCropSilently()
         toolAfterCrop = nil

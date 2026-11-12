@@ -45,6 +45,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     init(model: VideoEditorModel) {
         self.model = model
         super.init(frame: .zero)
+        model.commitPendingText = { [weak self] in self?.commitField() }
     }
 
     @available(*, unavailable)
@@ -331,9 +332,9 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        // Esc keeps the text, as it does in the image editor; an empty new label goes away.
         if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-            closeField()
-            model.previewAnnotation(nil)
+            commitField()
             return true
         }
         return false
@@ -354,7 +355,12 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
                 model.addAnnotation(annotation)
             }
         } else {
+            // An unchanged label isn't a new project, so committing leaves it hidden; show it again instead.
+            let unchanged = model.project.annotationClip(annotation.id)?.annotation == annotation
             model.commitAnnotation(annotation, id: annotation.id)
+            if unchanged {
+                model.previewAnnotation(nil)
+            }
         }
     }
 

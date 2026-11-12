@@ -66,10 +66,10 @@ final class EditorModel {
             // A placed image picked as the crop tool is taken up gets a crop of its own.
             let imageToCrop = tool == .crop && oldValue != .crop ? (pendingCropImage ?? croppableSelection) : nil
             pendingCropImage = nil
+            // Picking a tool keeps the text being typed, as Esc does; then only select keeps it selected.
+            commitPendingText?()
             if tool != .select {
                 selectedID = nil
-            } else {
-                commitPendingText?()
             }
             if tool == .crop, oldValue != .crop {
                 beginCrop(from: oldValue, image: imageToCrop)
