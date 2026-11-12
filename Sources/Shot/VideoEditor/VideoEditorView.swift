@@ -23,7 +23,7 @@ struct VideoEditorRootView: View {
                 .padding(.trailing, 12)
                 .frame(height: GlassWindow.titlebarHeight)
             Rectangle()
-                .fill(ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6)))
+                .fill(ContrastAware(standard: Theme.hairline, increased: Theme.ink.opacity(0.6)))
                 .frame(height: 1)
                 .accessibilityHidden(true)
             HStack(spacing: 0) {
@@ -61,12 +61,12 @@ struct VideoEditorRootView: View {
     private var well: some View {
         GeometryReader { geometry in
             let rect = VideoWell.videoRect(showing: model.shownFrame.size, in: geometry.size, bottomClearance: model.isCropping ? model.cropBarClearance : 0)
-            let corners = RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular)
+            let corners = RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular)
             PlayerHost(player: model.player)
                 .background(Color.black)
                 .clipShape(corners)
-                .inkBorder(corners, width: 1, color: Color(light: Brutal.line.opacity(0.08), dark: .clear))
-                .shadow(color: Color(light: Brutal.line.opacity(0.16), dark: .black.opacity(0.5)), radius: 16, y: 12)
+                .inkBorder(corners, width: 1, color: Color(light: Theme.line.opacity(0.08), dark: .clear))
+                .shadow(color: Color(light: Theme.line.opacity(0.16), dark: .black.opacity(0.5)), radius: 16, y: 12)
                 .overlay { TransformOverlay(model: model) }
                 .overlay { AnnotationCanvas(model: model) }
                 .overlay { VideoCropOverlay(model: model) }
@@ -132,12 +132,12 @@ private struct VideoEditorTitleBar: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 0) {
                 Text(model.fileURL.lastPathComponent)
-                    .font(Brutal.label)
-                    .foregroundStyle(Brutal.ink)
+                    .font(Theme.label)
+                    .foregroundStyle(Theme.ink)
                     .truncationMode(.middle)
                 Text(verbatim: subtitle)
-                    .font(Brutal.caption)
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .font(Theme.caption)
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .monospacedDigit()
             }
             .lineLimit(1)
@@ -172,37 +172,37 @@ private struct VideoEditorTitleBar: View {
             Tile(selected: false, help: "Undo", key: "⌘Z", detail: "Redo with ⇧⌘Z.", isEnabled: model.history.canUndo) {
                 model.undo()
             } label: {
-                Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
+                Image(systemName: "arrow.uturn.backward").font(Theme.toolIcon)
             }
             Button {
                 model.toggleDrawing()
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "pencil").font(Brutal.toolIcon)
+                    Image(systemName: "pencil").font(Theme.toolIcon)
                     Text("Draw").font(.scaled(12, weight: .semibold))
                 }
                 .padding(.horizontal, 3)
             }
-            .buttonStyle(BrutalButtonStyle(.toolbar, isOn: model.showsDrawTools))
-            .brutalTip("Draw", detail: "Draw arrows, shapes, text, blur and more over the video.")
+            .buttonStyle(ThemeButtonStyle(.toolbar, isOn: model.showsDrawTools))
+            .themeTip("Draw", detail: "Draw arrows, shapes, text, blur and more over the video.")
             Tile(
                 selected: model.showsInspector, help: "Inspector", key: "⌥⌘I",
                 detail: "Shows a panel beside the video for the selected clip's or annotation's position, scale, keyframes and style."
             ) {
                 model.toggleInspector()
             } label: {
-                Image(systemName: "slider.horizontal.3").font(Brutal.toolIcon)
+                Image(systemName: "slider.horizontal.3").font(Theme.toolIcon)
             }
             Rectangle()
-                .fill(Brutal.controlEdge)
+                .fill(Theme.controlEdge)
                 .frame(width: 1, height: 20)
                 .padding(.horizontal, 6)
                 .accessibilityHidden(true)
             Group {
                 if model.isExporting {
                     Button("Cancel") { model.cancelExport() }
-                        .buttonStyle(BrutalButtonStyle())
-                        .brutalTip("Cancel", detail: "Stops exporting.")
+                        .buttonStyle(ThemeButtonStyle())
+                        .themeTip("Cancel", detail: "Stops exporting.")
                 } else {
                     saveButton
                 }
@@ -210,9 +210,9 @@ private struct VideoEditorTitleBar: View {
                     // One main button (rule 1): once the panel is open its own Export GIF or MP4 is the next step, and in
                     // crop mode the crop bar's Apply is, so Export steps back to secondary. No isOn: a secondary button's
                     // on state is the accent halo, which would read as focus and put a second yellow mark beside the panel's.
-                    .buttonStyle(BrutalButtonStyle(model.isCropping || model.showsExportPanel ? .secondary : .main))
+                    .buttonStyle(ThemeButtonStyle(model.isCropping || model.showsExportPanel ? .secondary : .main))
                     .accessibilityAddTraits(model.showsExportPanel ? .isSelected : [])
-                    .brutalTip("Export", detail: "Opens the Export panel, where you choose a GIF or an MP4 and export it.")
+                    .themeTip("Export", detail: "Opens the Export panel, where you choose a GIF or an MP4 and export it.")
             }
             .padding(.leading, 4)
         }
@@ -222,12 +222,12 @@ private struct VideoEditorTitleBar: View {
     @ViewBuilder private var saveButton: some View {
         if model.isComposite {
             Button("Save Copy") { Task { await model.save() } }
-                .buttonStyle(BrutalButtonStyle())
-                .brutalTip("Save Copy", key: "⌘S", detail: "Writes the edit as a new video next to the recording and copies it.")
+                .buttonStyle(ThemeButtonStyle())
+                .themeTip("Save Copy", key: "⌘S", detail: "Writes the edit as a new video next to the recording and copies it.")
         } else {
             Button("Save") { Task { await model.save() } }
-                .buttonStyle(BrutalButtonStyle())
-                .brutalTip("Save", key: "⌘S", detail: "Saves the trimmed video and copies it. The original goes to the Trash.")
+                .buttonStyle(ThemeButtonStyle())
+                .themeTip("Save", key: "⌘S", detail: "Saves the trimmed video and copies it. The original goes to the Trash.")
         }
     }
 

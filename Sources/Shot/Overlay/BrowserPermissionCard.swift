@@ -92,7 +92,7 @@ private struct BrowserPermissionCardView: View {
                 .font(.scaled(18, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: (Self.tile * scale).rounded(), height: (Self.tile * scale).rounded())
-                .background(Color.white.opacity(increased ? 0.24 : 0.12), in: RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+                .background(Color.white.opacity(increased ? 0.24 : 0.12), in: RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular))
                 .accessibilityHidden(true)
             Text(Self.title)
                 .font(.scaled(15, weight: .bold))
@@ -108,12 +108,12 @@ private struct BrowserPermissionCardView: View {
                 Button { actions.useWindow() } label: {
                     Text("Use Window").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(BrutalButtonStyle(floating: true))
+                .buttonStyle(ThemeButtonStyle(floating: true))
                 .help(String(localized: "Capture the whole window instead"))
                 Button { actions.grant() } label: {
                     Text("Grant Access").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(BrutalButtonStyle(.main, floating: true))
+                .buttonStyle(ThemeButtonStyle(.main, floating: true))
                 .keyboardShortcut(.defaultAction)
                 .help(String(localized: "Open the macOS prompt for Accessibility access"))
             }
@@ -122,7 +122,7 @@ private struct BrowserPermissionCardView: View {
         .padding(Self.padding)
         .frame(width: width, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
-        .floatingPanel(RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular), opacity: FloatingPanel.Opacity.card)
+        .floatingPanel(RoundedRectangle(cornerRadius: Theme.Radius.panel, style: .circular), opacity: FloatingPanel.Opacity.card)
         .onHover { inside in
             // The overlay's crosshair would otherwise stay over the buttons.
             (inside ? NSCursor.arrow : SelectionOverlayView.cursor).set()

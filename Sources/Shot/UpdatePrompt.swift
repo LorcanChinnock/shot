@@ -199,7 +199,7 @@ struct UpdatePromptView: View {
     private var increased: Bool { contrast == .increased }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.panel, style: .circular)
         VStack(alignment: .leading, spacing: 0) {
             header
             if let highlights = model.offer?.highlights, !highlights.isEmpty {
@@ -210,7 +210,7 @@ struct UpdatePromptView: View {
                     Text("Install future updates automatically")
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .toggleStyle(BrutalCheckboxStyle())
+                .toggleStyle(ThemeCheckboxStyle())
                 .help(String(localized: "Shot downloads each new version by itself and installs it when Shot next quits."))
                 .padding(.horizontal, Self.padding)
                 .padding(.top, 12)
@@ -221,7 +221,7 @@ struct UpdatePromptView: View {
         }
         .frame(width: Self.width(textSize), alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
-        .background(Brutal.group, in: shape)
+        .background(Theme.group, in: shape)
         .clipShape(shape)
         .inkBorder(shape, width: increased ? 1 : 0.5, color: edge)
         .accessibilityElement(children: .contain)
@@ -236,12 +236,12 @@ struct UpdatePromptView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(model.title)
                     .font(.scaled(14.5, weight: .bold))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
                 Text(model.subtitle)
                     .font(.scaled(12))
-                    .foregroundStyle(increased ? Brutal.ink : Brutal.tertiaryText)
+                    .foregroundStyle(increased ? Theme.ink : Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
             }
@@ -258,7 +258,7 @@ struct UpdatePromptView: View {
                 ProgressView().controlSize(.small)
                 Text("Looking for a new version…")
                     .font(.scaled(12))
-                    .foregroundStyle(increased ? Brutal.ink : Brutal.secondaryText)
+                    .foregroundStyle(increased ? Theme.ink : Theme.secondaryText)
                 Spacer(minLength: 8)
                 cancelButton
             }
@@ -272,10 +272,10 @@ struct UpdatePromptView: View {
             HStack(spacing: 8) {
                 Text("Ready to install")
                     .font(.scaled(12))
-                    .foregroundStyle(increased ? Brutal.ink : Brutal.secondaryText)
+                    .foregroundStyle(increased ? Theme.ink : Theme.secondaryText)
                 Spacer(minLength: 8)
                 Button { model.actions.relaunch() } label: { Text("Install and Relaunch") }
-                    .buttonStyle(BrutalButtonStyle(.main))
+                    .buttonStyle(ThemeButtonStyle(.main))
                     .fixedSize()
                     .keyboardShortcut(.defaultAction)
                     .help(String(localized: "Quit Shot, install the new version and open it again"))
@@ -285,7 +285,7 @@ struct UpdatePromptView: View {
                 ProgressView().controlSize(.small)
                 Text("Installing. Shot opens again by itself.")
                     .font(.scaled(12))
-                    .foregroundStyle(increased ? Brutal.ink : Brutal.secondaryText)
+                    .foregroundStyle(increased ? Theme.ink : Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
@@ -317,7 +317,7 @@ struct UpdatePromptView: View {
     @ViewBuilder private var skipButton: some View {
         if model.buttons?.showsSkip == true {
             Button { model.actions.skip() } label: { Text("Skip") }
-                .buttonStyle(BrutalButtonStyle(.plain))
+                .buttonStyle(ThemeButtonStyle(.plain))
                 .fixedSize()
                 .help(String(localized: "Don’t offer this version again"))
         }
@@ -327,12 +327,12 @@ struct UpdatePromptView: View {
         switch model.buttons?.later {
         case .later:
             Button { model.actions.later() } label: { Text("Later") }
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(ThemeButtonStyle())
                 .fixedSize()
                 .help(String(localized: "Ask again at the next check"))
         case .installOnQuit:
             Button { model.actions.later() } label: { Text("Install on Quit") }
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(ThemeButtonStyle())
                 .fixedSize()
                 .help(String(localized: "Install the new version the next time Shot quits"))
         case .hidden, nil:
@@ -343,13 +343,13 @@ struct UpdatePromptView: View {
     @ViewBuilder private var installButton: some View {
         if model.buttons?.install == .learnMore {
             Button { model.actions.install() } label: { Text("Learn More…") }
-                .buttonStyle(BrutalButtonStyle(.main))
+                .buttonStyle(ThemeButtonStyle(.main))
                 .fixedSize()
                 .keyboardShortcut(.defaultAction)
                 .help(String(localized: "Read about this version on the web"))
         } else {
             Button { model.actions.install() } label: { Text("Install and Relaunch") }
-                .buttonStyle(BrutalButtonStyle(.main))
+                .buttonStyle(ThemeButtonStyle(.main))
                 .fixedSize()
                 .keyboardShortcut(.defaultAction)
                 .help(String(localized: "Download the new version, then quit Shot, install it and open it again"))
@@ -358,7 +358,7 @@ struct UpdatePromptView: View {
 
     private var cancelButton: some View {
         Button { model.actions.cancel() } label: { Text("Cancel") }
-            .buttonStyle(BrutalButtonStyle())
+            .buttonStyle(ThemeButtonStyle())
             .fixedSize()
             .disabled(!model.canCancel)
     }
@@ -377,10 +377,10 @@ struct UpdatePromptView: View {
                 Text(status)
                     .font(.scaled(12))
                     .monospacedDigit()
-                    .foregroundStyle(increased ? Brutal.ink : Brutal.secondaryText)
+                    .foregroundStyle(increased ? Theme.ink : Theme.secondaryText)
                     .lineLimit(1)
                 if let fraction {
-                    BrutalProgressBar(value: fraction)
+                    ThemeProgressBar(value: fraction)
                         .accessibilityLabel(status)
                 } else {
                     ProgressView().controlSize(.small)
@@ -396,7 +396,7 @@ struct UpdatePromptView: View {
     /// The Float edge: black at 20% in light and white at 14% in dark, and 60% ink with Increase Contrast.
     private var edge: Color {
         if increased {
-            return Brutal.ink.opacity(0.6)
+            return Theme.ink.opacity(0.6)
         }
         return colorScheme == .dark ? .white.opacity(0.14) : .black.opacity(0.2)
     }
@@ -421,7 +421,7 @@ private struct Highlights: View {
         }
         .font(.scaled(12.5))
         .lineSpacing(3)
-        .foregroundStyle(increased ? Brutal.ink : Brutal.secondaryText)
+        .foregroundStyle(increased ? Theme.ink : Theme.secondaryText)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading, 20)
         .padding(.trailing, UpdatePromptView.padding)
@@ -438,7 +438,7 @@ private struct Highlights: View {
                 list
             }
         }
-        .background { Rectangle().fill(Brutal.window) }
+        .background { Rectangle().fill(Theme.window) }
         .overlay(alignment: .top) { divider }
         .overlay(alignment: .bottom) { divider }
         .accessibilityElement(children: .contain)
@@ -447,7 +447,7 @@ private struct Highlights: View {
 
     private var divider: some View {
         Rectangle()
-            .fill(increased ? Brutal.ink.opacity(0.6) : Brutal.separator)
+            .fill(increased ? Theme.ink.opacity(0.6) : Theme.separator)
             .frame(height: 1)
             .accessibilityHidden(true)
     }

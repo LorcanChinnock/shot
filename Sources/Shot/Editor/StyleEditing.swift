@@ -70,19 +70,19 @@ struct StylePresetSwatch: View {
     var border: Border.Kind?
 
     var body: some View {
-        let card = RoundedRectangle(cornerRadius: Brutal.Radius.tiny, style: .circular)
+        let card = RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular)
         if border == .outline {
-            Circle().fill(Brutal.sky)
+            Circle().fill(Theme.sky)
                 .padding(3)
                 .background(Circle().fill(.white))
-                .overlay(Circle().stroke(Brutal.line.opacity(0.45), lineWidth: 1))
+                .overlay(Circle().stroke(Theme.line.opacity(0.45), lineWidth: 1))
                 .frame(width: 16, height: 16)
         } else {
             card.fill(.white)
                 .overlay {
                     switch border {
-                    case .hairline: card.stroke(Brutal.line.opacity(0.45), lineWidth: 1)
-                    case .solid: card.stroke(Brutal.sky, lineWidth: 3)
+                    case .hairline: card.stroke(Theme.line.opacity(0.45), lineWidth: 1)
+                    case .solid: card.stroke(Theme.sky, lineWidth: 3)
                     case .outline, nil: EmptyView()
                     }
                 }
@@ -93,7 +93,7 @@ struct StylePresetSwatch: View {
     private var color: Color {
         switch shadow {
         case nil: .clear
-        case .glow: Brutal.sky
+        case .glow: Theme.sky
         case .contact: .black.opacity(0.45)
         case .soft, .float: .black.opacity(0.3)
         }

@@ -238,7 +238,7 @@ final class ColorPickerView: NSView {
         let increased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
         let cell = ColorLoupe.cell(side: textSize.points(ColorLoupe.side))
         let side = cell * CGFloat(Loupe.cells)
-        let inkRing = Brutal.inkWidth(1.5, scale: backing)
+        let inkRing = Theme.inkWidth(1.5, scale: backing)
         let outset = 3 + inkRing
 
         let hex = NSAttributedString(string: color.hex, attributes: [
@@ -262,7 +262,7 @@ final class ColorPickerView: NSView {
         shadow.shadowOffset = NSSize(width: 0, height: -12)
         shadow.shadowBlurRadius = 14
         shadow.set()
-        ctx.setFillColor(Brutal.inkNS.cgColor)
+        ctx.setFillColor(Theme.inkNS.cgColor)
         ctx.fillEllipse(in: loupe.insetBy(dx: -outset, dy: -outset))
         ctx.restoreGState()
         ctx.setFillColor(NSColor.white.cgColor)
@@ -294,7 +294,7 @@ final class ColorPickerView: NSView {
         ctx.setStrokeColor(NSColor.white.cgColor)
         ctx.setLineWidth(inkRing)
         ctx.stroke(centre.insetBy(dx: -inkRing * 1.5, dy: -inkRing * 1.5))
-        ctx.setStrokeColor(Brutal.inkNS.cgColor)
+        ctx.setStrokeColor(Theme.inkNS.cgColor)
         ctx.stroke(centre.insetBy(dx: -inkRing / 2, dy: -inkRing / 2))
         ctx.restoreGState()
 
@@ -323,7 +323,7 @@ final class ColorPickerView: NSView {
         NSColor.white.withAlphaComponent(FloatingPanel.solidNS ? 1 : 0.85).setFill()
         hintPill.fill()
         if increased {
-            Brutal.inkNS.withAlphaComponent(0.4).setStroke()
+            Theme.inkNS.withAlphaComponent(0.4).setStroke()
             hintPill.lineWidth = 1
             hintPill.stroke()
         }

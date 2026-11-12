@@ -143,7 +143,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     /// A 30 × 20 copy of a thumbnail for the keyboard's list, cropped and rounded as in the row.
     private static func listThumbnail(_ image: NSImage?) -> NSImage {
         NSImage(size: NSSize(width: 30, height: 20), flipped: false) { rect in
-            RecentThumbnailView.drawPicture(image, in: rect, radius: Brutal.Radius.tiny)
+            RecentThumbnailView.drawPicture(image, in: rect, radius: Theme.Radius.tiny)
             return true
         }
     }
@@ -217,7 +217,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private static func makeIcon(_ symbol: String, tint: Tint?) -> NSImage? {
         var configuration = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
         if tint == .record {
-            configuration = configuration.applying(.init(paletteColors: [NSColor(Brutal.record)]))
+            configuration = configuration.applying(.init(paletteColors: [NSColor(Theme.record)]))
         }
         let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?.withSymbolConfiguration(configuration)
         image?.isTemplate = tint == nil

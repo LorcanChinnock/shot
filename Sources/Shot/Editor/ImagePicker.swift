@@ -23,21 +23,21 @@ struct ImagePicker: View {
                         Button { pick([item.url]) } label: {
                             CaptureThumbnail(item: item)
                                 .frame(width: Self.tile, height: Self.tile * 0.7)
-                                .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular), width: 2)
+                                .inkBorder(RoundedRectangle(cornerRadius: Theme.Radius.chip, style: .circular), width: 2)
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(Text(item.name))
-                        .brutalTip(item.name)
+                        .themeTip(item.name)
                     }
                 }
             } else {
                 Text(recent == nil ? "Loading…" : "No screenshots in your save folder yet")
-                    .font(Brutal.caption)
-                    .foregroundStyle(Brutal.faded(0.55))
+                    .font(Theme.caption)
+                    .foregroundStyle(Theme.faded(0.55))
                     .frame(width: Self.tile * 3 + 16, height: Self.tile * 0.7)
             }
             Button("Choose File…", action: chooseFiles)
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(ThemeButtonStyle())
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(14)
@@ -65,7 +65,7 @@ private struct CaptureThumbnail: View {
 
     var body: some View {
         ZStack {
-            Brutal.paper.opacity(0.6)
+            Theme.paper.opacity(0.6)
             if let thumbnail {
                 Image(nsImage: thumbnail.image).resizable().scaledToFill()
             }

@@ -93,7 +93,7 @@ Read the note in `docs/architecture/` before changing the area it covers:
 
 - Use `NSView(hosting:)`, never `NSHostingView(rootView:)`/`NSHostingController`; a plain hosting view crashes when content changes under a visible window. `GlassWindow.swift`, which defines the helper, is exempt.
 - Use `@Setting`, never `@AppStorage`; `@AppStorage` updates late, so views show inconsistent state.
-- Use `inkBorder(_:width:color:)` rather than `strokeBorder` with any `Brutal` colour (a ternary included). It snaps the width to whole device pixels, so 1.5 pt ink is crisp on 1x and Retina. `BrutalStyle.swift`, which defines `inkBorder`, is exempt.
+- Use `inkBorder(_:width:color:)` rather than `strokeBorder` with any `Theme` colour (a ternary included). It snaps the width to whole device pixels, so 1.5 pt ink is crisp on 1x and Retina. `ThemeStyle.swift`, which defines `inkBorder`, is exempt.
 - Use `style: .circular`, never `.continuous`, for rounded corners; continuous corners leave steps under ink borders.
 - ShotCore imports no AppKit, SwiftUI or Cocoa, so its logic is tested without a window.
 - Never pair `onTapGesture(count: 2)` with a single tap; every single click waits out the double-click interval. Use one `onTapGesture` and read `NSApp.currentEvent?.clickCount`.

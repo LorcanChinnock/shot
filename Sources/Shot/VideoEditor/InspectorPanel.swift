@@ -38,13 +38,13 @@ struct InspectorPanel: View {
         HStack {
             Text("Inspector")
                 .font(.scaled(13, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             Button("Reset") { reset() }
                 .buttonStyle(PanelLinkStyle())
                 .disabled(resetIsDisabled)
-                .brutalTip("Reset", detail: resetDetail)
+                .themeTip("Reset", detail: resetDetail)
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
@@ -126,14 +126,14 @@ struct InspectorPanel: View {
     private func groupTitle(_ text: LocalizedStringResource) -> some View {
         Text(text)
             .font(.scaled(12, weight: .bold))
-            .foregroundStyle(Brutal.ink)
+            .foregroundStyle(Theme.ink)
             .accessibilityAddTraits(.isHeader)
     }
 
     private func note(_ text: LocalizedStringResource) -> some View {
         Text(text)
-            .font(Brutal.caption)
-            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+            .font(Theme.caption)
+            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -146,12 +146,12 @@ struct InspectorPanel: View {
                 HStack(spacing: 10) {
                     Text(verbatim: "\(Int(output.width)) × \(Int(output.height))")
                         .font(.scaled(12, weight: .bold, design: .monospaced, tabular: true))
-                        .foregroundStyle(Brutal.ink)
+                        .foregroundStyle(Theme.ink)
                         .accessibilityLabel(Text("Frame size, \(Int(output.width)) by \(Int(output.height)) pixels"))
                     Spacer(minLength: 8)
                     Button("Crop") { model.beginFrameCrop() }
-                        .buttonStyle(BrutalButtonStyle())
-                        .brutalTip("Crop", key: "C", detail: "Crops the video's frame.")
+                        .buttonStyle(ThemeButtonStyle())
+                        .themeTip("Crop", key: "C", detail: "Crops the video's frame.")
                 }
             }
             note("Select a clip or annotation to move, scale, turn or fade it, and to key it over time.")
@@ -198,7 +198,7 @@ struct InspectorPanel: View {
             HStack(spacing: 6) {
                 Text(Self.name(.position))
                     .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .accessibilityHidden(true)
                 Spacer(minLength: 8)
                 diamond(.position, animation)
@@ -214,7 +214,7 @@ struct InspectorPanel: View {
         HStack(spacing: 6) {
             Text(verbatim: axis)
                 .font(.scaled(11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .accessibilityHidden(true)
             NumberField(value: Binding(get: { value.rounded() }, set: { typed in
                 if let current = model.selectedValues {
@@ -232,27 +232,27 @@ struct InspectorPanel: View {
         let start = model.selectedClipID.flatMap { model.project.clipStart($0) } ?? 0
         let here = animation.hasKeyframe(property, at: model.playhead - start)
         let others = animation.hasKeyframes(property)
-        let chip = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let chip = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         return Button { model.toggleKeyframe(property) } label: {
             Image(systemName: here ? "diamond.fill" : "diamond")
                 .font(.scaled(11, weight: .bold))
-                .foregroundStyle(here ? AnyShapeStyle(Brutal.line) : AnyShapeStyle(ContrastAware(standard: Brutal.ink.opacity(others ? 0.85 : 0.45), increased: Brutal.ink)))
+                .foregroundStyle(here ? AnyShapeStyle(Theme.line) : AnyShapeStyle(ContrastAware(standard: Theme.ink.opacity(others ? 0.85 : 0.45), increased: Theme.ink)))
                 .overlay {
                     if !here, others {
-                        Circle().fill(Brutal.ink).frame(width: 3, height: 3)
+                        Circle().fill(Theme.ink).frame(width: 3, height: 3)
                     }
                 }
                 .frame(width: 22, height: 20)
-                .background(here ? Brutal.yellow : Color.clear, in: chip)
+                .background(here ? Theme.yellow : Color.clear, in: chip)
                 .overlay {
                     if here {
-                        Color.clear.inkBorder(chip, width: 1, color: Brutal.line)
+                        Color.clear.inkBorder(chip, width: 1, color: Theme.line)
                     }
                 }
                 .contentShape(chip)
         }
         .buttonStyle(.plain)
-        .brutalTip(here ? String(localized: "Remove this keyframe") : String(localized: "Keyframe \(name) here"), key: "K", detail: String(localized: "K keys every property at once."))
+        .themeTip(here ? String(localized: "Remove this keyframe") : String(localized: "Keyframe \(name) here"), key: "K", detail: String(localized: "K keys every property at once."))
         .accessibilityLabel(Text(here ? "Remove \(name) keyframe" : "Add \(name) keyframe"))
     }
 
@@ -266,20 +266,20 @@ struct InspectorPanel: View {
                 HStack(spacing: 10) {
                     Text("Easing")
                         .font(.scaled(12, weight: .semibold))
-                        .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                        .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                         .accessibilityHidden(true)
                     Spacer(minLength: 8)
-                    BrutalPopUp(title: "Easing", entries: Easing.allCases.map { option in
+                    ThemePopUp(title: "Easing", entries: Easing.allCases.map { option in
                         .item(option.title, selected: option == easing) { model.setKeyframeEasing(option) }
                     }, value: easing.title)
-                    .brutalTip("Easing", detail: "How the value moves from this keyframe to the next.")
+                    .themeTip("Easing", detail: "How the value moves from this keyframe to the next.")
                 }
             } else {
                 note("Click a diamond on the lane to choose how it eases to the next one.")
             }
             Button("Clear Keyframes") { model.clearKeyframes() }
-                .buttonStyle(BrutalButtonStyle())
-                .brutalTip("Clear Keyframes", detail: "Takes away every keyframe of the selection.")
+                .buttonStyle(ThemeButtonStyle())
+                .themeTip("Clear Keyframes", detail: "Takes away every keyframe of the selection.")
         }
     }
 
@@ -295,8 +295,8 @@ struct InspectorPanel: View {
                             .minimumScaleFactor(0.8)
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(BrutalButtonStyle())
-                    .brutalTip(preset.title, detail: Self.presetDetail(preset, isNote: isNote))
+                    .buttonStyle(ThemeButtonStyle())
+                    .themeTip(preset.title, detail: Self.presetDetail(preset, isNote: isNote))
                 }
             }
         }
@@ -320,14 +320,14 @@ struct InspectorPanel: View {
             let sections = StylePanelLayout.sections(
                 kind: kind, windowShadow: false, borders: !kind.borders(transparent: model.targetHasTransparency).isEmpty
             ).target.filter { [.corners, .shadow, .border].contains($0) }
-            Divider().overlay(Brutal.separator)
+            Divider().overlay(Theme.separator)
             HStack {
                 groupTitle("Style")
                 Spacer(minLength: 8)
                 Button("Reset") { model.resetTargetStyle() }
                     .buttonStyle(PanelLinkStyle())
                     .disabled(kind.isDefault(style: model.targetStyle, cornerRadius: model.targetCornerRadius))
-                    .brutalTip("Reset Style", detail: "Puts the shadow, border and corners back to how new ones start.")
+                    .themeTip("Reset Style", detail: "Puts the shadow, border and corners back to how new ones start.")
                     .accessibilityLabel(Text("Reset Style"))
             }
             ForEach(sections, id: \.self) { section in
@@ -342,12 +342,12 @@ struct InspectorPanel: View {
             Text("Crop").panelHeading()
             HStack(spacing: 8) {
                 Button("Crop") { model.beginClipCrop(id) }
-                    .buttonStyle(BrutalButtonStyle())
-                    .brutalTip("Crop", key: "C", detail: "Crops the clip's picture.")
+                    .buttonStyle(ThemeButtonStyle())
+                    .themeTip("Crop", key: "C", detail: "Crops the clip's picture.")
                 if model.selectedClip?.crop != nil {
                     Button("Reset Crop") { model.removeClipCrop() }
-                        .buttonStyle(BrutalButtonStyle())
-                        .brutalTip("Reset Crop", detail: "Shows all of the clip's picture again.")
+                        .buttonStyle(ThemeButtonStyle())
+                        .themeTip("Reset Crop", detail: "Shows all of the clip's picture again.")
                 }
             }
         }
@@ -365,7 +365,7 @@ private struct NumberField: View {
             .font(.scaled(12, design: .monospaced, tabular: true))
             .multilineTextAlignment(.trailing)
             .focused($focused)
-            .brutalField(focused: focused)
+            .themeField(focused: focused)
             .frame(maxWidth: .infinity)
             .accessibilityLabel(Text(label))
     }

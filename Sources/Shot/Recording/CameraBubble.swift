@@ -240,9 +240,9 @@ private final class CameraBubblePanel: NSPanel {
         videoLayer.backgroundColor = NSColor.black.cgColor
         ringLayer.fillColor = NSColor.white.cgColor
         contrastLayer.fillColor = nil
-        contrastLayer.strokeColor = Brutal.inkNS.cgColor
+        contrastLayer.strokeColor = Theme.inkNS.cgColor
         handleLayer.fillColor = NSColor.white.cgColor
-        handleLayer.strokeColor = Brutal.inkNS.cgColor
+        handleLayer.strokeColor = Theme.inkNS.cgColor
         contentView = bubbleView
         layoutLayers()
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(displayOptionsChanged), name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil)
@@ -291,12 +291,12 @@ private final class CameraBubblePanel: NSPanel {
         previewLayer.frame = videoLayer.bounds
         // The ring is a white disc behind the camera, so its inner edge never shows a seam against the clipped picture.
         ringLayer.path = CGPath(ellipseIn: local.insetBy(dx: -ring, dy: -ring), transform: nil)
-        let edge = Brutal.inkWidth(CameraBubbleStyle.contrastEdgeWidth, scale: scale)
+        let edge = Theme.inkWidth(CameraBubbleStyle.contrastEdgeWidth, scale: scale)
         contrastLayer.lineWidth = edge
         contrastLayer.path = CGPath(ellipseIn: local.insetBy(dx: -ring - edge / 2, dy: -ring - edge / 2), transform: nil)
         contrastLayer.isHidden = !NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
         if let center = handleCenter {
-            let width = Brutal.inkWidth(CameraBubbleStyle.handleEdgeWidth, scale: scale)
+            let width = Theme.inkWidth(CameraBubbleStyle.handleEdgeWidth, scale: scale)
             let side = CameraBubbleStyle.handleDiameter + width
             handleLayer.lineWidth = width
             handleLayer.path = CGPath(ellipseIn: CGRect(x: center.x - side / 2, y: center.y - side / 2, width: side, height: side), transform: nil)

@@ -11,13 +11,13 @@ struct SettingsSidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            BrutalSearchField(prompt: "Search", text: Bindable(navigation).query, focus: searchFocused)
+            ThemeSearchField(prompt: "Search", text: Bindable(navigation).query, focus: searchFocused)
                 .onExitCommand {
                     // Esc clears the search and gives the keyboard back to the window, so the arrow keys move between sections.
                     navigation.query = ""
                     navigation.searchBlurRequest += 1
                 }
-                .brutalTip("Search every setting by name or description (⌘F)")
+                .themeTip("Search every setting by name or description (⌘F)")
                 .padding(.horizontal, 4)
                 .padding(.bottom, 12)
             ForEach(SettingsSection.allCases) { section in
@@ -46,8 +46,8 @@ struct SettingsSectionTile: View {
     let selected: Bool
 
     var body: some View {
-        let tint = selected ? Brutal.SidebarTint.selected : section.tint
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+        let tint = selected ? Theme.SidebarTint.selected : section.tint
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         Image(systemName: section.symbol)
             .font(.scaled(12, weight: .semibold))
             .foregroundStyle(tint.icon)
@@ -76,7 +76,7 @@ private struct SettingsSidebarRow: View {
                 SettingsSectionTile(section: section, selected: selected)
                 Text(section.title)
                     .font(.scaled(13, weight: selected ? .semibold : .regular))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
@@ -101,7 +101,7 @@ private struct OpenGalleryRow: View {
     private var label: some View {
         Text("Open Gallery")
             .font(.scaled(13))
-            .foregroundStyle(Brutal.ink)
+            .foregroundStyle(Theme.ink)
             .lineLimit(1)
     }
 
@@ -110,13 +110,13 @@ private struct OpenGalleryRow: View {
             GalleryController.shared.show()
         } label: {
             HStack(spacing: 10) {
-                let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
+                let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
                 Image(systemName: "square.grid.2x2")
                     .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(Brutal.SidebarTint.gallery.icon)
+                    .foregroundStyle(Theme.SidebarTint.gallery.icon)
                     .frame(width: 22, height: 22)
-                    .background(Brutal.SidebarTint.gallery.tile, in: shape)
-                    .inkBorder(shape, width: 1, color: Brutal.controlEdge)
+                    .background(Theme.SidebarTint.gallery.tile, in: shape)
+                    .inkBorder(shape, width: 1, color: Theme.controlEdge)
                 // At larger text sizes, or in a long translation, the arrow gives way so the label stays on one line.
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 10) {
@@ -124,7 +124,7 @@ private struct OpenGalleryRow: View {
                         Spacer(minLength: 0)
                         Image(systemName: "arrow.up.right")
                             .font(.scaled(10, weight: .semibold))
-                            .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                             .accessibilityHidden(true)
                     }
                     label.frame(maxWidth: .infinity, alignment: .leading)
@@ -154,12 +154,12 @@ private struct SettingsSidebarFooter: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(verbatim: "Shot")
                         .font(.scaled(12, weight: .bold))
-                        .foregroundStyle(Brutal.ink)
+                        .foregroundStyle(Theme.ink)
                     Text(status)
                         .font(.scaled(11))
                         .foregroundStyle(updater.status.availableVersion == nil
-                            ? ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink)
-                            : ContrastAware(standard: Brutal.accentText, increased: Brutal.ink))
+                            ? ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink)
+                            : ContrastAware(standard: Theme.accentText, increased: Theme.ink))
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -171,10 +171,10 @@ private struct SettingsSidebarFooter: View {
         }
         .buttonStyle(.plain)
         .overlay(alignment: .top) {
-            Brutal.hairline.frame(height: 1)
+            Theme.hairline.frame(height: 1)
         }
         .padding(.top, 6)
-        .brutalTip("Updates and more in About")
+        .themeTip("Updates and more in About")
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(verbatim: "Shot"))
         .accessibilityValue(Text(status))

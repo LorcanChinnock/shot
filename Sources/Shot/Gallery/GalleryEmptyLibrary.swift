@@ -45,12 +45,12 @@ struct GalleryEmptyLibrary: View {
             VStack(spacing: 6) {
                 Text("Take a screenshot to start your library")
                     .font(.scaled(17, weight: .heavy))
-                    .foregroundStyle(Brutal.ink)
+                    .foregroundStyle(Theme.ink)
                     .accessibilityAddTraits(.isHeader)
                 Text("Everything Shot saves to \(model.folderPath) appears here, and you can search the text inside it.")
                     .font(.scaled(13))
                     .lineSpacing(3)
-                    .foregroundStyle(increased ? Brutal.ink : Brutal.secondaryText)
+                    .foregroundStyle(increased ? Theme.ink : Theme.secondaryText)
             }
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
@@ -58,7 +58,7 @@ struct GalleryEmptyLibrary: View {
             Button("Choose a different folder…") {
                 model.chooseFolder(in: NSApp.keyWindow)
             }
-            .buttonStyle(BrutalButtonStyle())
+            .buttonStyle(ThemeButtonStyle())
             .help(String(localized: "Pick the folder Shot saves captures to, as in Settings › General"))
         }
         .padding(24)
@@ -72,13 +72,13 @@ private struct FirstCaptureBox: View {
 
     var body: some View {
         let scale = CGFloat(textSize.scale)
-        RoundedRectangle(cornerRadius: Brutal.Radius.panel, style: .circular)
-            .stroke(Brutal.ink.opacity(contrast == .increased ? 0.6 : 0.25), style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
+        RoundedRectangle(cornerRadius: Theme.Radius.panel, style: .circular)
+            .stroke(Theme.ink.opacity(contrast == .increased ? 0.6 : 0.25), style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
             .frame(width: (220 * scale).rounded(), height: (140 * scale).rounded())
             .overlay {
                 Text("Your first capture goes here")
                     .font(.scaled(15, weight: .semibold))
-                    .foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.secondaryText)
+                    .foregroundStyle(contrast == .increased ? Theme.ink : Theme.secondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
             }
@@ -118,9 +118,9 @@ private struct ArrowShape: View {
     var body: some View {
         ZStack {
             ArrowStroke(drawn: drawn)
-                .stroke(Brutal.record, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .stroke(Theme.record, style: StrokeStyle(lineWidth: 4, lineCap: .round))
             ArrowHead(drawn: drawn)
-                .fill(Brutal.record)
+                .fill(Theme.record)
         }
     }
 }
@@ -203,18 +203,18 @@ private struct BigKeycap: View {
     @Environment(\.displayScale) private var scale
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
         Text(verbatim: key)
             .font(.scaled(22, weight: .heavy))
-            .foregroundStyle(accented ? Color(hex: 0x16161A) : Brutal.ink)
+            .foregroundStyle(accented ? Color(hex: 0x16161A) : Theme.ink)
             .lineLimit(1)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .frame(minWidth: 36)
-            .background(accented ? Brutal.accent : Brutal.group, in: shape)
+            .background(accented ? Theme.accent : Theme.group, in: shape)
             .inkBorder(shape, width: 2)
             .background {
-                shape.fill(Brutal.line).offset(y: Brutal.inkOffset(4, scale: scale))
+                shape.fill(Theme.line).offset(y: Theme.inkOffset(4, scale: scale))
             }
             .padding(.bottom, 4)
             .fixedSize()
@@ -236,7 +236,7 @@ private struct DotGrid: View {
                 }
                 y += step
             }
-            context.fill(dots, with: .color(Brutal.ink.opacity(0.08)))
+            context.fill(dots, with: .color(Theme.ink.opacity(0.08)))
         }
         .accessibilityHidden(true)
     }
@@ -271,22 +271,22 @@ struct TrashConfirmation: View {
                 .padding(.bottom, 4)
             Text(title)
                 .font(.scaled(15, weight: .bold))
-                .foregroundStyle(Brutal.ink)
+                .foregroundStyle(Theme.ink)
                 .accessibilityAddTraits(.isHeader)
             Text(detail)
                 .font(.scaled(12.5))
                 .lineSpacing(3)
-                .foregroundStyle(contrast == .increased ? Brutal.ink : Brutal.secondaryText)
+                .foregroundStyle(contrast == .increased ? Theme.ink : Theme.secondaryText)
             ButtonRow(shares: [1, 1]) {
                 Button { model.trashRequest = nil } label: {
                     Text("Cancel").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(BrutalButtonStyle())
+                .buttonStyle(ThemeButtonStyle())
                 .keyboardShortcut(.cancelAction)
                 Button { model.confirmTrash() } label: {
                     Text("Move to Trash").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(BrutalButtonStyle(.main, destructive: true))
+                .buttonStyle(ThemeButtonStyle(.main, destructive: true))
                 .keyboardShortcut(.defaultAction)
             }
             .padding(.top, 6)
@@ -295,7 +295,7 @@ struct TrashConfirmation: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(20)
         .frame(width: (300 * CGFloat(textSize.scale)).rounded())
-        .background(Brutal.group)
+        .background(Theme.group)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(title)
     }
@@ -326,8 +326,8 @@ private struct TrashCard: View {
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.control, style: .circular)
-        Brutal.group
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
+        Theme.group
             .overlay {
                 if let image = slot.thumbnail?.image {
                     Image(nsImage: image)
@@ -337,7 +337,7 @@ private struct TrashCard: View {
             }
             .frame(width: 54, height: 40)
             .clipShape(shape)
-            .inkBorder(shape, width: 1, color: Brutal.ink.opacity(contrast == .increased ? 0.6 : 0.15))
+            .inkBorder(shape, width: 1, color: Theme.ink.opacity(contrast == .increased ? 0.6 : 0.15))
             .shadow(color: .black.opacity(0.1), radius: 5, y: 4)
     }
 }

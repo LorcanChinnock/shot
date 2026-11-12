@@ -8,7 +8,7 @@ private struct HostsTipsKey: EnvironmentKey {
 }
 
 extension EnvironmentValues {
-    /// True inside a `tipHost()`; elsewhere `brutalTip` falls back to the system tooltip.
+    /// True inside a `tipHost()`; elsewhere `themeTip` falls back to the system tooltip.
     var hostsTips: Bool {
         get { self[HostsTipsKey.self] }
         set { self[HostsTipsKey.self] = newValue }
@@ -20,13 +20,13 @@ extension View {
     /// view has a shortcut, with `detail` below them when there is one.
     /// VoiceOver reads the tip as a hint, not a label, since most titles add a shortcut to a button's own text, so a
     /// control without readable text, such as an icon, needs its own `accessibilityLabel`.
-    func brutalTip(_ title: LocalizedStringResource, key: String? = nil, detail: LocalizedStringResource? = nil) -> some View {
+    func themeTip(_ title: LocalizedStringResource, key: String? = nil, detail: LocalizedStringResource? = nil) -> some View {
         modifier(TipTrigger(title: String(localized: title), key: key, detail: detail.map { String(localized: $0) }))
     }
 
     /// A tip whose text is already localized, or needs no translating, as `Text` takes a string variable as is.
     @_disfavoredOverload
-    func brutalTip<S: StringProtocol>(_ title: S, key: String? = nil, detail: String? = nil) -> some View {
+    func themeTip<S: StringProtocol>(_ title: S, key: String? = nil, detail: String? = nil) -> some View {
         modifier(TipTrigger(title: String(title), key: key, detail: detail))
     }
 
@@ -163,18 +163,18 @@ private struct TipBubble: View {
             : max(min(target.maxX, bounds.width - Self.margin), Self.maxWidth + Self.margin) - Self.maxWidth
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 8) {
-                Text(tip.title).font(Brutal.small).foregroundStyle(Brutal.ink)
+                Text(tip.title).font(Theme.small).foregroundStyle(Theme.ink)
                 if let key = tip.key {
                     Keycap(key)
                 }
             }
             if let detail = tip.detail {
-                Text(detail).font(.scaled(12)).foregroundStyle(Brutal.tertiaryText)
+                Text(detail).font(.scaled(12)).foregroundStyle(Theme.tertiaryText)
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .depth(.float, fill: Brutal.group, radius: Brutal.Radius.control)
+        .depth(.float, fill: Theme.group, radius: Theme.Radius.control)
         .fixedSize(horizontal: false, vertical: true)
         .frame(width: Self.maxWidth, height: 0, alignment: Alignment(horizontal: leading ? .leading : .trailing, vertical: below ? .top : .bottom))
         .position(x: minX + Self.maxWidth / 2, y: below ? target.maxY + Self.gap : target.minY - Self.gap)

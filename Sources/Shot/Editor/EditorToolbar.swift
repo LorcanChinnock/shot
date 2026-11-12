@@ -10,14 +10,14 @@ struct EditorToolGroup: View {
         HStack(spacing: 1) {
             ForEach(EditorToolbarLayout.drawingTools) { toolTile($0) }
             Rectangle()
-                .fill(Brutal.controlEdge)
+                .fill(Theme.controlEdge)
                 .frame(width: 1, height: 18)
                 .padding(.horizontal, 4)
                 .accessibilityHidden(true)
             Tile(selected: model.showsImagePicker, help: "Add an image", key: "⇧⌘I", detail: "Place a recent capture or an image file beside your screenshot") {
                 model.showsImagePicker.toggle()
             } label: {
-                Image(systemName: "photo.badge.plus").font(Brutal.toolIcon)
+                Image(systemName: "photo.badge.plus").font(Theme.toolIcon)
             }
             .popover(isPresented: $model.showsImagePicker, arrowEdge: .bottom) {
                 ImagePicker(excluding: model.fileURL) { urls in
@@ -28,7 +28,7 @@ struct EditorToolGroup: View {
             ForEach(EditorToolbarLayout.afterDivider) { toolTile($0) }
         }
         .padding(3)
-        .background(Brutal.fieldFill, in: RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular))
+        .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular))
         .fixedSize()
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Tools"))
@@ -38,7 +38,7 @@ struct EditorToolGroup: View {
         Tile(selected: EditorToolbarLayout.selectedButton(for: model.tool) == tool, tool: true, help: tool.title, key: String(tool.key).uppercased(), detail: tool.summary) {
             model.tool = tool
         } label: {
-            Image(systemName: tool.symbol).font(Brutal.toolIcon)
+            Image(systemName: tool.symbol).font(Theme.toolIcon)
         }
     }
 }

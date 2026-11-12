@@ -63,13 +63,13 @@ private struct CustomColorButton: View {
                 }
             }
             .inkBorder(Circle(), width: 2)
-            .background(Circle().fill(Brutal.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+            .background(Circle().fill(Theme.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
             .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
             .frame(width: 26, height: 30)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .brutalTip(help)
+        .themeTip(help)
         .accessibilityLabel(Text(help))
         .accessibilityAddTraits(custom != nil ? .isSelected : [])
         .animation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
@@ -116,12 +116,12 @@ struct ColorEditor: View {
         VStack(spacing: 12) {
             SaturationBrightnessField(hue: hue, saturation: $saturation, brightness: $brightness)
                 .frame(width: 200, height: 140)
-            BrutalSlider(
+            ThemeSlider(
                 value: $hue,
                 track: LinearGradient(colors: (0...6).map { Color(hue: Double($0) / 6, saturation: 1, brightness: 1) }, startPoint: .leading, endPoint: .trailing)
             )
             .accessibilityLabel(Text("Hue"))
-            BrutalSlider(
+            ThemeSlider(
                 value: $opacity,
                 track: LinearGradient(colors: [color.opacity(0), color.opacity(1)], startPoint: .leading, endPoint: .trailing),
                 checkerboard: true
@@ -131,8 +131,8 @@ struct ColorEditor: View {
                 Button(action: sample) {
                     Image(systemName: "eyedropper")
                 }
-                .buttonStyle(BrutalButtonStyle(.toolbar))
-                .brutalTip("Pick a colour on screen", detail: "Click anywhere, including the image. Esc cancels.")
+                .buttonStyle(ThemeButtonStyle(.toolbar))
+                .themeTip("Pick a colour on screen", detail: "Click anywhere, including the image. Esc cancels.")
                 .accessibilityLabel(Text("Pick a colour on screen"))
                 Spacer()
                 Circle().fill(color).frame(width: 22, height: 22)
@@ -190,12 +190,12 @@ private struct SaturationBrightnessField: View {
                 LinearGradient(colors: [.white, .white.opacity(0)], startPoint: .leading, endPoint: .trailing)
                 LinearGradient(colors: [.black.opacity(0), .black], startPoint: .top, endPoint: .bottom)
             }
-            .inkBorder(RoundedRectangle(cornerRadius: Brutal.Radius.chip, style: .circular), width: 2)
+            .inkBorder(RoundedRectangle(cornerRadius: Theme.Radius.chip, style: .circular), width: 2)
             // Outside the border's clip, so at an edge the marker and its focus ring draw whole, over the border.
             .overlay {
                 Circle().fill(Color(hue: hue, saturation: saturation, brightness: brightness))
                     .frame(width: 14, height: 14)
-                    .inkBorder(Circle(), width: 2, color: isFocused ? Brutal.yellow : .white)
+                    .inkBorder(Circle(), width: 2, color: isFocused ? Theme.yellow : .white)
                     .padding(1)
                     .inkBorder(Circle(), width: 1)
                     .position(x: saturation * size.width, y: (1 - brightness) * size.height)
@@ -240,7 +240,7 @@ private struct SaturationBrightnessField: View {
 /// ⇧ by 10%. `onEditingChanged` reports a drag, or an arrow key held down, starting and ending, so a caller can make each
 /// one undo step. A `floating` slider is for the dark floating panels: a 3 pt white track at 25% filled in white up to a
 /// 12 pt knob.
-struct BrutalSlider: View {
+struct ThemeSlider: View {
 
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...1
@@ -273,7 +273,7 @@ struct BrutalSlider: View {
                 .frame(width: knob, height: knob)
                 .background {
                     if isFocused, isEnabled {
-                        Color.clear.inkBorder(Circle(), width: 4, color: Brutal.focusRing).padding(-4)
+                        Color.clear.inkBorder(Circle(), width: 4, color: Theme.focusRing).padding(-4)
                     }
                 }
                 .offset(x: fraction * (width - knob))
@@ -344,7 +344,7 @@ struct BrutalSlider: View {
                 Capsule().fill(track)
             }
             .clipShape(Capsule())
-            .inkBorder(Capsule(), width: 1, color: increased ? Brutal.ink.opacity(0.6) : Brutal.controlEdge)
+            .inkBorder(Capsule(), width: 1, color: increased ? Theme.ink.opacity(0.6) : Theme.controlEdge)
             .frame(height: 8)
         } else if floating {
             let filled = knob / 2 + fraction * (width - knob)
@@ -355,9 +355,9 @@ struct BrutalSlider: View {
                 .frame(height: 3)
         } else {
             let filled = knob / 2 + fraction * (width - knob)
-            Capsule().fill(increased ? AnyShapeStyle(Brutal.ink.opacity(0.35)) : AnyShapeStyle(Brutal.quietTrack))
+            Capsule().fill(increased ? AnyShapeStyle(Theme.ink.opacity(0.35)) : AnyShapeStyle(Theme.quietTrack))
                 .overlay(alignment: .leading) {
-                    Capsule().fill(Brutal.ink).frame(width: filled)
+                    Capsule().fill(Theme.ink).frame(width: filled)
                 }
                 .frame(height: 4)
         }
@@ -384,19 +384,19 @@ private struct Swatch: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Circle().fill(color?.swiftUIColor ?? Brutal.paper)
+                Circle().fill(color?.swiftUIColor ?? Theme.paper)
                 if color == nil {
-                    Rectangle().fill(Brutal.red).frame(width: 2, height: 22).rotationEffect(.degrees(45))
+                    Rectangle().fill(Theme.red).frame(width: 2, height: 22).rotationEffect(.degrees(45))
                 }
             }
             .inkBorder(Circle(), width: 2)
-            .background(Circle().fill(Brutal.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
+            .background(Circle().fill(Theme.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
             .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
             .frame(width: 26, height: 30)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .brutalTip(name)
+        .themeTip(name)
         .accessibilityLabel(Text(name))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .animation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
@@ -410,8 +410,8 @@ struct ToolGroup<Content: View>: View {
         HStack(spacing: 4) {
             content
         }
-        .padding(Brutal.groupInset)
-        .brutalSurface(Brutal.paper.opacity(0.5), glass: true, radius: Brutal.Radius.panel, shadow: 3)
+        .padding(Theme.groupInset)
+        .themeSurface(Theme.paper.opacity(0.5), glass: true, radius: Theme.Radius.panel, shadow: 3)
     }
 }
 
@@ -451,9 +451,9 @@ struct Tile<Label: View>: View {
         Button(action: action) {
             label.frame(minWidth: 16, minHeight: 16)
         }
-        .buttonStyle(BrutalButtonStyle(tool ? .tool : .toolbar, isOn: selected))
+        .buttonStyle(ThemeButtonStyle(tool ? .tool : .toolbar, isOn: selected))
         .disabled(!isEnabled)
         .accessibilityLabel(Text(help))
-        .brutalTip(help, key: key, detail: detail)
+        .themeTip(help, key: key, detail: detail)
     }
 }

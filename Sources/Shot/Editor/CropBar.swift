@@ -64,29 +64,29 @@ private struct CropBarView<Model: CropBarEditing>: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Brutal.Radius.group, style: .circular)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
         HStack(spacing: 10) {
             Text("Aspect")
                 .font(.scaled(12, weight: .semibold))
-                .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                 .accessibilityHidden(true)
-            BrutalSegmented(
+            ThemeSegmented(
                 selection: Binding(get: { model.cropAspect }, set: { model.chooseCropAspect($0) }),
                 options: CropAspect.allCases.map { ($0, $0.label) }
             )
             .accessibilityLabel(Text("Aspect"))
             size
             Button("Reset") { model.resetCrop() }
-                .buttonStyle(BrutalButtonStyle(.plain))
+                .buttonStyle(ThemeButtonStyle(.plain))
                 .disabled(!model.canResetCrop)
-                .brutalTip("Reset", key: "⌫", detail: model.cropResetDetail)
+                .themeTip("Reset", key: "⌫", detail: model.cropResetDetail)
             Rectangle()
-                .fill(Brutal.controlEdge)
+                .fill(Theme.controlEdge)
                 .frame(width: 1, height: 18)
                 .accessibilityHidden(true)
             Button("Cancel") { model.cancelCrop() }
-                .buttonStyle(BrutalButtonStyle(.secondary))
-                .brutalTip("Cancel", key: "esc", detail: "Leaves crop mode and keeps the crop as it was.")
+                .buttonStyle(ThemeButtonStyle(.secondary))
+                .themeTip("Cancel", key: "esc", detail: "Leaves crop mode and keeps the crop as it was.")
             Button {
                 model.applyCrop()
             } label: {
@@ -95,17 +95,17 @@ private struct CropBarView<Model: CropBarEditing>: View {
                     Text(verbatim: "↩").accessibilityHidden(true)
                 }
             }
-            .buttonStyle(BrutalButtonStyle(.main))
+            .buttonStyle(ThemeButtonStyle(.main))
             .accessibilityLabel(Text("Crop"))
-            .brutalTip("Crop", key: "↩", detail: model.cropApplyDetail)
+            .themeTip("Crop", key: "↩", detail: model.cropApplyDetail)
         }
         .padding(.vertical, 6)
         .padding(.leading, 12)
         .padding(.trailing, 7)
-        .depth(.float, fill: solid ? AnyShapeStyle(Brutal.group) : AnyShapeStyle(cropBarFill), radius: Brutal.Radius.group)
+        .depth(.float, fill: solid ? AnyShapeStyle(Theme.group) : AnyShapeStyle(cropBarFill), radius: Theme.Radius.group)
         .overlay {
             if contrast == .increased {
-                Color.clear.inkBorder(shape, width: 1, color: Brutal.ink.opacity(0.6))
+                Color.clear.inkBorder(shape, width: 1, color: Theme.ink.opacity(0.6))
             }
         }
         .contentShape(shape)
@@ -120,7 +120,7 @@ private struct CropBarView<Model: CropBarEditing>: View {
         let height = Int(kept.height.rounded()).formatted()
         return Text(verbatim: EditorToolbarLayout.sizeLabel(kept))
             .font(.scaled(11.5, weight: .bold, design: .monospaced, tabular: true))
-            .foregroundStyle(ContrastAware(standard: Brutal.ink.opacity(0.85), increased: Brutal.ink))
+            .foregroundStyle(ContrastAware(standard: Theme.ink.opacity(0.85), increased: Theme.ink))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text("Crop size"))
             .accessibilityValue(Text("\(width) by \(height) pixels"))

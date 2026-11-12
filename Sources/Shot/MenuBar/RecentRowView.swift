@@ -68,7 +68,7 @@ final class RecentRowView: NSView {
         // Behind the thumbnails, as far in as the menu's own row highlight sits.
         let highlight = NSRect(x: 5, y: Self.padding.bottom - 3, width: bounds.width - 10, height: Self.thumbnailSize.height + 6)
         NSColor.selectedContentBackgroundColor.setFill()
-        NSBezierPath(roundedRect: highlight, xRadius: Brutal.Radius.control, yRadius: Brutal.Radius.control).fill()
+        NSBezierPath(roundedRect: highlight, xRadius: Theme.Radius.control, yRadius: Theme.Radius.control).fill()
     }
 }
 
@@ -126,7 +126,7 @@ final class RecentThumbnailView: NSView, NSDraggingSource {
     private static let badgeFill = NSColor(srgbRed: 0x16 / 255, green: 0x16 / 255, blue: 0x1A / 255, alpha: 0.75)
 
     override func draw(_ dirtyRect: NSRect) {
-        let radius = Brutal.Radius.tiny
+        let radius = Theme.Radius.tiny
         Self.drawPicture(entry?.thumbnail?.image, in: bounds, radius: radius)
 
         Self.edge.setStroke()

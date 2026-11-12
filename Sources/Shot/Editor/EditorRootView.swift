@@ -15,7 +15,7 @@ struct EditorRootView: View {
                 .padding(.trailing, 12)
                 .frame(height: GlassWindow.titlebarHeight)
             Rectangle()
-                .fill(ContrastAware(standard: Brutal.hairline, increased: Brutal.ink.opacity(0.6)))
+                .fill(ContrastAware(standard: Theme.hairline, increased: Theme.ink.opacity(0.6)))
                 .frame(height: 1)
                 .accessibilityHidden(true)
             HStack(spacing: 0) {
@@ -88,12 +88,12 @@ private struct EditorTitleBar: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 0) {
                 Text(model.fileURL.lastPathComponent)
-                    .font(Brutal.label)
-                    .foregroundStyle(Brutal.ink)
+                    .font(Theme.label)
+                    .foregroundStyle(Theme.ink)
                     .truncationMode(.middle)
                 subtitle
-                    .font(Brutal.caption)
-                    .foregroundStyle(ContrastAware(standard: Brutal.tertiaryText, increased: Brutal.ink))
+                    .font(Theme.caption)
+                    .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
                     .monospacedDigit()
             }
             .lineLimit(1)
@@ -121,7 +121,7 @@ private struct EditorTitleBar: View {
             Tile(selected: false, help: "Undo", key: "⌘Z", detail: "Redo with ⇧⌘Z.", isEnabled: model.history.canUndo) {
                 model.undo()
             } label: {
-                Image(systemName: "arrow.uturn.backward").font(Brutal.toolIcon)
+                Image(systemName: "arrow.uturn.backward").font(Theme.toolIcon)
             }
             CanvasMenu(model: model, compact: compactCanvas)
             Tile(
@@ -130,27 +130,27 @@ private struct EditorTitleBar: View {
             ) {
                 model.toggleStylePanel()
             } label: {
-                Image(systemName: "paintpalette").font(Brutal.toolIcon)
+                Image(systemName: "paintpalette").font(Theme.toolIcon)
             }
             Tile(selected: model.showsLayers, help: "Layers", key: "⌘L", detail: "Shows every mark and image in a list beside the canvas.") {
                 model.toggleLayers()
             } label: {
-                Image(systemName: "sidebar.right").font(Brutal.toolIcon)
+                Image(systemName: "sidebar.right").font(Theme.toolIcon)
             }
             Rectangle()
-                .fill(Brutal.controlEdge)
+                .fill(Theme.controlEdge)
                 .frame(width: 1, height: 20)
                 .padding(.horizontal, 6)
                 .accessibilityHidden(true)
             ShareMenu(model: model)
             Button("Save") { Task { await model.save() } }
-                .buttonStyle(BrutalButtonStyle())
-                .brutalTip("Save", key: "⌘S", detail: "Saves your changes and copies the image.")
+                .buttonStyle(ThemeButtonStyle())
+                .themeTip("Save", key: "⌘S", detail: "Saves your changes and copies the image.")
                 .padding(.leading, 4)
             Button("Copy") { Task { await model.copy() } }
                 // In crop mode the crop bar's Crop is the next step, so Copy steps back to keep one main button (rule 1).
-                .buttonStyle(BrutalButtonStyle(model.tool == .crop ? .secondary : .main))
-                .brutalTip("Copy", key: "⌘C", detail: "Copies the image with your changes, ready to paste.")
+                .buttonStyle(ThemeButtonStyle(model.tool == .crop ? .secondary : .main))
+                .themeTip("Copy", key: "⌘C", detail: "Copies the image with your changes, ready to paste.")
                 .padding(.leading, 4)
         }
         .fixedSize()
@@ -165,28 +165,28 @@ private struct CanvasMenu: View {
     let compact: Bool
 
     var body: some View {
-        BrutalDropdown(title: "Canvas", entries: [
+        ThemeDropdown(title: "Canvas", entries: [
             .item("Fit to Content") { model.fitToContent() },
             .item("Trim to Image", enabled: model.document.canTrimToImage) { model.trimToImage() },
             .divider,
             .item("Background…") { model.showStylePanel() },
         ]) {
             if compact {
-                Image(systemName: "rectangle.dashed").font(Brutal.toolIcon)
+                Image(systemName: "rectangle.dashed").font(Theme.toolIcon)
             } else {
                 HStack(spacing: 5) {
                     Text("Canvas")
                         .font(.scaled(12))
-                        .foregroundStyle(ContrastAware(standard: Self.labelColor, increased: Brutal.ink))
+                        .foregroundStyle(ContrastAware(standard: Self.labelColor, increased: Theme.ink))
                     Image(systemName: "chevron.down")
                         .font(.scaled(9, weight: .bold))
-                        .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
                 }
             }
         }
-        .buttonStyle(BrutalButtonStyle(.toolbar))
+        .buttonStyle(ThemeButtonStyle(.toolbar))
         .fixedSize()
-        .brutalTip("Canvas", detail: "Fit the canvas to what's on it, trim it to the image, or choose its background in the Style panel.")
+        .themeTip("Canvas", detail: "Fit the canvas to what's on it, trim it to the image, or choose its background in the Style panel.")
     }
 
     /// The board's `#3A393F`, 85% ink, and the light ink at 85% in dark mode.
@@ -198,22 +198,22 @@ private struct ShareMenu: View {
     let model: EditorModel
 
     var body: some View {
-        BrutalDropdown(title: "Share", entries: entries) {
+        ThemeDropdown(title: "Share", entries: entries) {
             HStack(spacing: 6) {
                 Text("Share")
                 Image(systemName: "chevron.down")
                     .font(.scaled(9, weight: .bold))
-                    .foregroundStyle(ContrastAware(standard: Brutal.secondaryText, increased: Brutal.ink))
+                    .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
             }
         }
-        .buttonStyle(BrutalButtonStyle())
+        .buttonStyle(ThemeButtonStyle())
         .fixedSize()
-        .brutalTip("Share", detail: "Copy the file's path for an AI assistant or a chat, save a copy somewhere else, show it in Finder or pin it to your screen.")
+        .themeTip("Share", detail: "Copy the file's path for an AI assistant or a chat, save a copy somewhere else, show it in Finder or pin it to your screen.")
     }
 
-    private var entries: [BrutalMenuEntry] {
-        EditorShareAction.allCases.flatMap { action -> [BrutalMenuEntry] in
-            let item = BrutalMenuEntry.item(action.title, symbol: action.symbol, shortcut: action.shortcut) {
+    private var entries: [ThemeMenuEntry] {
+        EditorShareAction.allCases.flatMap { action -> [ThemeMenuEntry] in
+            let item = ThemeMenuEntry.item(action.title, symbol: action.symbol, shortcut: action.shortcut) {
                 Task { await model.share(action) }
             }
             return action.startsSection ? [.divider, item] : [item]
