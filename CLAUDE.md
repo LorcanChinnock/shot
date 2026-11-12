@@ -30,7 +30,7 @@ What this means in practice:
 ```bash
 make test                         # ShotCoreTests, the unit tests (Swift Testing)
 make perf-app                     # make bundle, then scripts/perf.sh: launch, capture, memory, idle CPU of build/ShotDev.app
-make lint                         # scripts/lint.sh: bans patterns that caused bugs (see below); on macOS also scripts/strings.sh --check
+make lint                         # scripts/lint.sh, which bans patterns that caused bugs (see below), then a debug build and scripts/strings.sh --check
 make strings                      # sync Resources/Localizable.xcstrings with the strings the build extracted
 make build                        # Debug build of the app, as Xcode's Build does
 make bundle                       # archive a universal Release build/ShotDev.app only
@@ -70,7 +70,7 @@ The screenshots and recordings in `docs/media` come from a second sample, `docs/
 
 Four targets in `Shot.xcodeproj`, all macOS-only:
 - `ShotCore` (`Sources/ShotCore`, a static framework): everything that needs no window, display or permission. It imports no AppKit, SwiftUI or Cocoa (`make lint` checks).
-- `Shot` (`Sources/Shot` and `Resources`, the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
+- `Shot` (`Sources/Shot` and `Resources`, the app): AppKit and SwiftUI that need a real session, grouped by feature (`Capture`, `Overlay`, `MenuBar`, `QuickAccess`, `Editor`, `Recording`, `VideoEditor`, `Gallery`, `Settings`, `Design`).
 - `ShotCoreTests` (`Tests/ShotCoreTests`) and `ScrollLab` (`Sources/ScrollLab`, the tool behind `scripts/scroll-lab`).
 
 **If logic can be tested without a window, it goes in ShotCore with a test.** The one test target is `Tests/ShotCoreTests`. The app has no tests.
@@ -80,13 +80,13 @@ Read the note in `docs/architecture/` before changing the area it covers:
 | Before changing | Read |
 | --- | --- |
 | What belongs in ShotCore, or how it handles images and drawing | [core.md](docs/architecture/core.md) |
-| Taking a capture: `CaptureCoordinator`, picking what to capture, saving | [capture.md](docs/architecture/capture.md) |
+| Taking a capture: `CaptureCoordinator`, the capture bar, picking what to capture, saving, Quick Access | [capture.md](docs/architecture/capture.md) |
 | Annotations, `AnnotationRenderer` or editor undo | [image-editor.md](docs/architecture/image-editor.md) |
 | `Recorder`, pausing or audio | [recording.md](docs/architecture/recording.md) |
 | The video timeline, or GIF export | [video-editor.md](docs/architecture/video-editor.md) |
-| Preferences and `@Setting` | [settings.md](docs/architecture/settings.md) |
-| Shared UI components, lazy lists and grids, or concurrency | [design-system.md](docs/architecture/design-system.md) |
-| `site/` and the user guide | [website.md](docs/architecture/website.md) |
+| Preferences, `@Setting` or the Settings window | [settings.md](docs/architecture/settings.md) |
+| Shared UI components, button kinds, floating panels, motion, lazy lists and grids, or concurrency | [design-system.md](docs/architecture/design-system.md) |
+| `site/`, its tokens, or the user guide | [website.md](docs/architecture/website.md) |
 | Anything for the redesign (#1050): its tokens, rules, and which issue builds each board and updates each guide page | [redesign/spec.md](docs/redesign/spec.md) |
 
 ## Rules enforced by `make lint`
@@ -96,6 +96,10 @@ Read the note in `docs/architecture/` before changing the area it covers:
 - Use `inkBorder(_:width:color:)` rather than `strokeBorder` with any `Brutal` colour (a ternary included). It snaps the width to whole device pixels, so 1.5 pt ink is crisp on 1x and Retina. `BrutalStyle.swift`, which defines `inkBorder`, is exempt.
 - Use `style: .circular`, never `.continuous`, for rounded corners; continuous corners leave steps under ink borders.
 - ShotCore imports no AppKit, SwiftUI or Cocoa, so its logic is tested without a window.
+- Never pair `onTapGesture(count: 2)` with a single tap; every single click waits out the double-click interval. Use one `onTapGesture` and read `NSApp.currentEvent?.clickCount`.
+- Put a `# macOS: <reason>` comment above each macOS `runs-on` in `.github/workflows/`, saying why the job can't run on Linux, since macOS jobs queue.
+- On the site, no card has one thick coloured edge: `border-top-color` and its kin, or a colour on a one-edge border, are rejected (`site/DESIGN.md`). `HeroStage.astro` is exempt.
+- When `shellcheck` is installed, it checks the install and uninstall scripts and their tests.
 
 ## CI
 
