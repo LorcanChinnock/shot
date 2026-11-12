@@ -8,7 +8,8 @@ interface Props {
   imageAlt?: string;
   headings?: { depth: number; slug: string; text: string }[];
   /** Links to every page of a multi-page document, such as the guide, in the left column under their group's name.
-   * `color` is the token behind the group's marker. Passing pages gives the guide's three columns and "Shot guide" header. */
+   * `color` is the token behind the group's marker. Passing pages gives the guide's three columns and "Shot guide" header.
+   * Without it, the page is long-form text (privacy, other screenshot apps): the guide's article style in one centred column. */
   pages?: { href: string; title: string; current?: boolean; group?: string; color?: string }[];
 }
 const { title, description, image, imageAlt, headings = [], pages = [] } = Astro.props;
@@ -50,8 +51,8 @@ const toc = headings.filter((h) => h.depth === 2);
       )}
     </div>
   ) : (
-    <div id="top" class="wrap doc">
-      <article class="prose card solid">
+    <div id="top" class="narrow longform">
+      <article class="prose longform-article">
         <slot />
       </article>
     </div>
@@ -60,7 +61,7 @@ const toc = headings.filter((h) => h.depth === 2);
 </Base>
 
 <style>
-  .doc { max-width: 820px; padding-block: 40px 24px; }
+  .longform { padding-block: 36px 24px; }
   article { min-width: 0; }
 
   /* The guide: the page list, the article and "On this page" side by side on wide screens (the board's 1360 px container).
@@ -115,6 +116,23 @@ const toc = headings.filter((h) => h.depth === 2);
 
   .to-top { position: fixed; right: 16px; bottom: 16px; z-index: 10; }
   .to-top[hidden] { display: none; }
+</style>
+
+<style is:global>
+  /* Long-form pages: the guide's article (board "Site · guide page") without its side columns.
+     The page opens with a .longform-head: a meta line, the title with the highlighter under one word, and the lede. */
+  .prose.longform-article { display: grid; gap: 22px; padding: 0; font-size: 16.5px; line-height: 1.65; }
+  .prose.longform-article > * { margin: 0; min-width: 0; }
+  .prose.longform-article .longform-head { display: grid; gap: 12px; }
+  .prose.longform-article .longform-head > * { margin: 0; }
+  .prose.longform-article .longform-meta { font-size: 13px; font-weight: 700; color: var(--tertiary); }
+  .prose.longform-article .longform-head .lede { max-width: 40em; }
+  .prose.longform-article h2 { margin: 18px 0 0; padding: 0; border: 0; line-height: 1.15; scroll-margin-top: 24px; }
+  .prose.longform-article h2 + * { margin-top: -8px; }
+  .prose.longform-article ul { display: grid; gap: 10px; margin: 0; }
+  .prose.longform-article li { margin: 0; padding-left: 4px; }
+  /* The install command (Copy.astro) keeps its own type on the dark band, not .prose's inline code. */
+  .prose.longform-article .copy code { padding: 0; font-size: 13.5px; background: none; border-radius: 0; }
 </style>
 
 <script>

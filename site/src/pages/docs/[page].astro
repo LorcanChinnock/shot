@@ -11,7 +11,7 @@ export function getStaticPaths() {
 }
 const { page, previous, next } = Astro.props;
 const group = groups.find((g) => g.name === page.group)!;
-// The pastel panel's token: the sky one is --sky-panel, since --sky is still an older name (global.css).
+// The pastel panel's token, which for the sky tone is named --sky-panel.
 const panel = group.tone === 'sky' ? 'sky-panel' : group.tone;
 const links = pages.map((p) => ({ href: `/docs/${p.slug}/`, title: p.title, current: p === page, group: p.group, color: groups.find((g) => g.name === p.group)?.color }));
 
@@ -103,7 +103,7 @@ const edit = `${repo}/edit/main/site/src/guide/${page.file}`;
 </script>
 
 <style is:global>
-  /* The guide's article, from the board's "Site · guide page". Long-form pages that share .prose keep its plain rules. */
+  /* The guide's article, from the board's "Site · guide page". The long-form pages get theirs in Prose.astro. */
   .guide-article { display: grid; gap: 22px; }
   .prose .guide-body { display: grid; gap: 22px; min-width: 0; color: var(--ink); }
   .prose .guide-body > * { margin: 0; min-width: 0; }
