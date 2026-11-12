@@ -40,3 +40,36 @@ extension AspectRatio {
         portrait ? label.split(separator: ":").reversed().joined(separator: ":") : label
     }
 }
+
+/// The ratio an area is held to and which way it's turned, as the capture bar's Ratio button and menu show it. Dragging
+/// keeps it as set, so the area always matches the button.
+public struct AreaShape: Equatable, Sendable {
+    public var ratio: AspectRatio
+    public var portrait: Bool
+
+    public init(ratio: AspectRatio = .free, portrait: Bool = false) {
+        self.ratio = ratio
+        self.portrait = portrait
+    }
+
+    /// Width over height, or `nil` when free.
+    public var widthOverHeight: CGFloat? {
+        ratio.value.map { portrait ? 1 / $0 : $0 }
+    }
+
+    /// "16:9", "9:16" when turned, or "Free".
+    public var label: String {
+        ratio.label(portrait: portrait && turns)
+    }
+
+    /// Only a ratio with a long side can turn.
+    public var turns: Bool {
+        ratio != .free && ratio != .square
+    }
+
+    public mutating func turn() {
+        if turns {
+            portrait.toggle()
+        }
+    }
+}

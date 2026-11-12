@@ -60,7 +60,7 @@ final class SelectionOverlayController {
     private(set) var hoveredWindow: WindowInfo?
     /// The page of `hoveredWindow` in CoreGraphics global space, in browser mode.
     private(set) var hoveredPage: CGRect?
-    var aspectRatio = AspectRatio.free {
+    var areaShape = AreaShape() {
         didSet {
             for view in views {
                 view.needsDisplay = true
