@@ -24,6 +24,8 @@ struct EditorToolGroup: View {
                     model.showsImagePicker = false
                     model.addImageFiles(urls)
                 }
+                // The picker keeps its usual buttons when the title bar's are narrowed.
+                .environment(\.tightToolbar, false)
             }
             ForEach(EditorToolbarLayout.afterDivider) { toolTile($0) }
         }
