@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.86](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.85...v0.7.0-beta.86) (2026-11-12)
+
+
+### Features
+
+* **capture:** pick the area ratio from the capture bar ([#1276](https://github.com/LorcanChinnock/shot/issues/1276)) ([e658966](https://github.com/LorcanChinnock/shot/commit/e658966c0c951df4fa246a4c493a10451a6f34ab))
+
+
+### Bug Fixes
+
+* **design:** draw switches like the system ones ([#1273](https://github.com/LorcanChinnock/shot/issues/1273)) ([bdae939](https://github.com/LorcanChinnock/shot/commit/bdae939b00ad1e8b6af0a30abfe35adcaa0bc7c5))
+
 ## [0.7.0-beta.85](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.84...v0.7.0-beta.85) (2026-11-12)
 
 
