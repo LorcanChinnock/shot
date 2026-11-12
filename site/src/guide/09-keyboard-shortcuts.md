@@ -56,6 +56,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | Tab | Switch between picking an area, a window and the full screen. <kbd>⇧Tab</kbd> goes back. |
 | D | Step the delay through Off, 3, 5 and 10 seconds. |
 | R | Step the area's ratio. |
+| X | Turn the area's ratio between landscape and portrait. |
 | B | Switch to Browser, which captures just the page of a browser window, or back to Window, for this capture. |
 | M | Turn the magnifier on or off for this capture. |
 | C | Turn the crosshair guide lines on or off for this capture. |

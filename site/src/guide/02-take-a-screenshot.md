@@ -18,7 +18,9 @@ A small dark bar at the bottom of the screen starts with **Screenshot** or **Rec
 
 The bar never appears in your screenshot, and it stays out of the way: it fades away about 4 seconds after it shows (it stays while the pointer is on it), so you can pick the area under it, and any of its keys brings it back. It also hides while you drag out an area, and moves to the top of the screen when the window you point at is under it. To start an area right under the bar, just drag from it: a click picks an icon, a drag starts the area.
 
-The last three icons switch the magnifier (<kbd>M</kbd>), the crosshair (<kbd>C</kbd>) and the size label (<kbd>I</kbd>) for this capture, whatever **Settings › Capture** says. One that's on has a light fill and a white icon. They only change what you see when you pick an area. The size label sits above the area's top-left corner and gives its size in pixels, next to its ratio (**Free ratio** until you pick one). The magnifier is a round loupe beside the pointer that shows each pixel around it, with the pointer's position in pixels at the bottom, and it stays while you drag. The crosshair draws guide lines across the screen through the pointer. When you pick a ratio with <kbd>R</kbd>, it shows above the area even with the size label off.
+The last three icons switch the magnifier (<kbd>M</kbd>), the crosshair (<kbd>C</kbd>) and the size label (<kbd>I</kbd>) for this capture, whatever **Settings › Capture** says. One that's on has a light fill and a white icon. They only change what you see when you pick an area. The size label sits above the area's top-left corner and gives its size in pixels, next to its ratio (**Free ratio** until you pick one). The magnifier is a round loupe beside the pointer that shows each pixel around it, with the pointer's position in pixels at the bottom, and it stays while you drag. The crosshair draws guide lines across the screen through the pointer. When you pick a ratio, it shows above the area even with the size label off.
+
+To get an area of an exact shape, click the ratio icon on the bar, next to **Scroll**, before you drag. It shows when you pick an area. Choose **Free**, **1:1**, **4:3**, **3:2** or **16:9**, or **Turn to Portrait** for a tall area such as 9:16. The icon then takes the ratio's shape and shows its name, and the area you drag keeps that shape whichever way you drag.
 
 - **Area:** drag across it.
 - **Window:** click a window. The window under the pointer is tinted yellow with a yellow and black edge, and its name and size in pixels show in the middle, over a hint to click or press <kbd>Return</kbd>. Shot captures it as it is right now, even if something covers it, and keeps its macOS shadow. To leave the shadow out, turn off **Window shadow** in **Settings › Capture**.
@@ -29,9 +31,8 @@ While you drag an area:
 
 | Press | To |
 |---|---|
-| <kbd>Shift</kbd> | Keep the area square. |
-| <kbd>R</kbd> | Step through 1:1, 4:3, 3:2 and 16:9, then back to free. <kbd>⇧R</kbd> steps back. The way you start dragging picks landscape or portrait. |
-| <kbd>X</kbd> | Turn the ratio between landscape and portrait. |
+| <kbd>R</kbd> | Step through 1:1, 4:3, 3:2 and 16:9, then back to free. <kbd>⇧R</kbd> steps back. It works before you drag too. |
+| <kbd>X</kbd> | Turn the ratio between landscape and portrait. It works before you drag too. |
 | <kbd>Space</kbd> | Hold it to move the whole area. |
 | <kbd>Esc</kbd> | Cancel. |
 

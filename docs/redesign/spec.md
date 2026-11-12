@@ -227,6 +227,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Picked mode | The one ink control: accent fill, 1.5 pt black outline and 2 pt black drop, group radius, 34 pt tall. Its icon and name in 13 semibold `#16161A` |
 | Other modes | 38 × 34, icon only, at 82% white. Hover fill `rgba(255,255,255,0.08)` |
 | Delay, Scroll | 34 pt tall. Scroll always shows its name. Delay is icon only while off and shows its seconds in tabular figures while on. On: the 16% white fill |
+| Ratio | Area only, after Delay and Scroll, 34 pt tall. Icon only while Free (`aspectratio`), then a rounded rectangle drawn in the ratio's shape, wide or tall as it's turned, and its name ("16:9", "9:16") with the 16% white fill. A click opens a native menu of the ratios and Turn to Portrait or Landscape (X), above the bar, or below it when the bar is at the top |
 | Toggles | Magnifier, crosshair and size, 34 × 34. On: 16% white fill and a white icon. Off: icon at 55% white (75% with Increase Contrast) |
 | Dividers | The floating divider between modes, Delay and Scroll, and the toggles, with 4 pt either side |
 | Tooltip | On hover: the button's name in 12 pt white and its keycap (10.5 pt bold SF Mono on 16% white, radius 4), on a `rgba(26,26,30,0.92)` panel with the 0.5 pt edge, radius 8, 8 pt above the bar (below it when the bar is at the top) |
@@ -248,7 +249,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Edge | 1 pt `rgba(255,255,255,0.95)` just outside the area, then 1 pt `rgba(0,0,0,0.35)` outside that |
 | Handles | 10 pt white circles with a 1.5 pt ink edge, at the corners and the middle of each side of 48 pt or more. An area under 12 pt both ways has none |
 | Size chip | The size in pixels, as the image will be, in 12 pt bold SF Mono, white |
-| Ratio chip | "Free ratio", or the ratio such as "16:9" or "9:16", in Small type at 75% white (100% with Increase Contrast). Holding Shift shows 1:1 |
+| Ratio chip | "Free ratio", or the ratio such as "16:9" or "9:16", in Small type at 75% white (100% with Increase Contrast). A ratio that turns adds "· X turns" |
 | Chips | `rgba(26,26,30,0.88)`, radius 8, 0.5 pt floating-panel edge, 3 × 9 pt padding, 6 pt apart, 14 pt above the area's top-left corner |
 | Loupe | 132 pt circle showing 11 × 11 device pixels, so the pointer's pixel is in the middle. 3 pt white ring, 1.5 pt ink ring, `0 12px 28px rgba(0,0,0,0.4)`. Grid lines one device pixel wide in mid-grey at 30%. The pointer's row and column in accent (`#FFD43B`) at 35%. The pointer's pixel outlined in 1.5 pt ink with a white hairline outside |
 | Position chip | The pointer's pixel, from the screen's top-left, in 10 pt medium SF Mono on the 0.88 fill, radius 5, 10 pt above the loupe's bottom |
@@ -256,6 +257,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Guides | The crosshair toggle (C): lines across the screen, 1 pt white at 90% over 3 pt black at 25%, stopping 12 pt short of the pointer |
 
 - **No key-hint strip.** The board draws ⇧ Square, R Ratio, X Turn, Space Move and Esc Cancel in a floating strip at the bottom. The bar already hides while you drag, so the strip wouldn't collide with it. It's left out anyway, because rule 2 and the mantra keep extra panels closed by default. It would also flash across the screen on every capture for a quick sharer who never uses those keys. The keys stay in the overlay's VoiceOver help and the guide's table, and the ratio chip shows when a ratio is in force.
+- **Ratio on the bar (#1274).** R and X were the only way to a ratio, and nothing on screen showed them. The bar's Ratio button opens a menu of the ratios and Turn, so the shape is picked before dragging. Orientation is part of the setting (`AreaShape` in ShotCore): it starts landscape, X or the menu turns it before or while dragging, and the drag no longer picks it from its direction, so the area always matches the button. Shift no longer holds a square, since 1:1 does the same.
 - **Toggles stay as they were.** Size (I) shows both chips. A ratio other than Free shows its chip even with Size off, since it changes what you get. Magnifier (M) and Crosshair (C) show the loupe and guides. All three start off, as before.
 - **Loupe and guides while dragging.** The board draws them at the drag corner, so they now show while dragging as well as before it, which is when an exact edge matters. They don't show for an area made with the arrow keys, since the pointer is elsewhere, or while the pointer is on the bar.
 - **Placement.** `AreaLabelPlacement` puts the chips above the area, else below it, else inside its top-left corner, kept 8 pt inside the screen and off the bar. `Loupe.frame` puts the loupe 22 pt from the pointer on the side away from where the drag started (below and right before dragging), and turns to the next corner at a screen edge or when it would cover the chips or the bar. Both are in ShotCore with tests.

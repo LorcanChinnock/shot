@@ -21,7 +21,6 @@ final class SelectionOverlayView: NSView {
     private var selection: CGRect?
     private var isMoving = false
     private var lastDragPoint: CGPoint?
-    private var portrait: Bool?
     /// The selection was made with the arrow keys, so Return takes it and Option-arrows resize it.
     private var isKeyboardSelection = false
     /// What a click on a button of the bar does, with where each was last drawn.
@@ -32,6 +31,7 @@ final class SelectionOverlayView: NSView {
         case magnifier
         case crosshair
         case resolution
+        case ratio
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
     /// A press that landed on a button of the bar: its release clicks it, unless it turns into dragging out an area first.
@@ -112,7 +112,6 @@ final class SelectionOverlayView: NSView {
         dragStart = nil
         isMoving = false
         isKeyboardSelection = false
-        portrait = nil
         setAccessibilityValue(nil)
         needsDisplay = true
     }
@@ -163,7 +162,6 @@ final class SelectionOverlayView: NSView {
         }
         dragStart = point
         lastDragPoint = point
-        portrait = nil
         selection = nil
         isKeyboardSelection = false
         needsDisplay = true
@@ -181,7 +179,6 @@ final class SelectionOverlayView: NSView {
                 return
             }
             pressedChip = nil
-            portrait = nil
             selection = nil
             isKeyboardSelection = false
         }
@@ -192,10 +189,7 @@ final class SelectionOverlayView: NSView {
             dragStart = CGPoint(x: start.x + moved.minX - current.minX, y: start.y + moved.minY - current.minY)
             selection = moved
         } else {
-            if portrait == nil, hypot(point.x - start.x, point.y - start.y) >= Self.orientationLockDistance {
-                portrait = isTall(from: start, to: point)
-            }
-            selection = shaped(from: start, to: point, square: event.modifierFlags.contains(.shift))
+            selection = shaped(from: start, to: point)
         }
         lastDragPoint = point
         needsDisplay = true
@@ -209,22 +203,73 @@ final class SelectionOverlayView: NSView {
         case .magnifier: controller.toggleMagnifier()
         case .crosshair: controller.toggleCrosshair()
         case .resolution: controller.toggleSizeLabel()
+        case .ratio: showRatioMenu()
         }
     }
 
-    private func shaped(from start: CGPoint, to point: CGPoint, square: Bool) -> CGRect {
-        if square {
-            return Geometry.fitted(from: start, to: point, ratio: 1, in: bounds)
-        }
-        if let ratio = controller.aspectRatio.value {
-            let tall = portrait ?? isTall(from: start, to: point)
-            return Geometry.fitted(from: start, to: point, ratio: tall ? 1 / ratio : ratio, in: bounds)
+    private func shaped(from start: CGPoint, to point: CGPoint) -> CGRect {
+        if let ratio = controller.areaShape.widthOverHeight {
+            return Geometry.fitted(from: start, to: point, ratio: ratio, in: bounds)
         }
         return Geometry.normalized(from: start, to: point)
     }
 
-    private func isTall(from start: CGPoint, to point: CGPoint) -> Bool {
-        abs(point.y - start.y) > abs(point.x - start.x)
+    /// The Ratio button's menu: the ratios, as they'd be turned now, then Turn. A native menu, so it reads and works like any other.
+    private func showRatioMenu() {
+        guard let box = barHits.first(where: { $0.action == .ratio })?.rect else {
+            return
+        }
+        let shape = controller.areaShape
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        for (index, ratio) in AspectRatio.allCases.enumerated() {
+            let title = AreaShape(ratio: ratio, portrait: shape.portrait).label
+            let item = NSMenuItem(title: title, action: #selector(pickRatio(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = index
+            item.state = ratio == shape.ratio ? .on : .off
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
+        let turn = NSMenuItem(
+            title: shape.portrait ? String(localized: "Turn to Landscape") : String(localized: "Turn to Portrait"),
+            action: #selector(turnRatio), keyEquivalent: "x"
+        )
+        turn.keyEquivalentModifierMask = []
+        turn.target = self
+        turn.isEnabled = shape.turns
+        menu.addItem(turn)
+        // Clear of the bar, on the side away from the screen's edge, so every item shows without scrolling.
+        let gap: CGFloat = 6
+        let top = barPlacement == .top ? box.minY - gap : box.maxY + gap + menu.size.height
+        // The button's tooltip would show under the menu.
+        hoveredChip = nil
+        display()
+        menu.popUp(positioning: nil, at: CGPoint(x: box.minX, y: top), in: self)
+        controller.revealBar()
+    }
+
+    @objc private func pickRatio(_ sender: NSMenuItem) {
+        setShape { $0.ratio = AspectRatio.allCases[sender.tag] }
+    }
+
+    @objc private func turnRatio() {
+        setShape { $0.turn() }
+    }
+
+    /// Changes the ratio or its turn, reshapes an area being made to match, and says what it now is.
+    private func setShape(_ change: (inout AreaShape) -> Void) {
+        var shape = controller.areaShape
+        change(&shape)
+        controller.areaShape = shape
+        if isKeyboardSelection, let current = selection {
+            selection = KeyboardArea.start(at: CGPoint(x: current.midX, y: current.midY), ratio: shape.widthOverHeight, in: bounds)
+        }
+        if let start = dragStart, let point = lastDragPoint, !isMoving, pressedChip == nil {
+            selection = shaped(from: start, to: point)
+        }
+        announce(String(localized: "Ratio: \(shape.label)"))
+        needsDisplay = true
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -257,13 +302,11 @@ final class SelectionOverlayView: NSView {
             needsDisplay = true
             return
         }
-        let shape = event.modifierFlags.contains(.shift) ? AspectRatio.square : controller.aspectRatio
-        let ratio = shape.value.map { selection.width >= selection.height ? $0 : 1 / $0 }
-        controller.finish(.area(display: index, rect: selection, ratio: ratio), modifiers: event.modifierFlags)
+        controller.finish(.area(display: index, rect: selection, ratio: controller.areaShape.widthOverHeight), modifiers: event.modifierFlags)
     }
 
     override func keyDown(with event: NSEvent) {
-        if [49, 48, 1, 2, 46, 8, 34, 11].contains(event.keyCode), !event.isARepeat {
+        if [49, 48, 1, 2, 46, 8, 34, 11, 15, 7].contains(event.keyCode), !event.isARepeat {
             controller.revealBar()
         }
         switch event.keyCode {
@@ -294,26 +337,13 @@ final class SelectionOverlayView: NSView {
         case 123...126 where controller.target == .area && dragStart == nil:
             nudgeSelection(keyCode: event.keyCode, event.modifierFlags)
         case 15 where controller.target == .area:
-            controller.aspectRatio = controller.aspectRatio.next(backward: event.modifierFlags.contains(.shift))
-            if isKeyboardSelection, let current = selection {
-                let ratio = controller.aspectRatio.value.map { current.width >= current.height ? $0 : 1 / $0 }
-                selection = KeyboardArea.start(at: CGPoint(x: current.midX, y: current.midY), ratio: ratio, in: bounds)
-            }
-            if let start = dragStart, let point = lastDragPoint, !isMoving {
-                portrait = isTall(from: start, to: point)
-                selection = shaped(from: start, to: point, square: false)
-            }
-            needsDisplay = true
-        case 7 where controller.aspectRatio != .free:
-            if let start = dragStart, let point = lastDragPoint, !isMoving {
-                portrait = !(portrait ?? isTall(from: start, to: point))
-                selection = shaped(from: start, to: point, square: event.modifierFlags.contains(.shift))
-                needsDisplay = true
-            }
+            let backward = event.modifierFlags.contains(.shift)
+            setShape { $0.ratio = $0.ratio.next(backward: backward) }
+        case 7 where controller.target == .area && controller.areaShape.turns:
+            setShape { $0.turn() }
         case 36 where isKeyboardSelection, 76 where isKeyboardSelection:
             if let selection {
-                let ratio = controller.aspectRatio.value.map { selection.width >= selection.height ? $0 : 1 / $0 }
-                controller.finish(.area(display: index, rect: selection, ratio: ratio), modifiers: event.modifierFlags)
+                controller.finish(.area(display: index, rect: selection, ratio: controller.areaShape.widthOverHeight), modifiers: event.modifierFlags)
             }
         case 36 where controller.windowMode && controller.hoveredWindow != nil, 76 where controller.windowMode && controller.hoveredWindow != nil:
             if let window = controller.hoveredWindow {
@@ -332,16 +362,16 @@ final class SelectionOverlayView: NSView {
         let amount = flags.contains(.shift) ? KeyboardArea.fineStep : KeyboardArea.step
         let dx: CGFloat = keyCode == 124 ? amount : keyCode == 123 ? -amount : 0
         let dy: CGFloat = keyCode == 126 ? amount : keyCode == 125 ? -amount : 0
-        let ratio = controller.aspectRatio.value
+        let shape = controller.areaShape
         if isKeyboardSelection, let current = selection {
             if flags.contains(.option) {
-                selection = KeyboardArea.resized(current, dw: dx, dh: dy, ratio: ratio, in: bounds)
+                selection = KeyboardArea.resized(current, dw: dx, dh: dy, ratio: shape.ratio.value, in: bounds)
             } else {
                 selection = KeyboardArea.moved(current, dx: dx, dy: dy, in: bounds)
             }
         } else {
             let centre = pointer ?? CGPoint(x: bounds.midX, y: bounds.midY)
-            selection = KeyboardArea.start(at: centre, ratio: ratio, in: bounds)
+            selection = KeyboardArea.start(at: centre, ratio: shape.widthOverHeight, in: bounds)
             isKeyboardSelection = true
             announce(String(localized: "Area started. Arrow keys move it, Option and arrow keys resize it, Return captures it."))
         }
@@ -746,11 +776,11 @@ final class SelectionOverlayView: NSView {
 
     /// The size chip and, beside it, the ratio chip, above the area's top-left corner. The size is in pixels, as the image
     /// will be, in bold SF Mono so it doesn't jitter while dragging. Size (I) shows both; a ratio other than Free shows on
-    /// its own even with Size off, since it changes what you get. Returns where they went, for the loupe to keep off.
+    /// its own even with Size off, since it changes what you get, and says X turns it, since the bar is hidden while
+    /// dragging. Returns where they went, for the loupe to keep off.
     private func drawChips(for area: CGRect, avoiding: [CGRect], in ctx: CGContext) -> CGRect? {
-        let shiftHeld = dragStart != nil && !isKeyboardSelection && NSEvent.modifierFlags.contains(.shift)
-        let ratio = shiftHeld ? AspectRatio.square : controller.aspectRatio
-        guard showSizeLabel || ratio != .free else {
+        let shape = controller.areaShape
+        guard showSizeLabel || shape.ratio != .free else {
             return nil
         }
         let textSize = Preferences().textSize
@@ -761,7 +791,11 @@ final class SelectionOverlayView: NSView {
                 .font: NSFont.monospacedSystemFont(ofSize: textSize.points(12), weight: .bold), .foregroundColor: NSColor.white,
             ]))
         }
-        let ratioText = ratio == .free ? String(localized: "Free ratio") : ratio.label(portrait: area.height > area.width)
+        let ratioText = switch shape.ratio {
+        case .free: String(localized: "Free ratio")
+        case _ where shape.turns: String(localized: "\(shape.label) · X turns")
+        default: shape.label
+        }
         texts.append(NSAttributedString(string: ratioText, attributes: [
             .font: NSFont.systemFont(ofSize: textSize.points(12), weight: .semibold),
             .foregroundColor: NSColor.white.withAlphaComponent(increased ? 1 : 0.75),
@@ -789,9 +823,9 @@ final class SelectionOverlayView: NSView {
         var parts: [String]
         switch controller.target {
         case .area:
-            parts = [String(localized: "Drag an area"), String(localized: "Arrows: move"), String(localized: "R: ratio (\(controller.aspectRatio.label))")]
-            if controller.aspectRatio != .free {
-                parts.append(String(localized: "X: rotate"))
+            parts = [String(localized: "Drag an area"), String(localized: "Arrows: move"), String(localized: "R: ratio (\(controller.areaShape.label))")]
+            if controller.areaShape.turns {
+                parts.append(String(localized: "X: turn"))
             }
         case .window:
             parts = [String(localized: "Click a window"), String(localized: "Arrows: next window")]
@@ -824,6 +858,8 @@ final class SelectionOverlayView: NSView {
             case toggle
         }
         let symbol: String
+        /// Drawn in place of `symbol`: a rectangle of this width over height, for the Ratio button.
+        var shape: CGFloat?
         let label: String?
         let on: Bool
         let look: Look
@@ -853,6 +889,13 @@ final class SelectionOverlayView: NSView {
         if controller.offersScrolling {
             let scroll = String(localized: "Scroll")
             options.append(BarButton(symbol: "arrow.down.to.line", label: scroll, on: controller.scrolling, look: .plain, name: scroll, key: "S", action: .scrolling))
+        }
+        if controller.target == .area {
+            let shape = controller.areaShape
+            options.append(BarButton(
+                symbol: "aspectratio", shape: shape.widthOverHeight, label: shape.ratio == .free ? nil : shape.label, on: shape.ratio != .free,
+                look: .plain, name: String(localized: "Ratio: \(shape.label)"), key: "R", action: .ratio
+            ))
         }
         func toggle(_ symbol: String, _ name: String, _ key: String, on: Bool, _ action: BarAction) -> BarButton {
             BarButton(symbol: symbol, label: nil, on: on, look: .toggle, name: name, key: key, action: action)
@@ -899,6 +942,9 @@ final class SelectionOverlayView: NSView {
         let groups = barGroups
 
         func icon(_ button: BarButton, _ color: NSColor) -> NSImage? {
+            if let shape = button.shape {
+                return Self.ratioIcon(shape, side: symbolSize, color: color)
+            }
             let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: button.look == .picked ? .semibold : .medium)
                 .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
             return NSImage(systemSymbolName: button.symbol, accessibilityDescription: nil)?.withSymbolConfiguration(config)
@@ -909,7 +955,7 @@ final class SelectionOverlayView: NSView {
         func width(_ button: BarButton) -> CGFloat {
             guard let label = button.label else {
                 // Icon only: a mode is a little wider than tall, and a toggle or Delay is square.
-                return button.look == .toggle || button.action == .delay ? height : textSize.points(38).rounded()
+                return button.look == .toggle || button.action == .delay || button.action == .ratio ? height : textSize.points(38).rounded()
             }
             let iconWidth = icon(button, .white)?.size.width.rounded(.up) ?? 0
             let labelWidth = (label as NSString).size(withAttributes: [.font: font(button)]).width.rounded(.up)
@@ -1027,6 +1073,23 @@ final class SelectionOverlayView: NSView {
         }
     }
 
+    /// The Ratio button's icon: a rounded rectangle of the ratio's shape, wide or tall as it's turned, in a square of `side`.
+    private static func ratioIcon(_ widthOverHeight: CGFloat, side: CGFloat, color: NSColor) -> NSImage {
+        let line: CGFloat = 1.5
+        let room = side - line
+        let size = widthOverHeight >= 1
+            ? CGSize(width: room, height: room / widthOverHeight)
+            : CGSize(width: room * widthOverHeight, height: room)
+        return NSImage(size: NSSize(width: side, height: side), flipped: false) { _ in
+            let rect = CGRect(x: (side - size.width) / 2, y: (side - size.height) / 2, width: size.width, height: size.height)
+            let path = NSBezierPath(roundedRect: rect, xRadius: 2.5, yRadius: 2.5)
+            path.lineWidth = line
+            color.setStroke()
+            path.stroke()
+            return true
+        }
+    }
+
     /// A floating panel's fill and 0.5 pt edge, dark in both appearances and solid with Increase Contrast or Reduce
     /// Transparency. The bar's shadow is drawn only outside it, so it doesn't darken the see-through fill.
     private func drawPanel(_ frame: CGRect, radius: CGFloat, opacity: Double, shadow: Bool, increased: Bool, in ctx: CGContext) {
@@ -1105,6 +1168,8 @@ final class SelectionOverlayView: NSView {
             if case .mode = action {
                 element.setAccessibilityRole(.radioButton)
                 element.setAccessibilityValue(button.on ? 1 : 0)
+            } else if action == .ratio {
+                element.setAccessibilityRole(.popUpButton)
             } else if button.look == .toggle || action == .scrolling {
                 element.setAccessibilityRole(.checkBox)
                 element.setAccessibilitySubrole(.toggle)
