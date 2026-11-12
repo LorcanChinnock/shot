@@ -8,7 +8,7 @@ group: Edit and share
 
 ## Open the video editor
 
-- **Edit** on a recording's [Quick Access](#quick-access) card.
+- The scissors button, **Edit Video**, on a recording's [Quick Access](#quick-access) card.
 - **Edit Video** in the [gallery](#find-your-captures), or a double-click on the recording there.
 - A [`shot://edit-video?path=…`](#url-scheme) link.
 

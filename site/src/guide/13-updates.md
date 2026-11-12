@@ -14,7 +14,7 @@ To change your mind, turn **Check automatically** on or off in **Settings › Ab
 
 ## Check now
 
-Click **Check for Updates** in **Settings › About**, or choose **Check for Updates…** in Shot's menu bar menu. When a check finds a new version, that menu item becomes **Update to Shot** and the version. When an automatic check finds one, a dot also takes the place of the top-right corner of Shot's menu bar icon until you open the update.
+Click **Check for Updates** in **Settings › About**, or choose **Check for Updates…** in Shot's menu bar menu. A small window says Shot is looking for a new version, with **Cancel**. When a check finds a new version, that menu item becomes **Update to Shot** and the version. When an automatic check finds one, a dot also takes the place of the top-right corner of Shot's menu bar icon until you open the update.
 
 The top of **Settings › About** shows Shot's version and what the last check found. It says **Up to date** only when a check since Shot opened found nothing, names the new version once one is out, and otherwise says when Shot last checked.
 
@@ -22,7 +22,7 @@ The top of **Settings › About** shows Shot's version and what the last check f
 
 When there's a new version, Shot opens a small window with what's new in it. Click **Install and Relaunch** to download it, with a progress bar and Cancel. Shot then quits, installs it and opens again, and it asks about unsaved edits and saves any recording first.
 
-- **Later** closes the window, and the next check offers the version again. Closing the window or pressing Esc does the same.
+- **Later** closes the window, and the next check offers the version again. Closing the window or pressing Esc does the same. Later only shows while **Check automatically** is on, since otherwise there's no next check.
 - **Skip** stops Shot offering that version. A newer one is still offered.
 - **Install future updates automatically**, shown while Check automatically is on, lets Shot download each new version by itself and install it the next time Shot quits.
 

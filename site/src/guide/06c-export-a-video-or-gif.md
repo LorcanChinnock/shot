@@ -4,7 +4,7 @@ summary: "Export an MP4 or a GIF at the size, frame rate and speed you want, and
 group: Edit and share
 ---
 
-![The video editor with the Export panel open: a cut in the recording, a Best day label and an arrow over the video, and the GIF options with the estimated size](../../../docs/media/video-editor.png)
+![The video editor with the Export panel open on the right: the drawing tools beside the video, a Best day label and an arrow over it, a cut in the timeline, and the GIF options above the estimated size and the Export GIF button](../../../docs/media/video-editor.png)
 
 ## Export
 
@@ -25,7 +25,7 @@ The card at the foot of the panel shows the estimated file size and how long the
 > A GIF keeps the first 60 seconds of what plays, so 120 seconds of video at 2×. An MP4 that's re-encoded is H.264, or HEVC when H.264 would drop frames: a 120 fps recording, or one above 30 fps that's larger than 2560 × 1600, such as a full Retina screen.
 
 > [!TIP]
-> For a quick GIF without opening the editor, click **Export GIF** on the recording's [Quick Access](#quick-access) card. It uses the frame rate and width you last chose here.
+> For a quick GIF without opening the editor, click the **Export GIF** button on the recording's [Quick Access](#quick-access) card. It uses the frame rate and width you last chose here.
 
 ## Reopen an edit later
 

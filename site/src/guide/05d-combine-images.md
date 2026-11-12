@@ -10,7 +10,7 @@ group: Edit and share
 
 In the annotation editor, any of these places another image beside your screenshot:
 
-- Click **Add an image** (<kbd>⇧⌘I</kbd>) and pick one of your recent captures, or **Choose File…** for any image files.
+- Click **Add an image** (<kbd>⇧⌘I</kbd>), beside **Crop** in the title bar, and pick one of your recent captures, or **Choose File…** for any image files.
 - Drag an image file, or a [Quick Access](#quick-access) card, onto the canvas. It's centred where you drop it.
 - Press <kbd>⌘V</kbd> with an image on the clipboard.
 
@@ -27,7 +27,7 @@ A placed image starts with a soft shadow, so it stands out from the screenshot u
 To trim an image's own edges, such as a pasted screenshot's toolbar:
 
 1. Double-click the image. You can also select it and press <kbd>C</kbd>, or right-click it and choose **Crop Image**. Once it has a crop, clicking the round crop badge on its top-right corner does the same; the badge shows while the pointer is over the image or it's selected.
-2. Drag the handles. The part cropped off shows dimmed, and **Aspect** and **Reset** work as they do when you [crop the screenshot](#crop).
+2. Drag the handles. The part cropped off fades into the canvas, and **Aspect** and **Reset** work as they do when you [crop the screenshot](#crop).
 3. Press <kbd>Return</kbd> to apply the crop, or <kbd>Esc</kbd> to cancel.
 
 Double-click it again to drag the edges back out. Its shadow, border and rounded corners go around the cropped edge, and resizing it scales what's left. Copies, duplicates and pastes keep the crop, and **Paste Style** leaves it alone.

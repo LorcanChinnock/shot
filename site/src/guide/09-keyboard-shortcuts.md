@@ -59,11 +59,12 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | B | Switch to Browser, which captures just the page of a browser window, or back to Window, for this capture. |
 | M | Turn the magnifier on or off for this capture. |
 | C | Turn the crosshair guide lines on or off for this capture. |
-| I | Turn the size readout (the area's width and height in pixels) on or off for this capture. |
-| Arrow keys | Move an area. In window mode, step through the windows. |
-| Space | While dragging an area, hold it to move the area. |
+| I | Turn the size label (the area's width and height in pixels) on or off for this capture. |
+| Arrow keys | Make an area at the pointer, then move it. <kbd>⌥</kbd> and the arrow keys resize it. In window mode, step through the windows. |
+| Space | Switch between picking an area and a window. While dragging an area, hold it to move the area. |
 | S | Turn scrolling on or off, to build one screenshot of a long page. |
 | Return | Take the highlighted window or screen, or the area you made with the keys. |
+| ⌥ | Hold it as you finish picking what to record, to [check the frame and options](#record-your-screen) before recording starts. |
 | Esc | Cancel |
 
 ## Recording setup

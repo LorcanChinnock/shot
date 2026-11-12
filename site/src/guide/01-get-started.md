@@ -27,13 +27,13 @@ Download the zip from the [latest release](https://github.com/LorcanChinnock/sho
 
 ## Follow the welcome window
 
-![The welcome window's second step, Make it yours: Use Shot for ⌘⇧4 and ⌘⇧5 is on, Open Shot at login is off, and there's a Continue button](../../../docs/media/welcome.png)
+![The welcome window on its Shortcuts step, titled Make it yours, with Permission ticked and Try it still to come along the top. Use Shot for ⌘⇧4 and ⌘⇧5 is on, Open Shot at login is off, and the screenshot keys are drawn as keycaps beside them above a yellow Continue button](../../../docs/media/welcome.png)
 
-A short welcome window walks you through up to three steps, named across its top so you can see how far you've got. **Back** in the bottom left returns to the step before. You can close the window at any point to skip the rest.
+A short welcome window walks you through up to three steps: **Permission**, **Shortcuts** and **Try it**. They're named across the top of the window, with a tick beside each one you've done, so you can see how far you've got. **Back** in the bottom left returns to the step before. You can close the window at any point to skip the rest.
 
-1. **Allow screen recording.** macOS needs this for every capture. Click **Grant** and turn Shot on under **Screen & System Audio Recording**, then click **Relaunch**. macOS only applies the permission after Shot restarts. If Shot already has it, you won't see this step.
-2. **Make it yours.** Choose whether Shot takes over the screenshot keys <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd>, and whether it opens when you log in. Both start on. Click **Continue** to apply them. If you close the window here instead, macOS keeps its keys and Shot doesn't open at login.
-3. **Try it.** Press <kbd>⌘⇧4</kbd> and drag across anything on screen. The window comes back with a few tips.
+1. **Permission.** macOS needs screen recording access for every capture. Click **Grant**, turn Shot on under **Screen & System Audio Recording**, then click **Relaunch**. macOS only applies the permission after Shot restarts. If Shot already has it, the step is ticked and the window starts on the next one.
+2. **Shortcuts.** Under **Make it yours**, choose whether Shot takes over the screenshot keys <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd>, and whether it opens when you log in. Both start on. Click **Continue** to apply them. If you close the window here instead, macOS keeps its keys and Shot doesn't open at login.
+3. **Try it.** Press <kbd>⌘⇧4</kbd> and drag across anything on screen. The step gets its tick, and the window shows a few tips and a **Done** button. Click **Skip** if you'd rather try it later.
 
 Shot doesn't ask for Accessibility access up front. Only capturing just the page of a browser window needs it, to find where a browser shows its page, so Shot asks when you turn on **Capture only the page in browser windows** in **Settings › Capture**. To set it up ahead of time, grant it in **Settings › About**.
 
@@ -42,7 +42,7 @@ Shot doesn't ask for Accessibility access up front. Only capturing just the page
 
 ## Where to find Shot
 
-Shot lives in the menu bar, not the Dock. Click its icon for every capture and recording action, your four newest captures, your [gallery](#find-your-captures) and **Settings**. This guide is linked from **Settings › About**.
+Shot lives in the menu bar, not the Dock. Click its icon for **Screenshot**, **Record**, **Pick Colour** and **Gallery**, which opens your [gallery](#find-your-captures) in its own window. Under **Recent**, the menu shows your four newest captures as thumbnails: click one to open it in the editor, or drag it into another app. **Settings…** and **Quit Shot** are at the bottom. This guide is linked from **User guide** in **Settings › About**.
 
 After each capture, Shot saves it, copies it, and shows a small [Quick Access](#quick-access) card in the corner of the screen. Paste it anywhere straight away, or hover the card to annotate it.
 
@@ -63,4 +63,4 @@ Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.
 - [Share a capture with an AI assistant](#share-a-capture-with-an-ai-assistant) such as Claude or ChatGPT.
 
 > [!NOTE]
-> To see the welcome window again, open [`shot://welcome`](#url-scheme). It starts from your current settings, and closing it changes nothing. If Shot ever loses its screen recording permission, your next capture opens the window at that step.
+> To see the welcome window again, open [`shot://welcome`](#url-scheme). It starts from your current settings, and closing it changes nothing. If Shot doesn't have Accessibility access yet, it adds a **Browser pages** step to set that up, which you can skip. If Shot ever loses its screen recording permission, your next capture opens the window at that step.

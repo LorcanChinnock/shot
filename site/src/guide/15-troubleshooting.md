@@ -36,9 +36,9 @@ Shot takes over <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> only once it has Scree
 - If you turned the macOS shortcuts back on in System Settings, turn that setting on again.
 - A **Shortcut unavailable** message means another app already uses that shortcut. Pick another in **Settings › Shortcuts**.
 
-## Browser shows a card asking for Accessibility
+## Browser needs Accessibility
 
-Shot needs Accessibility access to find where a browser shows its page, so it can leave out the tabs and address bar. Click **Grant Access**, then in the macOS prompt click **Open System Settings** and turn on Shot under **Privacy & Security › Accessibility**. Your next capture can use Browser. Until then, **Use Window** captures the whole browser window, and Esc closes the card.
+Picking **Browser** on the capture bar, or pressing <kbd>B</kbd>, shows this card until Shot has Accessibility access. Shot needs it to find where a browser shows its page, so it can leave out the tabs and address bar. Click **Grant Access**, then in the macOS prompt click **Open System Settings** and turn on Shot under **Privacy & Security › Accessibility**. Your next capture can use Browser. Until then, **Use Window** captures the whole browser window, and Esc closes the card.
 
 ## Scrolling capture shows a warning
 
@@ -56,8 +56,8 @@ A capture can still have a thin gap or repeat after a fast scroll past the end o
 Shot shows this dialog when it opens after stopping in the middle of a recording, for example after a crash or a restart. The dialog says how much was recorded and how many parts it was saved in.
 
 1. **Recover** joins the parts and saves the video to your save folder as `… (recovered).mp4`. If they can't be joined, each part is saved as its own `(recovered, part N)` file.
-2. **Show Parts** opens the parts in Finder, so you can look at them before you choose. The dialog stays open.
-3. **Discard recording** deletes the parts. **Undo** in the message that follows brings the dialog back for 5 seconds.
+2. **Show Parts** opens the parts in Finder, so you can look at them before you choose. The dialog stays open. When there's only one part, the button says **Show File**.
+3. **Discard recording** deletes the parts. For 5 seconds afterwards, **Undo** in the message in the corner of the screen brings the dialog back.
 
 Press <kbd>Esc</kbd> to close the dialog without choosing. The parts stay where they are, and Shot asks again the next time it opens.
 

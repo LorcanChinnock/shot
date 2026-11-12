@@ -18,4 +18,4 @@ Text search, editor layers and video projects stay in Shot's own Application Sup
 
 Shot needs **Screen & System Audio Recording** access for every capture. **Accessibility** is only for capturing just the page of a browser window, to find the web page inside it. macOS asks for **Microphone** and **Camera** access only when Shot first uses them: when you record with them, or try them with **Test** or **Preview** in **Settings › Recording**.
 
-To give Shot every permission at once, click **Allow…** beside each one in **Settings › About**. A permission you've allowed shows **Allowed**. Once macOS has asked and won't ask again, **Allow…** opens that list in System Settings.
+To give Shot a permission before it needs it, click **Allow…** beside it in **Settings › About**. A permission you've allowed shows **Allowed**. Once macOS has asked and won't ask again, **Allow…** opens that list in System Settings.
