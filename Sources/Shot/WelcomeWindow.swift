@@ -710,7 +710,7 @@ private struct PermissionPicture: View {
                     RoundedRectangle(cornerRadius: 6, style: .circular).fill(Theme.fieldFill).frame(width: 28, height: 28)
                     Capsule().fill(Theme.fieldFill).frame(width: 84, height: 8)
                     Spacer()
-                    PictureSwitch(isOn: false)
+                    SwitchPicture(isOn: false)
                 }
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
@@ -719,7 +719,7 @@ private struct PermissionPicture: View {
                     AppIconView(size: 28)
                     Text(verbatim: "Shot").font(Theme.label).foregroundStyle(Theme.ink)
                     Spacer()
-                    PictureSwitch(isOn: true)
+                    SwitchPicture(isOn: true)
                 }
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
@@ -734,34 +734,6 @@ private struct PermissionPicture: View {
         }
         .frame(width: 260)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-/// A drawn switch, which nothing can press: `ThemeToggleStyle`'s look without the control.
-private struct PictureSwitch: View {
-    let isOn: Bool
-
-    var body: some View {
-        if isOn {
-            ZStack(alignment: .trailing) {
-                Capsule().fill(Theme.accent)
-                Circle().fill(.white)
-                    .inkBorder(Circle(), width: 1.5)
-                    .frame(width: 17, height: 17)
-                    .padding(2.5)
-            }
-            .frame(width: 38, height: 22)
-            .inkBorder(Capsule(), width: 1.5)
-        } else {
-            ZStack(alignment: .leading) {
-                Capsule().fill(Theme.quietTrack)
-                Circle().fill(.white)
-                    .frame(width: 18, height: 18)
-                    .shadow(color: .black.opacity(0.25), radius: 1, y: 1)
-                    .padding(2)
-            }
-            .frame(width: 38, height: 22)
-        }
     }
 }
 

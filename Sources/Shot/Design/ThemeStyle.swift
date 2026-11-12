@@ -757,8 +757,9 @@ extension Theme {
     static let quietTrack = Color(light: Color(hex: 0x16161A).opacity(0.12), dark: .white.opacity(0.16))
 }
 
-/// A switch, from Components › Choice. On, it's the accent with a 1.5 pt ink outline and an inked knob; off, a grey track
-/// with a white knob. It draws the switch only, so put the label beside it and hide the toggle's own with `labelsHidden()`.
+/// A switch, from Components › Choice, drawn like the system one: the accent track when on, a grey one when off, and a
+/// white knob with a soft shadow. It draws the switch only, so put the label beside it and hide the toggle's own with
+/// `labelsHidden()`.
 struct ThemeToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         ThemeSwitch(configuration: configuration)
@@ -769,7 +770,6 @@ private struct ThemeSwitch: View {
     let configuration: ToggleStyleConfiguration
     @FocusState private var focused: Bool
     @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -779,7 +779,14 @@ private struct ThemeSwitch: View {
                 configuration.isOn.toggle()
             }
         } label: {
-            track
+            SwitchPicture(isOn: configuration.isOn)
+                .background {
+                    if focused, isEnabled {
+                        Color.clear.inkBorder(Capsule(), width: 4, color: Theme.focusRing).padding(-4)
+                    }
+                }
+                .opacity(isEnabled ? 1 : 0.45)
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .focusEffectDisabled()
@@ -789,40 +796,25 @@ private struct ThemeSwitch: View {
                 .toggleStyle(.switch)
         }
     }
+}
 
-    private var track: some View {
-        let on = configuration.isOn
-        let increased = contrast == .increased
-        return ZStack(alignment: on ? .trailing : .leading) {
-            Capsule().fill(on ? Theme.accent : Theme.quietTrack)
-            knob(on: on, increased: increased)
+/// `ThemeToggleStyle`'s look without the control, for a picture of a switch. Increase Contrast edges the track and knob.
+struct SwitchPicture: View {
+    let isOn: Bool
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        let edge: CGFloat = contrast == .increased ? 1 : 0
+        ZStack(alignment: isOn ? .trailing : .leading) {
+            Capsule().fill(isOn ? Theme.accent : Theme.quietTrack)
+            Circle().fill(.white)
+                .modifier(ButtonEdge(shape: Circle(), width: edge, color: Color(hex: 0x16161A).opacity(0.6)))
+                .frame(width: 20, height: 20)
+                .shadow(color: .black.opacity(0.3), radius: 1, y: 0.5)
+                .padding(1)
         }
         .frame(width: 38, height: 22)
-        .modifier(ButtonEdge(shape: Capsule(), width: on ? 1.5 : (increased ? 1 : 0), color: on ? Theme.line : Theme.ink.opacity(0.6)))
-        .background {
-            if focused, isEnabled {
-                Color.clear.inkBorder(Capsule(), width: 4, color: Theme.focusRing).padding(-4)
-            }
-        }
-        .opacity(isEnabled ? 1 : 0.45)
-        .contentShape(Capsule())
-    }
-
-    /// 17 pt inside the ink outline when on, 18 pt with a soft shadow when off.
-    @ViewBuilder
-    private func knob(on: Bool, increased: Bool) -> some View {
-        if on {
-            Circle().fill(.white)
-                .inkBorder(Circle(), width: 1.5)
-                .frame(width: 17, height: 17)
-                .padding(2.5)
-        } else {
-            Circle().fill(.white)
-                .modifier(ButtonEdge(shape: Circle(), width: increased ? 1 : 0, color: Color(hex: 0x16161A).opacity(0.6)))
-                .frame(width: 18, height: 18)
-                .shadow(color: .black.opacity(0.25), radius: 1, y: 1)
-                .padding(2)
-        }
+        .modifier(ButtonEdge(shape: Capsule(), width: edge, color: Theme.ink.opacity(0.6)))
     }
 }
 
