@@ -144,13 +144,13 @@ final class EditorModel {
         get { selectedIDs.count == 1 ? selectedIDs.first : nil }
         set { selectedIDs = newValue.map { [$0] } ?? [] }
     }
-    var showsLayers = UserDefaults.standard.bool(forKey: EditorModel.showsLayersKey)
+    /// Whether the Layers panel shows beside the canvas. It starts closed in every window (rule 2).
+    private(set) var showsLayers = false
     /// Whether the picker of images to place on the canvas is open.
     var showsImagePicker = false
     /// Whether the Style panel shows beside the canvas. It starts closed in every window, and it and the Layers panel
     /// take turns, so the canvas keeps its room at the window's minimum width.
     private(set) var showsStylePanel = false
-    private static let showsLayersKey = PreferenceKey.editorShowsLayers
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
     var isDirty: Bool { history.isDirty }
@@ -257,7 +257,6 @@ final class EditorModel {
 
     func toggleLayers() {
         showsLayers.toggle()
-        UserDefaults.standard.set(showsLayers, forKey: Self.showsLayersKey)
         if showsLayers {
             showsStylePanel = false
         }

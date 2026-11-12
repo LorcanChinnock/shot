@@ -66,6 +66,7 @@ enum SystemShortcuts {
         let store = UserDefaults.standard
         Preferences.removeTextCapture(in: store)
         Preferences.removeTranslateTarget(in: store)
+        Preferences.removeRememberedPanels(in: store)
         Preferences.migrateCaptureActions(in: store)
         Preferences.removeMenuOnlyHotkeys(in: store)
         let prefs = Preferences()
