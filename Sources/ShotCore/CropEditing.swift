@@ -13,9 +13,10 @@ public enum CropEditing {
         previous == .crop ? .select : previous
     }
 
-    /// The crop to start adjusting: the placed image's bounds, else the frame crop, else all of the content.
-    public static func startingDraft(imageBounds: CGRect?, frameCrop: CGRect?, contentRect: CGRect) -> CGRect {
-        imageBounds ?? frameCrop ?? contentRect
+    /// The crop to start adjusting: the placed image's bounds, else the frame crop, else all of the content, held to the
+    /// remembered shape so the crop matches the shape the crop bar shows.
+    public static func startingDraft(imageBounds: CGRect?, frameCrop: CGRect?, contentRect: CGRect, holding aspect: CropAspect) -> CGRect {
+        draft(imageBounds ?? frameCrop ?? contentRect, holding: aspect)
     }
 
     /// What putting the tool down changes. A placed image is cropped when the draft differs from its bounds; the frame
@@ -33,12 +34,17 @@ public enum CropEditing {
         return .cropFrame(draft)
     }
 
-    /// The draft after a shape is picked: the largest crop of that shape inside the current one; free leaves it as it is.
+    /// The draft held to a shape: the largest crop of that shape inside the current one. Free leaves it as it is, and so
+    /// does a draft already of that shape to within a pixel, so starting or picking the shape again changes nothing.
     public static func draft(_ draft: CGRect, holding aspect: CropAspect) -> CGRect {
         guard let ratio = aspect.ratio(for: draft.size) else {
             return draft
         }
-        return CropGeometry.fit(ratio: ratio, in: draft)
+        let fitted = CropGeometry.fit(ratio: ratio, in: draft)
+        guard draft.width - fitted.width > 1 || draft.height - fitted.height > 1 else {
+            return draft
+        }
+        return fitted
     }
 
     /// Whether Reset has a crop to take off. `fullRect` is where a placed image being cropped would be drawn whole.

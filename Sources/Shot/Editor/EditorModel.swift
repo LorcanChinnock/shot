@@ -823,7 +823,7 @@ final class EditorModel {
         toolBeforeCrop = CropEditing.toolBefore(taking: previous)
         let annotation = image.flatMap { image in document.annotations.first { $0.id == image } }
         cropImageID = annotation?.id
-        cropDraft = CropEditing.startingDraft(imageBounds: annotation?.bounds, frameCrop: document.frameCrop, contentRect: document.contentRect)
+        cropDraft = CropEditing.startingDraft(imageBounds: annotation?.bounds, frameCrop: document.frameCrop, contentRect: document.contentRect, holding: cropAspect)
     }
 
     /// The selection, when it's a placed image that can be cropped.

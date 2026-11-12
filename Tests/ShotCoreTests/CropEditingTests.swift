@@ -18,9 +18,24 @@ private let image = UUID()
 
 @Test func cropStartsOnAnImageThenTheFrameThenAllTheContent() {
     let bounds = CGRect(x: 5, y: 5, width: 20, height: 20)
-    #expect(CropEditing.startingDraft(imageBounds: bounds, frameCrop: frame, contentRect: content) == bounds)
-    #expect(CropEditing.startingDraft(imageBounds: nil, frameCrop: frame, contentRect: content) == frame)
-    #expect(CropEditing.startingDraft(imageBounds: nil, frameCrop: nil, contentRect: content) == content)
+    #expect(CropEditing.startingDraft(imageBounds: bounds, frameCrop: frame, contentRect: content, holding: .free) == bounds)
+    #expect(CropEditing.startingDraft(imageBounds: nil, frameCrop: frame, contentRect: content, holding: .free) == frame)
+    #expect(CropEditing.startingDraft(imageBounds: nil, frameCrop: nil, contentRect: content, holding: .free) == content)
+}
+
+@Test func cropStartsAtTheRememberedShape() {
+    let picture = CGRect(x: 0, y: 0, width: 1908, height: 1250)
+    let started = CropEditing.startingDraft(imageBounds: nil, frameCrop: nil, contentRect: picture, holding: .sixteenNine)
+    #expect(started.width == 1908)
+    #expect(started.height == 1073)
+    #expect(picture.contains(started))
+}
+
+@Test func aDraftAlreadyOfTheShapeIsLeftAsItIs() {
+    // 1,908 × 1,073 is 16:9 to within a pixel, so starting the crop again doesn't nudge it.
+    let cropped = CGRect(x: 0, y: 88, width: 1908, height: 1073)
+    #expect(CropEditing.draft(cropped, holding: .sixteenNine) == cropped)
+    #expect(CropEditing.outcome(draft: CropEditing.startingDraft(imageBounds: nil, frameCrop: cropped, contentRect: content, holding: .sixteenNine), image: nil, frameCrop: cropped, contentRect: content, isFrameCropHidden: false) == .nothing)
 }
 
 @Test func anUnchangedFrameCropChangesNothing() {

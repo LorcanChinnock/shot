@@ -1425,7 +1425,8 @@ extension VideoEditorModel {
             return
         }
         player.pause()
-        cropDraft = project.frameCrop ?? CGRect(origin: .zero, size: project.canvasSize)
+        // The crop starts at the remembered shape, so it matches the Aspect the crop bar shows.
+        cropDraft = CropEditing.draft(project.frameCrop ?? CGRect(origin: .zero, size: project.canvasSize), holding: cropAspect)
         cropTarget = .frame
         refreshPlayer()
     }
@@ -1442,7 +1443,7 @@ extension VideoEditorModel {
         if !(clip.start..<clip.end).contains(playhead) {
             seekTimeline(to: clip.start)
         }
-        cropDraft = LayerGeometry.keptRect(of: clip)
+        cropDraft = CropEditing.draft(LayerGeometry.keptRect(of: clip), holding: cropAspect)
         cropTarget = .clip(id)
         refreshPlayer()
         return true

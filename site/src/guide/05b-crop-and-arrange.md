@@ -17,7 +17,7 @@ The bar also shows the size in pixels that the crop keeps, and it changes as you
 - **Drag a handle** to resize the crop, in or out. An edge can go as far as the content reaches, padding and your marks included, so dragging outward brings cropped pixels back. Edges snap to the screenshot's edges.
 - **Drag inside** the crop to move it, or **outside** it to draw a new one.
 - **Hold <kbd>Shift</kbd>** to keep the crop's shape.
-- **Aspect**, in the bar, holds it to Free, 1:1, 4:3 or 16:9. Picking a ratio fits the largest crop of that ratio inside the current one, centred, wide or tall to match. The editor remembers the last one.
+- **Aspect**, in the bar, holds it to Free, 1:1, 4:3 or 16:9. Picking a ratio fits the largest crop of that ratio inside the current one, centred, wide or tall to match. The editor remembers the last one, and the next crop starts at that ratio, in the video editor too.
 - **Reset** in the bar, or <kbd>Delete</kbd>, makes the crop the whole screenshot again.
 
 Picking another tool, <kbd>⌘C</kbd>, <kbd>⌘S</kbd> or clicking outside the canvas also applies the crop. It's one undo step.
