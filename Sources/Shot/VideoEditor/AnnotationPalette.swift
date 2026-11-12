@@ -3,8 +3,8 @@ import ShotCore
 import SwiftUI
 
 /// The drawing options while a tool is picked: the image editor's style bar, from Edit › Image editor · annotate, centred
-/// 12 pt down from the top of the video's well. The colours and widths are in the bar, and the shape, fill, white and custom
-/// colours, alignment, a blur's amount and a spotlight's strength under More style. The select tool with nothing selected
+/// 12 pt down from the top of the video's well. The colours, custom colour and widths are in the bar, and the shape, fill,
+/// alignment, a blur's amount and a spotlight's strength under More style. The select tool with nothing selected
 /// shows no bar, and neither does crop mode. The tools themselves are in `DrawToolColumn`, beside the video.
 struct VideoStyleBar: View {
     @Bindable var model: VideoEditorModel

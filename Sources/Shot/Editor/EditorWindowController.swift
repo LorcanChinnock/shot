@@ -182,6 +182,10 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         model.pasteStyle()
     }
 
+    @objc func resetStyle(_ sender: Any?) {
+        model.resetToolOptions()
+    }
+
     @objc func applyStyleToAllImages(_ sender: Any?) {
         model.applyStyleToAllImages()
     }
@@ -258,6 +262,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         switch menuItem.action {
         case #selector(copyStyle(_:)): model.styleTarget != nil
         case #selector(pasteStyle(_:)), #selector(applyStyleToAllImages(_:)): model.canPasteStyle && model.editingText == nil
+        case #selector(resetStyle(_:)): model.styleBarContent != nil && model.canResetToolOptions
         case #selector(flatten(_:)): model.version != nil
         case #selector(revertToOriginal(_:)): model.canRevert
         default: true

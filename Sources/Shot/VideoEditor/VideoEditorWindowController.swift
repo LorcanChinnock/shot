@@ -257,6 +257,10 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         model.copyStyle()
     }
 
+    @objc func resetStyle(_ sender: Any?) {
+        model.resetToolOptions()
+    }
+
     @objc func pasteStyle(_ sender: Any?) {
         model.pasteStyle()
     }
@@ -286,6 +290,7 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         case #selector(trimIdleTime(_:)): model.canTrimIdleTime
         case #selector(copyStyle(_:)): model.targetStyleKind != nil
         case #selector(pasteStyle(_:)): model.canPasteStyle
+        case #selector(resetStyle(_:)): model.annotationTool != nil && !model.isCropping && model.canResetToolOptions
         case #selector(flatten(_:)): model.version != nil
         default: true
         }

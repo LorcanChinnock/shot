@@ -71,7 +71,8 @@ protocol StyleBarEditing: AnyObject, Observable {
 
 extension EditorModel: StyleBarEditing {}
 
-/// The bar: the colour swatches, a divider and the three widths, then More style for everything else. A redaction and a
+/// The bar: the seven colours and a custom one, a divider and the three widths, then More style for a mark's other options.
+/// Right-clicking it offers Reset Style, as the Edit menu does. A redaction and a
 /// spotlight show their own main choices in its place. The video editor shows it too, at the top of the video's well.
 struct StyleBar<Model: StyleBarEditing>: View {
     @Bindable var model: Model
@@ -115,7 +116,9 @@ struct StyleBar<Model: StyleBarEditing>: View {
                     .accessibilityLabel(Text("Outside the spotlight"))
                 }
             }
-            MoreStyleButton(model: model)
+            if content.offersMoreStyle(hasShape: model.paletteShape != nil, hasFill: model.showsFill, hasAlignment: model.paletteAlignment != nil) {
+                MoreStyleButton(model: model)
+            }
         }
         .padding(.vertical, 5)
         .padding(.horizontal, 7)
@@ -126,6 +129,10 @@ struct StyleBar<Model: StyleBarEditing>: View {
             }
         }
         .contentShape(shape)
+        .contextMenu {
+            Button("Reset Style", action: model.resetToolOptions)
+                .disabled(!model.canResetToolOptions)
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Style"))
     }
@@ -140,6 +147,16 @@ struct StyleBar<Model: StyleBarEditing>: View {
                     model.paletteColor = color
                 }
             }
+            CustomColorButton(
+                custom: StyleBarSwatches.contains(model.paletteColor) ? nil : model.paletteColor,
+                lastCustom: model.lastCustom(forFill: false),
+                fallback: model.paletteColor,
+                help: String(localized: "Custom colour"),
+                pick: { model.pickCustom($0, forFill: false) },
+                beginPicking: model.beginColorPick,
+                editorShown: { _ in },
+                compact: true
+            )
         }
     }
 
@@ -260,15 +277,14 @@ private struct MoreStyleButton<Model: StyleBarEditing>: View {
         }
         .buttonStyle(ThemeButtonStyle(.toolbar, isOn: model.showsMoreStyle))
         .accessibilityLabel(Text("More style"))
-        .themeTip("More style", detail: "Shows the rest of this mark's options, such as white, custom colours and Reset.")
+        .themeTip("More style", detail: "Shows the rest of this mark's options, such as its fill, and Reset.")
         .popover(isPresented: $model.showsMoreStyle, arrowEdge: .bottom) {
             MoreStyle(model: model)
         }
     }
 }
 
-/// What the bar has no room for: for a mark, its shape, every colour with white and custom ones, its fill and the
-/// text's alignment; for a redaction its amount; for a spotlight its strength and soft edge. Reset is last.
+/// What the bar has no room for: for a mark, its shape, its fill and the text's alignment; for a redaction its amount; for a spotlight its strength and soft edge. Reset is last.
 private struct MoreStyle<Model: StyleBarEditing>: View {
     @Bindable var model: Model
 
@@ -288,18 +304,6 @@ private struct MoreStyle<Model: StyleBarEditing>: View {
                         }
                         .buttonStyle(ThemeButtonStyle(.popUp))
                         .fixedSize()
-                    }
-                }
-                row("Colour") {
-                    HStack(spacing: 0) {
-                        ColorSwatches(
-                            selected: model.paletteColor,
-                            lastCustom: model.lastCustom(forFill: false),
-                            customHelp: "Custom colour",
-                            choose: { if let color = $0 { model.paletteColor = color } },
-                            pickCustom: { model.pickCustom($0, forFill: false) },
-                            beginPicking: model.beginColorPick
-                        )
                     }
                 }
                 if model.showsFill {

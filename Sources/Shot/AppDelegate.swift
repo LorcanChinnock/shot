@@ -197,6 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         edit.addItem(.separator())
         edit.addItem(withTitle: String(localized: "Copy Style"), action: #selector(EditorWindowController.copyStyle(_:)), keyEquivalent: "c").keyEquivalentModifierMask = [.command, .option]
         edit.addItem(withTitle: String(localized: "Paste Style"), action: #selector(EditorWindowController.pasteStyle(_:)), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option]
+        edit.addItem(withTitle: String(localized: "Reset Style"), action: #selector(EditorWindowController.resetStyle(_:)), keyEquivalent: "")
         edit.addItem(withTitle: String(localized: "Apply Style to All Images"), action: #selector(EditorWindowController.applyStyleToAllImages(_:)), keyEquivalent: "")
         edit.addItem(withTitle: String(localized: "Trim Idle Time"), action: #selector(VideoEditorWindowController.trimIdleTime(_:)), keyEquivalent: "")
         edit.addItem(withTitle: String(localized: "Flatten"), action: #selector(EditorWindowController.flatten(_:)), keyEquivalent: "")
