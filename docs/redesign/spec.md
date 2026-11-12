@@ -1380,7 +1380,7 @@ From **Website › Site · components and motion**, **Site · landing page** and
 | Note callout | `#DCEBF7`, edge `rgba(29,95,184,0.18)`, icon `#1D5FB8`, text `#173E73` | The guide's Note |
 | Scope tags | capture `#F9C6CE`, editor `#BFE3F5`, gallery `#D8E8D0`, release `#DCD6F2` | Changelog areas |
 | Guide groups | Get started accent, Capture `#F9C6CE`, Edit and share `#BFE3F5`, Reference `#DCD6F2`, Help `#D8E8D0` | Group markers in the guide's page list |
-| Step badge | `#E5352B` with a 2.5 px white ring | Numbered steps, counter marks |
+| Step badge | `#C4271E` with a 2.5 px white ring | Numbered steps, counter marks. It's darker than the app's `#E5352B` so the white numerals reach 4.5:1 (5.74:1) |
 | Red text | `#C4271E` | "guide" beside "Shot" in the guide's header, in the system font (rule 7 keeps handwriting to sticky notes) |
 | Copied | `#7FD8A0` | The copy-command button after copying |
 | Dark band | `#16161A`, text `#EDEBE6`, secondary `#B9B7BE` | Scrolling band, motion card, "Try it now" card |

@@ -350,12 +350,13 @@ kbd.key.accent { background: var(--accent); color: var(--on-accent); }
 .deco { pointer-events: none; user-select: none; }
 @media (max-width: 860px) { .deco { display: none !important; } }
 
-/* The counter badge, as the app's step tool draws it. */
+/* The counter badge, as the app's step tool draws it. The red is a shade darker than the app's so the white numerals,
+   13 to 17 px, reach 4.5:1 (5.74:1); #e5352b measures 4.31:1. */
 .counter {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border-radius: 50%;
   font: 900 16px/1 var(--display); color: #fff;
-  background: #e5352b;
+  background: #c4271e;
   box-shadow: 0 0 0 2.5px #fff;
 }
 
@@ -493,13 +494,13 @@ section { padding-block: clamp(48px, 8vw, 96px); }
 .prose kbd { min-width: 1.7em; padding: 0 0.4em; font-size: 0.86em; line-height: 1.5; border-radius: 6px; }
 .prose ol { list-style: none; counter-reset: step; padding-left: 0; display: grid; gap: 10px; }
 .prose ol > li { counter-increment: step; position: relative; margin: 0; padding-left: 44px; min-height: 30px; }
-/* Numbered steps use the counter badge: Shot's red with a white ring. */
+/* Numbered steps use the counter badge, in its darker red so the numerals pass 4.5:1, with a white ring. */
 .prose ol > li::before {
   content: counter(step);
   position: absolute; left: 2px; top: 0;
   width: 28px; height: 28px; display: grid; place-items: center;
   font: 900 14px/1 var(--display);
-  color: #fff; background: #e5352b;
+  color: #fff; background: #c4271e;
   border-radius: 50%; box-shadow: 0 0 0 2.5px #fff;
 }
 .prose .callout { margin: 24px 0; padding: 14px 18px; border-radius: 14px; }
