@@ -545,13 +545,21 @@ private struct HaloButtonFocus: View {
             .buttonStyle(.plain)
             .focusEffectDisabled()
             .focused($focused)
-            .background {
-                if focused, isEnabled {
-                    Color.clear
-                        .inkBorder(RoundedRectangle(cornerRadius: radius + 4, style: .circular), width: 4, color: Theme.focusRing)
-                        .padding(-4)
-                }
+            .focusHalo(focused && isEnabled, radius: radius)
+    }
+}
+
+extension View {
+    /// The 4 pt accent halo just outside the view while `shown`, for a view that takes focus without being a Button, such
+    /// as a list or a row that a drag starts from. It pairs with `.focusEffectDisabled()`, which hides the system ring.
+    func focusHalo(_ shown: Bool, radius: CGFloat = Theme.Radius.control) -> some View {
+        background {
+            if shown {
+                Color.clear
+                    .inkBorder(RoundedRectangle(cornerRadius: radius + 4, style: .circular), width: 4, color: Theme.focusRing)
+                    .padding(-4)
             }
+        }
     }
 }
 
