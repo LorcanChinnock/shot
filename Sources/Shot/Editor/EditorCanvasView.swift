@@ -1147,6 +1147,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             commitText()
             return true
         }
+        if commandSelector == #selector(NSResponder.insertNewline(_:)), case .note = editingText?.kind, NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
+            textView.insertNewlineIgnoringFieldEditor(nil)
+            return true
+        }
         return false
     }
 
