@@ -80,9 +80,18 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { noteInk = kind.isNote ? newValue : nil }
     }
     private var noteInk: RGBA?
+    /// The size of each part of a text's or note's text as a share of `textSize`, when its parts differ; `nil` when it's
+    /// all one size, as every text was before sizes could differ. Read and set through `textRuns`.
+    private var sizeRuns: [ScaledRun]?
+
+    /// A run of `sizeRuns`: `length` UTF-16 code units at `scale` times the text's size.
+    private struct ScaledRun: Equatable, Sendable, Codable {
+        var length: Int
+        var scale: CGFloat
+    }
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop, wrapWidth
+        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop, wrapWidth, sizeRuns
         case noteInk = "noteTextColor"
         case imageRadius = "cornerRadius"
         case customName = "name"
@@ -107,6 +116,11 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         crop = kind.isImage ? try container.decodeIfPresent(ImageCrop.self, forKey: .crop) : nil
         wrapWidth = kind.isText ? try container.decodeIfPresent(CGFloat.self, forKey: .wrapWidth) : nil
         noteInk = kind.isNote ? try container.decodeIfPresent(RGBA.self, forKey: .noteInk) : nil
+        sizeRuns = try container.decodeIfPresent([ScaledRun].self, forKey: .sizeRuns)
+        if let runs = sizeRuns, runs.count < 2 || runs.contains(where: { $0.length <= 0 || !($0.scale > 0) })
+            || runs.reduce(0, { $0 + $1.length }) != text?.utf16.count {
+            sizeRuns = nil
+        }
         // A rounded rectangle from before every shape could be rounded keeps its radius, or the fifth of its shorter side
         // that it had when it had none.
         if !kind.isImage {
@@ -314,7 +328,58 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         guard case let .note(string, rect) = kind else {
             return nil
         }
-        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, textColor: noteTextColor, verticalAlignment: verticalAlignment)
+        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, textColor: noteTextColor, verticalAlignment: verticalAlignment, runs: mixedRuns)
+    }
+
+    /// The size of a text's or a note's text, in pixels, which its padding and box follow; the largest of its parts when
+    /// they differ. `nil` for every other kind.
+    public var textSize: CGFloat? {
+        switch kind {
+        case let .text(_, _, fontSize): fontSize
+        case .note: noteFontSize
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .counter, .freehand, .marker, .image: nil
+        }
+    }
+
+    /// The size of each part of a text's or a note's text, in pixels; `nil` for every other kind. Text all in one size,
+    /// as all text was before parts could differ, is one run of `textSize`.
+    public var textRuns: TextRuns? {
+        guard let string = text, let size = textSize else {
+            return nil
+        }
+        let length = string.utf16.count
+        guard let sizeRuns, sizeRuns.reduce(0, { $0 + $1.length }) == length else {
+            return TextRuns(length: length, size: size)
+        }
+        return TextRuns(sizeRuns.map { TextRun(length: $0.length, size: size * $0.scale) })
+    }
+
+    /// `textRuns` when its parts differ in size, for layout; `nil` when it's all one size.
+    var mixedRuns: TextRuns? {
+        sizeRuns == nil ? nil : textRuns
+    }
+
+    /// Gives a text's or note's text these sizes, in pixels, and makes the largest its `textSize`. Runs that don't cover
+    /// the text exactly, and every other kind, are left alone.
+    public mutating func setTextRuns(_ runs: TextRuns) {
+        guard let string = text, runs.length == string.utf16.count, let largest = runs.largest else {
+            return
+        }
+        setTextSize(largest)
+        sizeRuns = runs.isUniform ? nil : runs.runs.map { ScaledRun(length: $0.length, scale: $0.size / largest) }
+    }
+
+    /// Sets a text's or note's size in pixels through its width, as the style bar does, keeping how its parts compare.
+    private mutating func setTextSize(_ size: CGFloat) {
+        switch kind {
+        case let .text(string, origin, fontSize):
+            kind = .text(string, origin: origin, fontSize: size)
+            lineWidth = fontSize > 0 && lineWidth > 0 ? lineWidth * size / fontSize : size / 6
+        case .note:
+            lineWidth = (size - 8) / 3
+        default:
+            break
+        }
     }
 
     /// The quadratic curve an arrow or line follows: its ends and the control point that gives it its bend.
@@ -344,7 +409,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .shape(_, rect), let .highlight(rect), let .pixelate(rect, _), let .blur(rect, _), let .spotlight(rect, _), let .image(_, rect):
             return rect
         case let .text(string, origin, fontSize):
-            return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color, width: textWidth).size)
+            return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color, width: textWidth, runs: mixedRuns).size)
         case let .counter(_, center):
             return CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
         case .note:
@@ -484,8 +549,25 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// Replaces the text of a text annotation or note; other kinds are left alone.
+    /// Replaces the text of a text annotation or note; other kinds are left alone. Text kept from before keeps its
+    /// sizes, and what's new takes the size before it, as typing does.
     public mutating func setText(_ string: String) {
+        let edited = mixedRuns.flatMap { runs in text.map { runs.edited(from: $0, to: string, fallback: textSize ?? 0) } }
+        replaceText(string)
+        if let edited {
+            sizeRuns = nil
+            setTextRuns(edited)
+        }
+    }
+
+    /// Replaces the text of a text annotation or note and gives it these sizes, as its text field holds them.
+    public mutating func setText(_ string: String, runs: TextRuns) {
+        replaceText(string)
+        sizeRuns = nil
+        setTextRuns(runs)
+    }
+
+    private mutating func replaceText(_ string: String) {
         switch kind {
         case let .text(_, origin, fontSize): kind = .text(string, origin: origin, fontSize: fontSize)
         case let .note(_, rect): kind = .note(string, rect: rect)
@@ -736,7 +818,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         let resized: CGRect
         switch handle.dy {
         case -1:
-            let textHeight = NoteLayout(string: string, rect: CGRect(x: minX, y: 0, width: width, height: 0), fontSize: layout.fontSize, color: color).frame.height
+            let textHeight = NoteLayout(string: string, rect: CGRect(x: minX, y: 0, width: width, height: 0), fontSize: layout.fontSize, color: color, runs: mixedRuns).frame.height
             let minY = min(point.y, frame.maxY - textHeight)
             resized = CGRect(x: minX, y: minY, width: width, height: frame.maxY - minY)
         case 1:

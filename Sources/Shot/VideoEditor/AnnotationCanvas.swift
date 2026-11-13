@@ -34,7 +34,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     private var editing: Annotation?
     private var resizeHandle: AnnotationHandle?
     private var resizeStart: Annotation?
-    private var field: NSTextField?
+    private var field: RunsTextField?
     private var fieldIsNew = false
     /// The text or note the field is editing. The model holds it so the palette can recolour and resize it.
     private var fieldAnnotation: Annotation? {
@@ -255,12 +255,17 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 
     /// Opens a text field over a text or note annotation, which is either new or already on the timeline.
     private func beginField(for annotation: Annotation, isNew: Bool) {
-        let field = NSTextField(string: annotation.text ?? "")
+        let field = RunsTextField(annotation: annotation)
         field.isBordered = false
         field.focusRingType = .none
         field.delegate = self
         field.target = self
         field.action = #selector(fieldAction)
+        field.onSelectionChange = { [weak self] in self?.syncField() }
+        field.onSizesChange = { [weak self] in
+            self?.syncField()
+            self?.layoutField()
+        }
         if case .note = annotation.kind {
             field.drawsBackground = false
             field.usesSingleLineMode = false
@@ -279,6 +284,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         fieldIsNew = isNew
         layoutField()
         window?.makeFirstResponder(field)
+        syncField()
         // The preview hides the annotation being edited, since its field is drawn over where it was.
         if !isNew {
             model.previewAnnotation(nil)
@@ -286,34 +292,57 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         }
     }
 
+    /// The text or note being edited, with what's typed so far in its sizes.
+    private var editedField: Annotation? {
+        guard let field, var annotation = fieldAnnotation else {
+            return nil
+        }
+        annotation.setText(field.text, runs: field.sizes)
+        return annotation
+    }
+
+    /// Tells the model the text being typed, in its sizes, and what's selected in it, for the style bar.
+    private func syncField() {
+        if let edited = editedField, edited != fieldAnnotation {
+            fieldAnnotation = edited
+        }
+        if model.editingSelection != field?.selection {
+            model.editingSelection = field?.selection
+        }
+    }
+
     func layoutField() {
         guard let field, let annotation = fieldAnnotation else {
             return
         }
-        var edited = annotation
-        edited.setText(field.stringValue)
-        field.alignment = annotation.alignment.textAlignment
+        // The palette may have resized what's typed; the field takes its sizes first.
+        if let runs = annotation.textRuns {
+            field.setSizes(runs)
+        }
+        guard let edited = editedField else {
+            return
+        }
         switch annotation.kind {
         case .note:
             guard let layout = edited.noteLayout else {
                 return
             }
-            let size = layout.fontSize * fit
-            if field.font?.pointSize != size {
-                field.font = .systemFont(ofSize: size)
-            }
             let ink = layout.ink
-            field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
+            field.restyle(
+                emptySize: layout.fontSize, color: NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1),
+                alignment: annotation.alignment.textAlignment, viewScale: fit
+            )
             // A borderless field insets its text 2 pt on each side.
             field.frame = viewRect(layout.alignedTextRect).insetBy(dx: -2, dy: 0)
         case let .text(_, origin, fontSize):
             let size = fontSize * fit
-            if field.font?.pointSize != size {
-                field.font = .boldSystemFont(ofSize: size)
-            }
-            field.textColor = NSColor(srgbRed: annotation.color.r, green: annotation.color.g, blue: annotation.color.b, alpha: 1)
+            field.restyle(
+                emptySize: fontSize, color: NSColor(srgbRed: annotation.color.r, green: annotation.color.g, blue: annotation.color.b, alpha: 1),
+                alignment: annotation.alignment.textAlignment, viewScale: fit
+            )
+            field.validateEditing()
             field.sizeToFit()
-            let fitted = field.stringValue.isEmpty ? 0 : field.frame.width
+            let fitted = field.text.isEmpty ? 0 : field.frame.width
             let topLeft = viewRect(CGRect(origin: origin, size: .zero)).origin
             field.frame = CGRect(x: topLeft.x, y: topLeft.y, width: max(200, field.frame.width + 20), height: size * 1.4)
             // The field is wider than its text, so it reaches back past the anchor by the spare width the alignment puts before the text.
@@ -328,6 +357,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     }
 
     func controlTextDidChange(_ notification: Notification) {
+        syncField()
         layoutField()
     }
 
@@ -341,13 +371,12 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     }
 
     private func commitField() {
-        guard let field, var annotation = fieldAnnotation else {
+        guard let field, let annotation = editedField else {
             return
         }
-        let string = field.stringValue
+        let string = field.text
         let isNew = fieldIsNew
         closeField()
-        annotation.setText(string)
         if isNew {
             if string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 model.previewAnnotation(nil)
@@ -368,6 +397,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         let old = field
         field = nil
         fieldAnnotation = nil
+        model.editingSelection = nil
         old?.delegate = nil
         old?.removeFromSuperview()
         window?.makeFirstResponder(self)

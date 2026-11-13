@@ -22,7 +22,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     /// selected, so which one is only known when the button comes up.
     private var pressedText: Annotation?
     private var pressedTextWasSelected = false
-    private var textField: NSTextField?
+    private var textField: RunsTextField?
     /// The text or note whose text field is open, hidden while it's edited; it may not be in the document yet.
     /// The model holds it so the toolbar can recolour and resize it.
     private var editingText: Annotation? {
@@ -1148,15 +1148,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         // A double-click that wobbles mustn't drag the text being edited.
         dragStart = nil
-        let field = NSTextField(string: existing?.text ?? "")
+        guard let editingText else {
+            return
+        }
+        let field = makeField(for: editingText)
         field.isBordered = false
         field.drawsBackground = true
         field.backgroundColor = NSColor.white.withAlphaComponent(0.6)
-        field.focusRingType = .none
-        field.delegate = self
-        field.target = self
-        field.action = #selector(textFieldAction)
-        if editingText?.textWidth != nil {
+        if editingText.textWidth != nil {
             field.usesSingleLineMode = false
             field.cell?.wraps = true
             field.cell?.isScrollable = false
@@ -1168,6 +1167,43 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         // Sized before it takes focus, as a note's field is, so the field editor starts at the field's real size.
         layoutTextField()
         window?.makeFirstResponder(field)
+        syncEditing()
+    }
+
+    /// A text field over `annotation`, which commits on Return and keeps the model told what's typed and selected.
+    private func makeField(for annotation: Annotation) -> RunsTextField {
+        let field = RunsTextField(annotation: annotation)
+        field.focusRingType = .none
+        field.delegate = self
+        field.target = self
+        field.action = #selector(textFieldAction)
+        field.onSelectionChange = { [weak self] in self?.syncEditing() }
+        field.onSizesChange = { [weak self] in
+            self?.syncEditing()
+            self?.layoutTextField()
+        }
+        return field
+    }
+
+    /// Tells the model the text being typed, in its sizes, and what's selected in it, for the style bar.
+    private func syncEditing() {
+        if let edited = editedText, edited != editingText {
+            editingText = edited
+        }
+        if model.editingSelection != textField?.selection {
+            model.editingSelection = textField?.selection
+        }
+    }
+
+    /// Gives the text field the sizes the style bar set on the text being typed, then shows it at the zoom.
+    private func restyleField(_ field: RunsTextField, as text: Annotation, color: RGBA) {
+        if let runs = text.textRuns {
+            field.setSizes(runs)
+        }
+        field.restyle(
+            emptySize: text.textSize ?? 12, color: NSColor(srgbRed: color.r, green: color.g, blue: color.b, alpha: 1),
+            alignment: text.alignment.textAlignment, viewScale: viewScale
+        )
     }
 
     /// Keeps the open text field over its text, at its size and colour, as the zoom, scroll, window or toolbar changes.
@@ -1180,23 +1216,20 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         let size = fontSize * viewScale
-        if field.font?.pointSize != size {
-            field.font = .boldSystemFont(ofSize: size)
-        }
-        field.textColor = NSColor(srgbRed: text.color.r, green: text.color.g, blue: text.color.b, alpha: 1)
-        field.alignment = text.alignment.textAlignment
+        restyleField(field, as: text, color: text.color)
         if let width = text.textWidth {
-            let layout = TextLayout(string: field.stringValue, fontSize: fontSize, color: text.color, width: width)
+            let layout = TextLayout(string: field.text, fontSize: fontSize, color: text.color, width: width, runs: field.sizes)
             // A borderless field insets its text 2 pt on each side.
             field.frame = viewRect(CGRect(origin: textOrigin, size: layout.size)).insetBy(dx: -2, dy: 0)
             return
         }
         let origin = viewRect(CGRect(origin: textOrigin, size: .zero)).origin
         let fitted: CGFloat
-        if field.stringValue.isEmpty {
+        if field.text.isEmpty {
             field.frame = CGRect(x: origin.x, y: origin.y, width: 240, height: size * 1.4)
             fitted = 0
         } else {
+            field.validateEditing()
             field.sizeToFit()
             fitted = field.frame.width
             field.frame = CGRect(x: origin.x, y: origin.y, width: max(240, fitted + 20), height: field.frame.height)
@@ -1223,6 +1256,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     func controlTextDidChange(_ notification: Notification) {
+        syncEditing()
         layoutTextField()
         updateStyleBar()
     }
@@ -1250,7 +1284,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard var text = editingText, let field = textField else {
             return nil
         }
-        text.setText(field.stringValue)
+        text.setText(field.text, runs: field.sizes)
         return text
     }
 
@@ -1270,43 +1304,37 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Opens a text field over `note`, which is either new or already in the document.
     private func beginNote(_ note: Annotation) {
-        guard case let .note(string, _) = note.kind, note.noteLayout != nil else {
+        guard case .note = note.kind, note.noteLayout != nil else {
             return
         }
         dragStart = nil
         editingText = note
-        let field = NSTextField(string: string)
+        let field = makeField(for: note)
         field.isBordered = false
         field.drawsBackground = false
-        field.focusRingType = .none
         field.usesSingleLineMode = false
         field.cell?.wraps = true
         field.cell?.isScrollable = false
         field.maximumNumberOfLines = 0
         field.lineBreakMode = .byWordWrapping
         field.placeholderString = String(localized: "Note")
-        field.delegate = self
-        field.target = self
-        field.action = #selector(textFieldAction)
         addSubview(field)
         textField = field
         layoutNoteField()
         window?.makeFirstResponder(field)
+        syncEditing()
     }
 
     /// Fits the text field to the note's text area as the text grows.
     private func layoutNoteField() {
-        guard let field = textField, let layout = editedText?.noteLayout else {
+        guard let field = textField, let note = editingText, let ink = note.noteLayout?.ink else {
             return
         }
         // The zoom changes with the window size and the zoom commands, so the font follows it here.
-        let size = layout.fontSize * viewScale
-        if field.font?.pointSize != size {
-            field.font = .systemFont(ofSize: size)
+        restyleField(field, as: note, color: ink)
+        guard let layout = editedText?.noteLayout else {
+            return
         }
-        let ink = layout.ink
-        field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
-        field.alignment = (editedText?.alignment ?? .left).textAlignment
         // A borderless field insets its text 2 pt on each side.
         field.frame = viewRect(layout.alignedTextRect).insetBy(dx: -2, dy: 0)
         needsDisplay = true
@@ -1317,6 +1345,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         let editedID = editingText?.id
         textField = nil
         editingText = nil
+        model.editingSelection = nil
         needsDisplay = true
         field?.delegate = nil
         field?.removeFromSuperview()

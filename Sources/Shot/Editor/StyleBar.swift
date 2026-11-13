@@ -41,7 +41,8 @@ protocol StyleBarEditing: AnyObject, Observable {
     var paletteFill: RGBA? { get set }
     var paletteNoteTextColor: RGBA? { get }
     func setNoteTextColor(_ color: RGBA?)
-    var paletteShownSize: CGFloat { get }
+    /// `nil` when the text it sizes is in more than one size.
+    var paletteShownSize: CGFloat? { get }
     var paletteSizeChoices: [CGFloat] { get }
     func setShownSize(_ size: CGFloat)
     func canStepLineWidth(by steps: Int) -> Bool
@@ -336,9 +337,10 @@ extension StyleBarColorRow {
 /// A size box like a word processor's font size: smaller and larger arrows before the size, which can be typed
 /// over, and a menu of the scale's sizes. Return or clicking away sets a typed size, kept within the scale and rounded to
 /// a half point, and Esc puts the shown one back. The up and down arrow keys step it, and left and right too from an
-/// arrow button. VoiceOver reads the field as an adjustable control, with the menu beside it.
+/// arrow button. VoiceOver reads the field as an adjustable control, with the menu beside it. Text in more than one size
+/// shows a dash, with the field left empty to type in.
 private struct StyleBarSizeBox: View {
-    let value: CGFloat
+    let value: CGFloat?
     let choices: [CGFloat]
     let label: String
     let down: String
@@ -350,8 +352,8 @@ private struct StyleBarSizeBox: View {
     @FocusState private var editing: Bool
     @Environment(\.colorSchemeContrast) private var contrast
 
-    private static func format(_ size: CGFloat) -> String {
-        Double(size).formatted(.number.precision(.fractionLength(0...1)).grouping(.never))
+    private static func format(_ size: CGFloat?) -> String {
+        size.map { Double($0).formatted(.number.precision(.fractionLength(0...1)).grouping(.never)) } ?? ""
     }
 
     var body: some View {
@@ -394,6 +396,14 @@ private struct StyleBarSizeBox: View {
         .multilineTextAlignment(.center)
         .foregroundStyle(StyleBarGlyph.color(selected: true))
         .frame(width: 30, height: 20)
+        .background {
+            if value == nil, typed.isEmpty {
+                Text(verbatim: "–")
+                    .font(.scaled(11, weight: .semibold))
+                    .foregroundStyle(StyleBarGlyph.color(selected: false))
+                    .accessibilityHidden(true)
+            }
+        }
         .focused($editing)
         .onSubmit {
             commit()
@@ -405,7 +415,7 @@ private struct StyleBarSizeBox: View {
         }
         .themeTip(label)
         .accessibilityLabel(Text(label))
-        .accessibilityValue(Text(verbatim: Self.format(value)))
+        .accessibilityValue(value == nil ? Text("Mixed sizes") : Text(verbatim: Self.format(value)))
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment: stepAndShow(1)
@@ -419,7 +429,7 @@ private struct StyleBarSizeBox: View {
         ThemeDropdown(
             title: "Sizes",
             entries: choices.map { size in
-                .item(Self.format(size), selected: abs(size - value) < 0.01) { set(size) }
+                .item(Self.format(size), selected: value.map { abs(size - $0) < 0.01 } ?? false) { set(size) }
             }
         ) {
             Image(systemName: "chevron.up.chevron.down")

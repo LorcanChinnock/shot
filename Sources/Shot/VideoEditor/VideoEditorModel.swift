@@ -86,6 +86,8 @@ final class VideoEditorModel {
     var annotationStyle = Preferences().editorStyle
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be on the timeline yet.
     var editingText: Annotation?
+    /// What's selected in the text being typed, in UTF-16 code units, for the size box; the canvas keeps it current.
+    var editingSelection: Range<Int>?
     /// Set by the annotation canvas: turns the text or note still being typed into an annotation, as the image editor's does.
     @ObservationIgnored var commitPendingText: (() -> Void)?
     /// Called when the panel opens, closes or changes height, so the window can grow or shrink to fit.
@@ -1100,7 +1102,7 @@ extension VideoEditorModel {
     private var palette: ShotCore.AnnotationPalette {
         ShotCore.AnnotationPalette(
             style: annotationStyle, editingText: editingText, editingTextIsNew: editingText.map { project.annotationClip($0.id) == nil } ?? false,
-            selection: selectedAnnotation?.annotation, tool: annotationTool, scale: styleScale,
+            editingSelection: editingSelection, selection: selectedAnnotation?.annotation, tool: annotationTool, scale: styleScale,
             imageLength: max(project.canvasSize.width, project.canvasSize.height),
             sharedSpotlight: project.annotationClips.map(\.annotation).spotlightStyle
         )
@@ -1255,7 +1257,7 @@ extension VideoEditorModel {
     }
 
     /// The size the style bar's size box shows: the line width in points, or the text size.
-    var paletteShownSize: CGFloat { palette.shownSize }
+    var paletteShownSize: CGFloat? { palette.shownSize }
 
     /// The sizes the size box's menu lists.
     var paletteSizeChoices: [CGFloat] { palette.sizeChoices }

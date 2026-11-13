@@ -161,6 +161,8 @@ final class EditorModel {
     private(set) var showsStylePanel = false
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be in the document yet.
     var editingText: Annotation?
+    /// What's selected in the text being typed, in UTF-16 code units, for the size box; the canvas keeps it current.
+    var editingSelection: Range<Int>?
     var isDirty: Bool { history.isDirty }
     @ObservationIgnored private var isSaving = false
     /// Set by the canvas: turns the text or note still being typed into an annotation.
@@ -361,7 +363,7 @@ final class EditorModel {
         ShotCore.AnnotationPalette(
             style: nextStyle, editingText: editingText,
             editingTextIsNew: editingText.map { text in !document.annotations.contains { $0.id == text.id } } ?? false,
-            selection: selection, tool: tool, scale: scale, imageLength: CGFloat(max(document.base.width, document.base.height)),
+            editingSelection: editingSelection, selection: selection, tool: tool, scale: scale, imageLength: CGFloat(max(document.base.width, document.base.height)),
             sharedSpotlight: document.spotlightStyle
         )
     }
@@ -812,7 +814,7 @@ final class EditorModel {
     }
 
     /// The size the style bar's size box shows: the line width in points, or the text size.
-    var paletteShownSize: CGFloat { palette.shownSize }
+    var paletteShownSize: CGFloat? { palette.shownSize }
 
     /// The sizes the size box's menu lists.
     var paletteSizeChoices: [CGFloat] { palette.sizeChoices }

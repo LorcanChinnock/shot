@@ -69,6 +69,8 @@ The colours are on the left, a row for each, named on its left. Every row has th
 
 The width and text size work like the font size box in a word processor. The down and up arrows step through the usual sizes, and the arrows between them list those sizes to pick from. You can also click the number, type any size and press <kbd>Return</kbd>. It's kept within the smallest and largest sizes, and <kbd>Esc</kbd> puts the old one back. Changing the size or colour while you type updates the text as you go.
 
+Text and sticky notes can mix sizes, for a large heading over smaller words. While you type, select some of the text and change the size, and only what you selected changes. New typing takes the size of the text just before it. With nothing selected, or all of it, the size changes the whole text, and the larger and smaller parts keep their difference. The box shows the size of what you selected, or of the text at the cursor, and a dash when your selection mixes sizes. Each change of size is one step for <kbd>⌘Z</kbd>.
+
 The bar doesn't show while you crop, since the crop has a bar of its own, or when the select tool has nothing, an image or several marks selected. Use **Style** in the title bar for those.
 
 Each palette remembers the last colour you picked. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The editor remembers the options you last used.

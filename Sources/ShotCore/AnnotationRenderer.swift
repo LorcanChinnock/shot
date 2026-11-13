@@ -306,11 +306,12 @@ public enum AnnotationRenderer {
         case let .image(image, rect):
             drawImage(image.cropped(annotation.imageCrop), in: pixelAligned(rect), cornerRadius: annotation.imageCornerRadius, style: annotation.style, shadowBackground: look.background, ctx: ctx)
         case let .text(string, origin, fontSize):
-            let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color, width: annotation.textWidth)
+            let runs = annotation.mixedRuns
+            let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color, width: annotation.textWidth, runs: runs)
             func drawLines(_ lines: [CoreTextLine], outlined: Bool = false) {
-                for (index, line) in lines.enumerated() {
+                for (line, baseline) in zip(lines, layout.baselines) {
                     let x = origin.x + annotation.alignment.offset(of: line, in: layout.size.width)
-                    ctx.draw(line, at: CGPoint(x: x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight), outlined: outlined)
+                    ctx.draw(line, at: CGPoint(x: x, y: origin.y + baseline), outlined: outlined)
                 }
             }
             if let box = annotation.textBox, let fill = annotation.fill {
@@ -325,7 +326,7 @@ public enum AnnotationRenderer {
                 ctx.saveGState()
                 ctx.setLineWidth(outline.width * 2)
                 ctx.setStrokeColor(outline.paint.cgColor)
-                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint, width: annotation.textWidth).lines, outlined: true)
+                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint, width: annotation.textWidth, runs: runs).lines, outlined: true)
                 ctx.restoreGState()
             }
             drawLines(layout.lines)
@@ -355,9 +356,9 @@ public enum AnnotationRenderer {
             ctx.fill(CGPath(roundedRect: layout.frame, cornerWidth: layout.cornerRadius, cornerHeight: layout.cornerRadius, transform: nil))
             ctx.restoreGState()
             let text = layout.alignedTextRect
-            for (index, line) in layout.lines.enumerated() {
+            for (line, baseline) in zip(layout.lines, layout.baselines) {
                 let x = text.minX + annotation.alignment.offset(of: line, in: text.width)
-                ctx.draw(line, at: CGPoint(x: x, y: text.minY + layout.ascent + CGFloat(index) * layout.lineHeight), outlined: false)
+                ctx.draw(line, at: CGPoint(x: x, y: text.minY + baseline), outlined: false)
             }
         }
     }

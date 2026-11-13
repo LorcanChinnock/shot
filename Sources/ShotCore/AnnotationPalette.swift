@@ -13,6 +13,8 @@ public struct AnnotationPalette: Equatable, Sendable {
     public var editingText: Annotation?
     /// True when `editingText` isn't in the document yet, so its style also becomes the next one's.
     public var editingTextIsNew: Bool
+    /// What's selected in the text being typed, in UTF-16 code units; empty for a caret, `nil` when no text is typed.
+    public var editingSelection: Range<Int>?
     /// The selected annotation.
     public var selection: Annotation?
     /// `nil` when no tool is picked, as in the video editor with nothing drawing.
@@ -25,12 +27,13 @@ public struct AnnotationPalette: Equatable, Sendable {
     public var sharedSpotlight: SpotlightStyle?
 
     public init(
-        style: EditorStyle, editingText: Annotation?, editingTextIsNew: Bool, selection: Annotation?, tool: EditorTool?,
-        scale: CGFloat, imageLength: CGFloat, sharedSpotlight: SpotlightStyle?
+        style: EditorStyle, editingText: Annotation?, editingTextIsNew: Bool, editingSelection: Range<Int>? = nil, selection: Annotation?,
+        tool: EditorTool?, scale: CGFloat, imageLength: CGFloat, sharedSpotlight: SpotlightStyle?
     ) {
         self.style = style
         self.editingText = editingText
         self.editingTextIsNew = editingTextIsNew
+        self.editingSelection = editingSelection
         self.selection = selection
         self.tool = tool
         self.scale = scale
@@ -228,8 +231,13 @@ public struct AnnotationPalette: Equatable, Sendable {
     }
 
     /// The size the style bar's size box shows: the line width in points, or for text, a note or a counter, its text size.
-    public var shownSize: CGFloat {
-        EditorStyle.shownSize(width: shownWidth, sizing: sizeKind)
+    /// For text in more than one size it's the size of the part selected, or at the caret, and `nil` when what it
+    /// stands for is in more than one size.
+    public var shownSize: CGFloat? {
+        guard let target = sizeTarget else {
+            return EditorStyle.shownSize(width: shownWidth, sizing: sizeKind)
+        }
+        return target.shown.map { points(pixels: $0) }
     }
 
     /// The sizes the size box's menu lists: one for each step of `EditorStyle.widths`.
@@ -240,22 +248,113 @@ public struct AnnotationPalette: Equatable, Sendable {
     /// Whether the width can step thicker (`by` above 0) or thinner: not past the thickest or thinnest step. Only the sign
     /// of `steps` counts, as each click steps once.
     public func canStepLineWidth(by steps: Int) -> Bool {
-        EditorStyle.step(from: shownWidth, up: steps > 0) != nil
+        guard let target = sizeTarget else {
+            return EditorStyle.step(from: shownWidth, up: steps > 0) != nil
+        }
+        return target.reference.flatMap { nextSize(after: points(pixels: $0), up: steps > 0) } != nil
     }
 
     /// Steps the width shown one step thicker (`by` above 0) or thinner along `EditorStyle.widths`. From between two steps
-    /// it goes to the next one along.
+    /// it goes to the next one along. Text in more than one size steps the size shown, or the largest when none is,
+    /// and scales the rest of what's selected with it.
     public mutating func stepLineWidth(by steps: Int) {
-        guard let next = EditorStyle.step(from: shownWidth, up: steps > 0) else {
+        guard let target = sizeTarget else {
+            if let next = EditorStyle.step(from: shownWidth, up: steps > 0) {
+                setLineWidth(points: next)
+            }
             return
         }
-        setLineWidth(points: next)
+        guard let reference = target.reference, let next = nextSize(after: points(pixels: reference), up: steps > 0) else {
+            return
+        }
+        setTextRuns(target.runs.mapping(in: target.range) { fitted($0 * pixels(points: next) / reference) })
     }
 
     /// Sets the size the size box shows, as typed or picked from its menu: kept within the scale's smallest and largest,
-    /// and rounded to a half point.
+    /// and rounded to a half point. Part of a text selected all takes the size; the whole of a text in more than one size
+    /// scales so the size shown, or the largest when none is, becomes it.
     public mutating func setShownSize(_ size: CGFloat) {
-        setLineWidth(points: EditorStyle.width(forShownSize: size, sizing: sizeKind))
+        guard let target = sizeTarget else {
+            setLineWidth(points: EditorStyle.width(forShownSize: size, sizing: sizeKind))
+            return
+        }
+        let wanted = fitted(pixels(points: size))
+        if target.isPart {
+            setTextRuns(target.runs.setting(wanted, in: target.range))
+        } else if let reference = target.reference {
+            setTextRuns(target.runs.mapping(in: target.range) { fitted($0 * wanted / reference) })
+        }
+    }
+
+    /// What the size box sizes when it isn't the plain width: part of the text being typed, or text in more than one
+    /// size, with the size it shows and the size it steps from, in pixels.
+    private struct SizeTarget {
+        var runs: TextRuns
+        var range: Range<Int>
+        var isPart: Bool
+        /// The one size of what's selected, or at the caret; `nil` when it's more than one.
+        var shown: CGFloat?
+        /// The size stepping and typing start from: `shown`, else the largest selected.
+        var reference: CGFloat? { shown ?? runs.largest(in: range) }
+    }
+
+    /// `nil` when the size box sizes the whole text, or anything else, by its width as it always has: text all in one size
+    /// with none of it, or all of it, selected.
+    private var sizeTarget: SizeTarget? {
+        guard let shown, let runs = shown.textRuns else {
+            return nil
+        }
+        let whole = 0..<runs.length
+        let selected = editingText == nil ? nil : editingSelection.map { $0.clamped(to: whole) }
+        if let selected, !selected.isEmpty, selected != whole {
+            return SizeTarget(runs: runs, range: selected, isPart: true, shown: runs.uniformSize(in: selected))
+        }
+        guard !runs.isUniform else {
+            return nil
+        }
+        let caret = selected.flatMap { $0.isEmpty ? runs.caretSize(at: $0.lowerBound) : nil }
+        return SizeTarget(runs: runs, range: whole, isPart: false, shown: caret)
+    }
+
+    /// The size the size box shows for text `pixels` tall, to a hundredth of a point.
+    private func points(pixels: CGFloat) -> CGFloat {
+        let points = sizeKind == .note ? (pixels - 8) / scale + 8 : pixels / scale
+        return (points * 100).rounded() / 100
+    }
+
+    /// The text size in pixels that the size box shows as `size`.
+    private func pixels(points size: CGFloat) -> CGFloat {
+        sizeKind == .note ? (size - 8) * scale + 8 : size * scale
+    }
+
+    /// `pixels` kept within the sizes the menu lists and rounded so it shows as a whole or half point.
+    private func fitted(_ pixels: CGFloat) -> CGFloat {
+        let choices = sizeChoices
+        let size = min(max(points(pixels: pixels), choices[0]), choices[choices.count - 1])
+        return self.pixels(points: (size * 2).rounded() / 2)
+    }
+
+    /// The size the menu lists after `size`, larger with `up`; `nil` past the largest or smallest.
+    private func nextSize(after size: CGFloat, up: Bool) -> CGFloat? {
+        let tolerance: CGFloat = 0.01
+        return up ? sizeChoices.first { $0 > size + tolerance } : sizeChoices.last { $0 < size - tolerance }
+    }
+
+    /// Gives the text being typed, else the selection, these sizes. The next text's size stays as it was.
+    private mutating func setTextRuns(_ runs: TextRuns) {
+        if editingText != nil {
+            editingText?.setTextRuns(runs)
+        } else {
+            selection?.setTextRuns(runs)
+        }
+    }
+
+    /// Puts the text being typed, or the selection, all in the size of its largest part.
+    private mutating func makeTextOneSize() {
+        guard let target = editingText ?? selection, let runs = target.textRuns, let largest = runs.largest, !runs.isUniform else {
+            return
+        }
+        setTextRuns(TextRuns(length: runs.length, size: largest))
     }
 
     /// Sets the width, in points, of the text being typed or the selection, and of the next annotation as the toolbar does.
@@ -467,6 +566,7 @@ public struct AnnotationPalette: Equatable, Sendable {
             if colorRows.contains(.noteText) {
                 setNoteTextColor(defaults.noteTextColor)
             }
+            makeTextOneSize()
             setLineWidth(points: defaults.width)
             if showsFill {
                 setFill(defaults.fill)
