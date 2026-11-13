@@ -5979,54 +5979,54 @@
         }
       }
     },
-    "B: browser page only" : {
+    "B: leave out browser toolbars" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "B: nur Browserseite"
+            "value" : "B: Browser-Symbolleisten weglassen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "B: solo la página del navegador"
+            "value" : "B: omitir las barras del navegador"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "B : page du navigateur seule"
+            "value" : "B : masquer les barres du navigateur"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "B: solo la pagina del browser"
+            "value" : "B: escludi le barre del browser"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "B：ブラウザのページのみ"
+            "value" : "B：ブラウザのツールバーを除く"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "B: 브라우저 페이지만"
+            "value" : "B: 브라우저 도구 막대 제외"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "B: só a página do navegador"
+            "value" : "B: omitir as barras do navegador"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "B：仅浏览器页面"
+            "value" : "B：不含浏览器工具栏"
           }
         }
       }
@@ -6807,58 +6807,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "亮度"
-          }
-        }
-      }
-    },
-    "Browser" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Browser"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Navegador"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Navigateur"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Browser"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ブラウザ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "브라우저"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Navegador"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "浏览器"
           }
         }
       }
@@ -25248,6 +25196,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "了解更多…"
+          }
+        }
+      }
+    },
+    "Leave out browser toolbars" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Browser-Symbolleisten weglassen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Omitir las barras del navegador"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer les barres du navigateur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escludi le barre del browser"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラウザのツールバーを除く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "브라우저 도구 막대 제외"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Omitir as barras do navegador"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不含浏览器工具栏"
           }
         }
       }

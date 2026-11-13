@@ -1,7 +1,7 @@
 import CoreGraphics
 
 /// Where the browser permission card sits on the selection overlay (Capture › Permission card…): next to the capture bar
-/// whose Browser mode was picked, so it shows up where the person is looking.
+/// whose Leave out browser toolbars toggle was turned on, so it shows up where the person is looking.
 public enum PermissionCardPlacement {
     /// The origin of a card of `size`, all in AppKit space. It is centred on `bar` and `gap` above it, or below it when
     /// there's no room above, as when the bar sits at the top of the screen. Without a bar, as after B once the bar has
