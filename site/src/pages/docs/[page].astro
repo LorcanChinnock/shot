@@ -175,7 +175,9 @@ const edit = `${repo}/edit/main/site/src/guide/${page.file}`;
 
   @media (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
-      .prose .guide-body > :is(figure, ol, .callout, .table, .code) { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% cover 20%; }
+      /* The timeline in its own rule, so the minifier can't fold it into the shorthand (see .reveal in global.css). */
+      .prose .guide-body > :is(figure, ol, .callout, .table, .code) { animation: rise linear both; }
+      .prose.prose .guide-body > :is(figure, ol, .callout, .table, .code) { animation-timeline: view(); animation-range: entry 0% cover 20%; }
     }
   }
   @media (prefers-reduced-motion: reduce) {
