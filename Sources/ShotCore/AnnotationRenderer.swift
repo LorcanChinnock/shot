@@ -221,6 +221,18 @@ public enum AnnotationRenderer {
         drawPlain(annotation, base: base, over: below, look: look, in: ctx)
     }
 
+    /// Strokes an arrow's shaft or a line solid, dashed or dotted, with the round caps already set.
+    private static func stroke(_ path: CGPath, dash: LineDash, width: CGFloat, in ctx: CGContext) {
+        guard let lengths = dash.pattern(width: width, length: LineDash.length(of: path)) else {
+            ctx.stroke(path)
+            return
+        }
+        ctx.saveGState()
+        ctx.setLineDash(phase: 0, lengths: lengths)
+        ctx.stroke(path)
+        ctx.restoreGState()
+    }
+
     /// Draws `annotation` without its shadow.
     private static func drawPlain(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: CGContext) {
         let color = annotation.color
@@ -253,7 +265,7 @@ public enum AnnotationRenderer {
             } else {
                 shaft.addLine(to: base)
             }
-            ctx.stroke(shaft)
+            stroke(shaft, dash: annotation.lineDash, width: width, in: ctx)
             let tip = CGMutablePath()
             tip.move(to: to)
             tip.addLine(to: CGPoint(x: base.x - uy * half, y: base.y + ux * half))
@@ -268,7 +280,7 @@ public enum AnnotationRenderer {
             } else {
                 line.addLine(to: to)
             }
-            ctx.stroke(line)
+            stroke(line, dash: annotation.lineDash, width: width, in: ctx)
         case let .shape(shape, rect):
             let path = shape.path(in: rect, cornerRadius: annotation.cornerRadius)
             if let fill = annotation.fill {
@@ -306,11 +318,12 @@ public enum AnnotationRenderer {
         case let .image(image, rect):
             drawImage(image.cropped(annotation.imageCrop), in: pixelAligned(rect), cornerRadius: annotation.imageCornerRadius, style: annotation.style, shadowBackground: look.background, ctx: ctx)
         case let .text(string, origin, fontSize):
-            let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color, width: annotation.textWidth)
+            let runs = annotation.mixedRuns
+            let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color, width: annotation.textWidth, runs: runs)
             func drawLines(_ lines: [CoreTextLine], outlined: Bool = false) {
-                for (index, line) in lines.enumerated() {
+                for (line, baseline) in zip(lines, layout.baselines) {
                     let x = origin.x + annotation.alignment.offset(of: line, in: layout.size.width)
-                    ctx.draw(line, at: CGPoint(x: x, y: origin.y + layout.ascent + CGFloat(index) * layout.lineHeight), outlined: outlined)
+                    ctx.draw(line, at: CGPoint(x: x, y: origin.y + baseline), outlined: outlined)
                 }
             }
             if let box = annotation.textBox, let fill = annotation.fill {
@@ -325,7 +338,7 @@ public enum AnnotationRenderer {
                 ctx.saveGState()
                 ctx.setLineWidth(outline.width * 2)
                 ctx.setStrokeColor(outline.paint.cgColor)
-                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint, width: annotation.textWidth).lines, outlined: true)
+                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint, width: annotation.textWidth, runs: runs).lines, outlined: true)
                 ctx.restoreGState()
             }
             drawLines(layout.lines)
@@ -355,9 +368,9 @@ public enum AnnotationRenderer {
             ctx.fill(CGPath(roundedRect: layout.frame, cornerWidth: layout.cornerRadius, cornerHeight: layout.cornerRadius, transform: nil))
             ctx.restoreGState()
             let text = layout.alignedTextRect
-            for (index, line) in layout.lines.enumerated() {
+            for (line, baseline) in zip(layout.lines, layout.baselines) {
                 let x = text.minX + annotation.alignment.offset(of: line, in: text.width)
-                ctx.draw(line, at: CGPoint(x: x, y: text.minY + layout.ascent + CGFloat(index) * layout.lineHeight), outlined: false)
+                ctx.draw(line, at: CGPoint(x: x, y: text.minY + baseline), outlined: false)
             }
         }
     }

@@ -27,11 +27,6 @@ struct StyleBarOverlay: View {
         }
         // Arriving is the panel moment; following the mark as it moves stays instant, as every edit is.
         .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: content)
-        .onChange(of: content) {
-            if content == nil {
-                model.showsMoreStyle = false
-            }
-        }
     }
 }
 
@@ -39,14 +34,21 @@ struct StyleBarOverlay: View {
 /// ShotCore's `AnnotationPalette`.
 @MainActor
 protocol StyleBarEditing: AnyObject, Observable {
-    /// Whether More style, the bar's popover of the options that don't fit in it, is open.
-    var showsMoreStyle: Bool { get set }
-    var showsStyle: Bool { get }
     var sizesText: Bool { get }
-    var showsFill: Bool { get }
+    var paletteColorRows: [StyleBarColorRow] { get }
+    var paletteControlRows: [[StyleBarControl]] { get }
     var paletteColor: RGBA { get set }
     var paletteFill: RGBA? { get set }
-    var lineWidthIndex: Int { get set }
+    var paletteNoteTextColor: RGBA? { get }
+    func setNoteTextColor(_ color: RGBA?)
+    /// `nil` when the text it sizes is in more than one size.
+    var paletteShownSize: CGFloat? { get }
+    var paletteSizeChoices: [CGFloat] { get }
+    func setShownSize(_ size: CGFloat)
+    func canStepLineWidth(by steps: Int) -> Bool
+    func stepLineWidth(by steps: Int)
+    var paletteLineDash: LineDash? { get }
+    func setLineDash(_ dash: LineDash)
     var paletteShape: BoxShape? { get }
     func setShape(_ shape: BoxShape)
     var palettePenLine: PenLine? { get }
@@ -65,6 +67,8 @@ protocol StyleBarEditing: AnyObject, Observable {
     func setVerticalAlignment(_ alignment: VerticalTextAlign)
     func lastCustom(forFill: Bool) -> RGBA?
     func pickCustom(_ color: RGBA, forFill: Bool)
+    func lastCustomNoteText() -> RGBA?
+    func pickCustomNoteText(_ color: RGBA)
     func beginColorPick()
     var canResetToolOptions: Bool { get }
     func resetToolOptions()
@@ -73,11 +77,12 @@ protocol StyleBarEditing: AnyObject, Observable {
 
 extension EditorModel: StyleBarEditing {}
 
-/// The bar: the seven colours and a custom one, a divider and the three widths, rectangle or ellipse for a shape, smooth
-/// or as drawn for the pen, then
-/// More style for a mark's other options.
-/// Right-clicking it offers Reset Style, as the Edit menu does. A redaction and a
-/// spotlight show their own main choices in its place. The video editor shows it too, at the top of the video's well.
+/// The bar. On the left, a row of colours for each colour the mark has, named on its left: Line, and Fill under it for a
+/// shape; Text, and Background under it for a note. Each row has the seven colours and a custom one, then transparent
+/// where the mark stays visible without that colour. On the
+/// right, the width or text size, a line's dashes, the pen's smoothing, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
+/// options in one row in place of the colours. Right-clicking it offers Reset Style, as the Edit menu does. The video
+/// editor shows it too, at the top of the video's well.
 struct StyleBar<Model: StyleBarEditing>: View {
     @Bindable var model: Model
     let content: StyleBarContent
@@ -86,60 +91,11 @@ struct StyleBar<Model: StyleBarEditing>: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
-        HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 8) {
             switch content {
-            case .colorAndWidth:
-                swatches
-                StyleBarDivider()
-                widths
-                if let shape = model.paletteShape {
-                    StyleBarDivider()
-                    GlyphSegmented(
-                        selection: shape, options: BoxShape.styleBarShapes.map { ($0, $0.title) }, choose: model.setShape
-                    ) { shape, selected in
-                        StyleBarGlyph(symbol: shape.symbol, selected: selected)
-                    }
-                    .accessibilityLabel(Text("Shape"))
-                }
-                if let penLine = model.palettePenLine {
-                    StyleBarDivider()
-                    GlyphSegmented(
-                        selection: penLine, options: PenLine.allCases.map { ($0, $0.title) }, choose: model.setPenLine
-                    ) { penLine, selected in
-                        StyleBarGlyph(symbol: penLine.symbol, selected: selected)
-                    }
-                    .accessibilityLabel(Text("Smooth or as drawn"))
-                }
-            case .redaction:
-                if let redaction = model.paletteRedaction {
-                    GlyphSegmented(
-                        selection: redaction, options: Redaction.allCases.map { ($0, $0.title) }, choose: model.setRedaction
-                    ) { redaction, selected in
-                        StyleBarGlyph(symbol: redaction == .blur ? "drop.halffull" : "square.grid.3x3", selected: selected)
-                    }
-                    .accessibilityLabel(Text("Blur or pixelate"))
-                }
-            case .spotlight:
-                if let spotlight = model.paletteSpotlight {
-                    GlyphSegmented(
-                        selection: spotlight.shape, options: BoxShape.spotlightShapes.map { ($0, $0.title) }, choose: model.setSpotlightShape
-                    ) { shape, selected in
-                        StyleBarGlyph(symbol: shape.symbol, selected: selected)
-                    }
-                    .accessibilityLabel(Text("Spotlight shape"))
-                    StyleBarDivider()
-                    GlyphSegmented(
-                        selection: spotlight.effect,
-                        options: SpotlightStyle.Effect.allCases.map { ($0, String(localized: "\($0.title) outside")) },
-                        choose: { model.setSpotlightLook(effect: $0, strength: spotlight.strength) }
-                    ) { effect, selected in
-                        StyleBarGlyph(symbol: effect == .darken ? "moon.fill" : "drop.halffull", selected: selected)
-                    }
-                    .accessibilityLabel(Text("Outside the spotlight"))
-                }
-            }
-            if content.offersMoreStyle(hasShape: model.paletteShape != nil, hasFill: model.showsFill, hasAlignment: model.paletteAlignment != nil) {
-                MoreStyleButton(model: model)
+            case .colorAndWidth: colorAndWidth
+            case .redaction: redaction
+            case .spotlight: spotlight
             }
         }
         .padding(.vertical, 5)
@@ -161,44 +117,410 @@ struct StyleBar<Model: StyleBarEditing>: View {
 
     private var solid: Bool { contrast == .increased || reduceTransparency }
 
-    private var swatches: some View {
-        HStack(spacing: 8) {
+    /// The colour rows in a grid, so their swatches line up after names of any length, then a divider as tall as the bar
+    /// and the other controls.
+    @ViewBuilder private var colorAndWidth: some View {
+        let rows = model.paletteColorRows
+        let controls = model.paletteControlRows
+        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: rowSpacing) {
+            ForEach(rows.indices, id: \.self) { index in
+                GridRow {
+                    rowLabel(rows[index])
+                    colorRow(rows[index])
+                }
+            }
+        }
+        StyleBarDivider(rows: max(rows.count, controls.count))
+        VStack(alignment: .leading, spacing: rowSpacing) {
+            ForEach(controls.indices, id: \.self) { index in
+                HStack(spacing: 8) {
+                    ForEach(controls[index].indices, id: \.self) { position in
+                        control(controls[index][position])
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func control(_ control: StyleBarControl) -> some View {
+        switch control {
+        case .width:
+            stepper
+        case .lineDash:
+            if let dash = model.paletteLineDash {
+                GlyphSegmented(selection: dash, options: LineDash.allCases.map { ($0, $0.title) }, choose: model.setLineDash) { dash, selected in
+                    LineDashGlyph(dash: dash, color: StyleBarGlyph.color(selected: selected))
+                }
+                .accessibilityLabel(Text("Line style"))
+            }
+        case .penLine:
+            if let penLine = model.palettePenLine {
+                GlyphSegmented(selection: penLine, options: PenLine.allCases.map { ($0, $0.title) }, choose: model.setPenLine) { penLine, selected in
+                    StyleBarGlyph(symbol: penLine.symbol, selected: selected)
+                }
+                .accessibilityLabel(Text("Smooth or as drawn"))
+            }
+        case .outline:
+            if let shape = model.paletteShape {
+                GlyphSegmented(selection: shape, options: BoxShape.allCases.map { ($0, $0.title) }, choose: model.setShape) { shape, selected in
+                    StyleBarGlyph(symbol: shape.symbol, selected: selected)
+                }
+                .accessibilityLabel(Text("Shape"))
+            }
+        case .alignment:
+            if let alignment = model.paletteAlignment {
+                GlyphSegmented(selection: alignment, options: TextAlign.allCases.map { ($0, $0.title) }, choose: model.setAlignment) { alignment, selected in
+                    StyleBarGlyph(symbol: alignment.symbol, selected: selected)
+                }
+                .accessibilityLabel(Text("Alignment"))
+            }
+        case .verticalAlignment:
+            if let vertical = model.paletteVerticalAlignment {
+                GlyphSegmented(
+                    selection: vertical, options: VerticalTextAlign.allCases.map { ($0, $0.title) }, choose: model.setVerticalAlignment
+                ) { vertical, selected in
+                    StyleBarGlyph(symbol: vertical.symbol, selected: selected)
+                }
+                .accessibilityLabel(Text("Vertical alignment"))
+            }
+        }
+    }
+
+    @ViewBuilder private var redaction: some View {
+        if let redaction = model.paletteRedaction {
+            GlyphSegmented(
+                selection: redaction, options: Redaction.allCases.map { ($0, $0.title) }, choose: model.setRedaction
+            ) { redaction, selected in
+                StyleBarGlyph(symbol: redaction == .blur ? "drop.halffull" : "square.grid.3x3", selected: selected)
+            }
+            .accessibilityLabel(Text("Blur or pixelate"))
+            StyleBarDivider()
+            slider(
+                "Amount", value: model.paletteRedactionAmount, range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound,
+                default: Redaction.defaultAmount
+            ) {
+                model.setRedactionAmount($0)
+            }
+            .themeTip("Amount")
+        }
+    }
+
+    @ViewBuilder private var spotlight: some View {
+        if let spotlight = model.paletteSpotlight {
+            GlyphSegmented(
+                selection: spotlight.shape, options: BoxShape.spotlightShapes.map { ($0, $0.title) }, choose: model.setSpotlightShape
+            ) { shape, selected in
+                StyleBarGlyph(symbol: shape.symbol, selected: selected)
+            }
+            .accessibilityLabel(Text("Spotlight shape"))
+            StyleBarDivider()
+            GlyphSegmented(
+                selection: spotlight.effect,
+                options: SpotlightStyle.Effect.allCases.map { ($0, String(localized: "\($0.title) outside")) },
+                choose: { model.setSpotlightLook(effect: $0, strength: spotlight.strength) }
+            ) { effect, selected in
+                StyleBarGlyph(symbol: effect == .darken ? "moon.fill" : "drop.halffull", selected: selected)
+            }
+            .accessibilityLabel(Text("Outside the spotlight"))
+            StyleBarDivider()
+            slider("Strength", value: spotlight.strength, range: SpotlightStyle.strengths, default: SpotlightStyle.defaultStrength) {
+                model.setSpotlightLook(effect: spotlight.effect, strength: $0)
+            }
+            .themeTip("Strength", detail: "Applies to every spotlight in the image.")
+            StyleBarDivider()
+            slider("Soft edge", value: spotlight.softEdge, range: 0...1, default: SpotlightStyle.defaultSoftEdge, set: model.setSpotlightSoftEdge)
+                .themeTip("Soft edge", detail: "Fades the spotlight into the dim.")
+        }
+    }
+
+    private var labelColor: ContrastAware { ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink) }
+
+    /// One colour row: the seven colours, the custom one, then transparent if the row offers it. A note's text has none
+    /// chosen while it's black or white to suit the paper, and clicking its chosen colour again goes back to that.
+    @ViewBuilder private func colorRow(_ row: StyleBarColorRow) -> some View {
+        switch row {
+        case .line, .outline, .text, .paper, .counter:
+            swatches(
+                selected: model.paletteColor, transparent: row.offersTransparent, clear: .clear, help: String(localized: "Custom colour"),
+                lastCustom: model.lastCustom(forFill: false)
+            ) {
+                model.paletteColor = $0 ?? .clear
+            } pickCustom: {
+                model.pickCustom($0, forFill: false)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text(row.title))
+        case .fill:
+            swatches(selected: model.paletteFill, transparent: true, clear: nil, help: String(localized: "Custom fill colour"), lastCustom: model.lastCustom(forFill: true)) {
+                model.paletteFill = $0
+            } pickCustom: {
+                model.pickCustom($0, forFill: true)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text(row.title))
+        case .noteText:
+            let chosen = model.paletteNoteTextColor
+            swatches(selected: chosen, help: String(localized: "Custom colour"), lastCustom: model.lastCustomNoteText(), matchesNone: false) { color in
+                model.setNoteTextColor(color == chosen ? nil : color)
+            } pickCustom: {
+                model.pickCustomNoteText($0)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text(row.title))
+            .accessibilityValue(chosen == nil ? Text("Automatic") : Text(verbatim: ""))
+        }
+    }
+
+    /// The row's name. A note's text explains, on pointing at it, what no colour chosen means.
+    @ViewBuilder private func rowLabel(_ row: StyleBarColorRow) -> some View {
+        let label = Text(row.title).font(Theme.small).foregroundStyle(labelColor).accessibilityHidden(true)
+        if row == .noteText {
+            label.themeTip(
+                row.title,
+                detail: String(localized: "With no colour chosen, the text is black or white, whichever reads better on the paper. Click the chosen colour again to go back to that.")
+            )
+        } else {
+            label
+        }
+    }
+
+    /// The preset colours, the rainbow swatch for a custom one, then if `transparent`, a transparent swatch that sets
+    /// `clear`. `selected` is the colour shown; with `matchesNone` off, a `nil` one shows no swatch chosen rather than
+    /// transparent.
+    private func swatches(
+        selected: RGBA?, transparent: Bool = false, clear: RGBA? = nil, help: String, lastCustom: RGBA?, matchesNone: Bool = true,
+        choose: @escaping (RGBA?) -> Void, pickCustom: @escaping (RGBA) -> Void
+    ) -> some View {
+        let isClear = selected.map { $0.a == 0 } ?? matchesNone
+        return HStack(spacing: 8) {
             ForEach(StyleBarSwatches.colors.indices, id: \.self) { index in
                 let color = StyleBarSwatches.colors[index]
-                StyleBarSwatch(color: color, name: PresetColorNames.all[index], selected: model.paletteColor == color) {
-                    model.paletteColor = color
+                StyleBarSwatch(color: color, name: PresetColorNames.all[index], selected: selected == color) {
+                    choose(color)
                 }
             }
             CustomColorButton(
-                custom: StyleBarSwatches.contains(model.paletteColor) ? nil : model.paletteColor,
-                lastCustom: model.lastCustom(forFill: false),
-                fallback: model.paletteColor,
-                help: String(localized: "Custom colour"),
-                pick: { model.pickCustom($0, forFill: false) },
+                custom: selected.flatMap { StyleBarSwatches.contains($0) || $0.a == 0 ? nil : $0 },
+                lastCustom: lastCustom,
+                fallback: selected.flatMap { $0.a == 0 ? nil : $0 } ?? RGBA(1, 1, 1),
+                help: help,
+                pick: pickCustom,
                 beginPicking: model.beginColorPick,
                 editorShown: { _ in },
                 compact: true
             )
+            if transparent {
+                StyleBarSwatch(color: nil, name: String(localized: "Transparent"), selected: isClear) { choose(clear) }
+            }
+        }
+        .frame(height: 24)
+    }
+
+    /// Thinner and thicker, or smaller and larger for text, around a box to type or pick the width or text size.
+    private var stepper: some View {
+        let sizesText = model.sizesText
+        return StyleBarSizeBox(
+            value: model.paletteShownSize,
+            choices: model.paletteSizeChoices,
+            label: sizesText ? String(localized: "Text size") : String(localized: "Line width"),
+            down: sizesText ? String(localized: "Smaller") : String(localized: "Thinner"),
+            up: sizesText ? String(localized: "Larger") : String(localized: "Thicker"),
+            canStep: model.canStepLineWidth(by:),
+            step: model.stepLineWidth(by:),
+            set: model.setShownSize
+        )
+    }
+
+    /// A short slider with its name ahead of it, as tall as the bar's segmented controls.
+    private func slider(
+        _ title: LocalizedStringResource, value: Double, range: ClosedRange<Double>, default defaultValue: Double, set: @escaping (Double) -> Void
+    ) -> some View {
+        HStack(spacing: 6) {
+            Text(title).font(Theme.small).foregroundStyle(labelColor).accessibilityHidden(true)
+            ThemeSlider(value: Binding(get: { value }, set: set), range: range, width: 72, defaultValue: defaultValue, onEditingChanged: model.setDraggingStyle)
+                .frame(height: 24)
+                .accessibilityLabel(Text(title))
+        }
+    }
+}
+
+extension LineDash {
+    /// The segment's tooltip and VoiceOver name.
+    var title: String {
+        switch self {
+        case .solid: String(localized: "Solid")
+        case .dashed: String(localized: "Dashed")
+        case .dotted: String(localized: "Dotted")
+        }
+    }
+}
+
+/// A short level line drawn solid, dashed or dotted with the renderer's own pattern, as a segment's picture.
+private struct LineDashGlyph: View {
+    let dash: LineDash
+    let color: ContrastAware
+
+    private static let width: CGFloat = 2
+    private static let length: CGFloat = 20
+
+    var body: some View {
+        let lengths = dash.pattern(width: Self.width, length: Self.length) ?? []
+        Path { path in
+            path.move(to: CGPoint(x: Self.width / 2, y: Self.width / 2))
+            path.addLine(to: CGPoint(x: Self.width / 2 + Self.length, y: Self.width / 2))
+        }
+        .stroke(color, style: StrokeStyle(lineWidth: Self.width, lineCap: .round, dash: lengths))
+        .frame(width: Self.length + Self.width, height: Self.width)
+    }
+}
+
+/// The space between the bar's rows.
+private let rowSpacing: CGFloat = 8
+
+extension StyleBarColorRow {
+    /// The name on the row's left.
+    var title: String {
+        switch self {
+        case .line, .outline: String(localized: "Line")
+        case .fill, .counter: String(localized: "Fill")
+        case .text, .noteText: String(localized: "Text")
+        case .paper: String(localized: "Background")
+        }
+    }
+}
+
+/// A size box like a word processor's font size: smaller and larger arrows before the size, which can be typed
+/// over, and a menu of the scale's sizes. Return or clicking away sets a typed size, kept within the scale and rounded to
+/// a half point, and Esc puts the shown one back. The up and down arrow keys step it, and left and right too from an
+/// arrow button. VoiceOver reads the field as an adjustable control, with the menu beside it. Text in more than one size
+/// shows a dash, with the field left empty to type in.
+private struct StyleBarSizeBox: View {
+    let value: CGFloat?
+    let choices: [CGFloat]
+    let label: String
+    let down: String
+    let up: String
+    let canStep: (Int) -> Bool
+    let step: (Int) -> Void
+    let set: (CGFloat) -> Void
+    @State private var typed = ""
+    @FocusState private var editing: Bool
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    private static func format(_ size: CGFloat?) -> String {
+        size.map { Double($0).formatted(.number.precision(.fractionLength(0...1)).grouping(.never)) } ?? ""
+    }
+
+    var body: some View {
+        let track = RoundedRectangle(cornerRadius: 8, style: .circular)
+        HStack(spacing: 0) {
+            arrow("chevron.down", help: down, by: -1)
+            arrow("chevron.up", help: up, by: 1)
+            field
+            menu
+        }
+        .padding(2)
+        .background(Theme.fieldFill, in: track)
+        .overlay {
+            if contrast == .increased {
+                Color.clear.inkBorder(track, width: 1, color: Theme.ink.opacity(0.6))
+            }
+        }
+        .onKeyPress(keys: [.upArrow, .downArrow], phases: [.down, .repeat]) { press in
+            stepAndShow(press.key == .upArrow ? 1 : -1)
+            return .handled
+        }
+        .onAppear { typed = Self.format(value) }
+        .onChange(of: value) { typed = Self.format(value) }
+        .onChange(of: editing) {
+            if !editing {
+                commit()
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(label))
+    }
+
+    private var field: some View {
+        // The prompt stands in for the label, which would otherwise show squashed in the empty field of mixed sizes.
+        TextField(text: $typed, prompt: Text(verbatim: "–")) {
+            Text(label)
+        }
+        .textFieldStyle(.plain)
+        .font(.scaled(11, weight: .semibold))
+        .monospacedDigit()
+        .multilineTextAlignment(.center)
+        .foregroundStyle(StyleBarGlyph.color(selected: true))
+        .frame(width: 30, height: 20)
+        .focused($editing)
+        .onSubmit {
+            commit()
+            editing = false
+        }
+        .onExitCommand {
+            typed = Self.format(value)
+            editing = false
+        }
+        .themeTip(label)
+        .accessibilityLabel(Text(label))
+        .accessibilityValue(value == nil ? Text("Mixed sizes") : Text(verbatim: Self.format(value)))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: stepAndShow(1)
+            case .decrement: stepAndShow(-1)
+            @unknown default: break
+            }
         }
     }
 
-    private var widths: some View {
-        let sizesText = model.sizesText
-        let names = sizesText ? WidthOptions.sizeNames : [String(localized: "Thin"), String(localized: "Medium"), String(localized: "Thick")]
-        return GlyphSegmented(
-            selection: model.lineWidthIndex,
-            options: EditorStyle.widths.indices.map { ($0, names[$0]) },
-            choose: { model.lineWidthIndex = $0 }
-        ) { index, selected in
-            let style = StyleBarGlyph.color(selected: selected)
-            if sizesText {
-                Text(verbatim: "A").font(.scaled(9 + CGFloat(index) * 2.5, weight: .bold)).foregroundStyle(style)
-            } else {
-                // 2, 4 and 6 pt lines, as on the board, for widths of 2, 4 and 8.
-                Capsule().fill(style).frame(width: 12, height: CGFloat(index + 1) * 2)
+    private var menu: some View {
+        ThemeDropdown(
+            title: "Sizes",
+            entries: choices.map { size in
+                .item(Self.format(size), selected: value.map { abs(size - $0) < 0.01 } ?? false) { set(size) }
             }
+        ) {
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.scaled(8, weight: .bold))
+                .foregroundStyle(StyleBarGlyph.color(selected: false))
+                .frame(width: 12, height: 20)
+                .contentShape(Rectangle())
         }
-        .accessibilityLabel(sizesText ? Text("Text size") : Text("Line width"))
+        .buttonStyle(.halo(radius: 6))
+        .themeTip("Sizes")
+    }
+
+    private func arrow(_ symbol: String, help: String, by steps: Int) -> some View {
+        Button {
+            stepAndShow(steps)
+        } label: {
+            StyleBarGlyph(symbol: symbol, selected: false)
+                .frame(width: 18, height: 20)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.halo(radius: 6))
+        .disabled(!canStep(steps))
+        .opacity(canStep(steps) ? 1 : 0.35)
+        .onKeyPress(keys: [.leftArrow, .rightArrow], phases: [.down, .repeat]) { press in
+            stepAndShow(press.key == .rightArrow ? 1 : -1)
+            return .handled
+        }
+        .accessibilityHidden(true)
+        .themeTip(help)
+    }
+
+    /// Steps from the size shown, dropping anything half typed.
+    private func stepAndShow(_ steps: Int) {
+        typed = Self.format(value)
+        step(steps)
+    }
+
+    /// Sets the typed size if it's a number and differs from the one shown, then shows what was set.
+    private func commit() {
+        if let size = SizeInput.parse(typed), size != value, Self.format(size) != Self.format(value) {
+            set(size)
+        }
+        typed = Self.format(value)
     }
 }
 
@@ -236,19 +558,23 @@ private struct StyleBarGlyph: View {
     }
 }
 
+/// A 1 pt rule between parts of the bar, 3 pt short of the top and bottom of the `rows` it stands beside.
 private struct StyleBarDivider: View {
+    var rows = 1
+
     var body: some View {
         Rectangle()
             .fill(Theme.controlEdge)
-            .frame(width: 1, height: 18)
+            .frame(width: 1, height: CGFloat(rows) * 24 + CGFloat(rows - 1) * rowSpacing - 6)
+            .padding(.vertical, 3)
             .accessibilityHidden(true)
     }
 }
 
 /// A 20 pt colour. The chosen one has an ink ring outside a gap of the bar's colour; the others a faint edge, so white
-/// marks and black on dark still show their shape.
+/// marks and black on dark still show their shape. A `nil` colour is transparent, drawn as a grey and white check.
 private struct StyleBarSwatch: View {
-    let color: RGBA
+    let color: RGBA?
     let name: String
     let selected: Bool
     let action: () -> Void
@@ -258,25 +584,30 @@ private struct StyleBarSwatch: View {
 
     var body: some View {
         Button(action: action) {
-            Circle()
-                .fill(color.swiftUIColor)
-                .overlay {
-                    if !selected {
-                        Circle().strokeBorder(Self.edge, lineWidth: 1)
-                    }
+            Group {
+                if let color {
+                    Circle().fill(color.swiftUIColor)
+                } else {
+                    Checkerboard().clipShape(Circle())
                 }
-                .frame(width: 20, height: 20)
-                .background {
-                    if selected {
-                        Color.clear.inkBorder(Circle(), width: 1.5, color: Theme.ink).padding(-3.5)
-                    }
+            }
+            .overlay {
+                if !selected {
+                    Circle().strokeBorder(Self.edge, lineWidth: 1)
                 }
-                .background {
-                    if focused {
-                        Color.clear.inkBorder(Circle(), width: 4, color: Theme.focusRing).padding(selected ? -7.5 : -4)
-                    }
+            }
+            .frame(width: 20, height: 20)
+            .background {
+                if selected {
+                    Color.clear.inkBorder(Circle(), width: 1.5, color: Theme.ink).padding(-3.5)
                 }
-                .contentShape(Circle())
+            }
+            .background {
+                if focused {
+                    Color.clear.inkBorder(Circle(), width: 4, color: Theme.focusRing).padding(selected ? -7.5 : -4)
+                }
+            }
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .focusEffectDisabled()
@@ -284,121 +615,5 @@ private struct StyleBarSwatch: View {
         .themeTip(name)
         .accessibilityLabel(Text(name))
         .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
-/// "…": opens the options that don't fit in the bar, with Reset.
-private struct MoreStyleButton<Model: StyleBarEditing>: View {
-    @Bindable var model: Model
-
-    var body: some View {
-        Button {
-            model.showsMoreStyle.toggle()
-        } label: {
-            Image(systemName: "ellipsis").font(Theme.toolIcon)
-        }
-        .buttonStyle(ThemeButtonStyle(.toolbar, isOn: model.showsMoreStyle))
-        .accessibilityLabel(Text("More style"))
-        .themeTip("More style", detail: "Shows the rest of this mark's options, such as its fill, and Reset.")
-        .popover(isPresented: $model.showsMoreStyle, arrowEdge: .bottom) {
-            MoreStyle(model: model)
-        }
-    }
-}
-
-/// What the bar has no room for: for a shape, its other outlines and its fill; for a mark, its fill and the text's alignment; for a redaction its amount; for a spotlight its strength and soft edge. Reset is last.
-private struct MoreStyle<Model: StyleBarEditing>: View {
-    @Bindable var model: Model
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if model.showsStyle {
-                if let shape = model.paletteShape {
-                    row("More shapes") {
-                        HStack(spacing: 4) {
-                            ForEach(BoxShape.moreStyleShapes, id: \.self) { option in
-                                Tile(selected: shape == option, help: option.title) {
-                                    model.setShape(option)
-                                } label: {
-                                    Image(systemName: option.symbol).font(Theme.toolIcon)
-                                }
-                            }
-                        }
-                    }
-                }
-                if model.showsFill {
-                    row("Fill") {
-                        HStack(spacing: 0) {
-                            ColorSwatches(
-                                selected: model.paletteFill,
-                                lastCustom: model.lastCustom(forFill: true),
-                                allowsNone: true,
-                                customHelp: "Custom fill colour",
-                                choose: { model.paletteFill = $0 },
-                                pickCustom: { model.pickCustom($0, forFill: true) },
-                                beginPicking: model.beginColorPick
-                            )
-                        }
-                    }
-                }
-                if let alignment = model.paletteAlignment {
-                    row("Alignment") {
-                        HStack(spacing: 4) {
-                            ForEach(TextAlign.allCases, id: \.self) { option in
-                                Tile(selected: alignment == option, help: option.title) {
-                                    model.setAlignment(option)
-                                } label: {
-                                    Image(systemName: option.symbol).font(Theme.toolIcon)
-                                }
-                            }
-                            if let vertical = model.paletteVerticalAlignment {
-                                StyleBarDivider().padding(.horizontal, 2)
-                                ForEach(VerticalTextAlign.allCases, id: \.self) { option in
-                                    Tile(selected: vertical == option, help: option.title) {
-                                        model.setVerticalAlignment(option)
-                                    } label: {
-                                        Image(systemName: option.symbol).font(Theme.toolIcon)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if model.paletteRedaction != nil {
-                row("Amount") {
-                    slider(value: model.paletteRedactionAmount, range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound) { model.setRedactionAmount($0) }
-                        .accessibilityLabel(Text("Amount"))
-                }
-            } else if let spotlight = model.paletteSpotlight {
-                row("Strength") {
-                    slider(value: spotlight.strength, range: SpotlightStyle.strengths) { model.setSpotlightLook(effect: spotlight.effect, strength: $0) }
-                        .accessibilityLabel(Text("Strength"))
-                        .themeTip("Strength", detail: "Applies to every spotlight in the image.")
-                }
-                row("Soft edge") {
-                    slider(value: spotlight.softEdge, range: 0...1, set: model.setSpotlightSoftEdge)
-                        .accessibilityLabel(Text("Soft edge"))
-                        .themeTip("Soft edge", detail: "Fades the spotlight into the dim.")
-                }
-            }
-            Button("Reset", action: model.resetToolOptions)
-                .buttonStyle(ThemeButtonStyle(.plain))
-                .disabled(!model.canResetToolOptions)
-                .themeTip("Reset", detail: "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay.")
-        }
-        .padding(14)
-        .frame(minWidth: 240, alignment: .leading)
-    }
-
-    private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(Theme.small).foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
-            content()
-        }
-    }
-
-    private func slider(value: Double, range: ClosedRange<Double>, set: @escaping (Double) -> Void) -> some View {
-        ThemeSlider(value: Binding(get: { value }, set: set), range: range, width: 200, onEditingChanged: model.setDraggingStyle)
-            .frame(height: 24)
     }
 }

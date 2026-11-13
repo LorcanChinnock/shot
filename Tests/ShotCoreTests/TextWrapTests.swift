@@ -12,21 +12,104 @@ private func wrapped(_ string: String = sentence, width: CGFloat? = 160) -> Anno
     return text
 }
 
-@Test func aClickPlacesTextAsWideAsWhatsTyped() {
-    let placed = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 11), fontSize: 20, threshold: 4)
-    #expect(placed.origin == CGPoint(x: 10, y: 10))
-    #expect(placed.width == nil)
+private func box(_ string: String = sentence, width: CGFloat = 160, height: CGFloat = 200) -> Annotation {
+    var text = wrapped(string, width: width)
+    text.textBoxHeight = height
+    return text
 }
 
-@Test func aDragPlacesABoxFromItsLeftEdgeAsWideAsTheDrag() {
-    let placed = TextLayout.placement(from: CGPoint(x: 200, y: 50), to: CGPoint(x: 80, y: 90), fontSize: 20, threshold: 4)
-    #expect(placed.origin == CGPoint(x: 80, y: 50))
-    #expect(placed.width == 120)
+@Test func aClickPlacesTextAsWideAsWhatsTyped() {
+    #expect(TextLayout.box(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 11), fontSize: 20, threshold: 4) == nil)
+}
+
+@Test func aDragPlacesABoxFromCornerToCorner() {
+    let dragged = TextLayout.box(from: CGPoint(x: 200, y: 90), to: CGPoint(x: 80, y: 50), fontSize: 20, threshold: 4)
+    #expect(dragged == CGRect(x: 80, y: 50, width: 120, height: 40))
 }
 
 @Test func aNarrowDragStillGivesRoomForAFewLetters() {
-    let placed = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 80), fontSize: 20, threshold: 4)
-    #expect(placed.width == TextLayout.minWidth(fontSize: 20))
+    let dragged = TextLayout.box(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 80), fontSize: 20, threshold: 4)
+    #expect(dragged == CGRect(x: 10, y: 10, width: TextLayout.minWidth(fontSize: 20), height: 70))
+}
+
+@Test func aTextBoxIsAsTallAsItsDragUntilTheTextNeedsMore() {
+    #expect(TextLayout.boxSize(text: CGSize(width: 100, height: 30), minHeight: 80) == CGSize(width: 100, height: 80))
+    #expect(TextLayout.boxSize(text: CGSize(width: 100, height: 120), minHeight: 80) == CGSize(width: 100, height: 120))
+    #expect(TextLayout.boxSize(text: CGSize(width: 100, height: 30), minHeight: nil) == CGSize(width: 100, height: 30))
+
+    let short = box("Hi", height: 200)
+    #expect(short.bounds == CGRect(x: 40, y: 30, width: 160, height: 200))
+    let long = box(String(repeating: sentence + " ", count: 4), height: 20)
+    #expect(long.bounds.height > 20)
+}
+
+@Test func theWholeTextBoxIsHitNotJustItsText() {
+    let short = box("Hi", height: 200)
+    let emptyCorner = CGPoint(x: short.bounds.maxX - 4, y: short.bounds.maxY - 4)
+    #expect(short.hitTest(emptyCorner, tolerance: 0))
+    #expect(!wrapped("Hi").hitTest(emptyCorner, tolerance: 0))
+}
+
+@Test func aFilledTextBoxFillsTheWholeBox() throws {
+    var short = box("Hi", height: 200)
+    short.fill = RGBA(0, 0, 1)
+    let box = try #require(short.textBox)
+    #expect(box.contains(CGPoint(x: 190, y: 225)))
+}
+
+@Test func aTextBoxsHeightIsSavedAndOlderTextStillOpens() throws {
+    let tall = box()
+    #expect(try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(tall)) == tall)
+    let saved = try JSONEncoder().encode(wrapped())
+    #expect(!String(decoding: saved, as: UTF8.self).contains("boxHeight"))
+    #expect(try JSONDecoder().decode(Annotation.self, from: saved).textBoxHeight == nil)
+    var counter = Annotation(kind: .counter(1, center: .zero), color: black, lineWidth: 4)
+    counter.textBoxHeight = 100
+    #expect(counter.textBoxHeight == nil)
+}
+
+@Test func draggingATextBoxsTopOrBottomChangesTheHeightItKeepsNotTheTextSize() {
+    let tall = box("Hi", height: 200)
+    var taller = tall
+    taller.resize(.bottom, to: CGPoint(x: 0, y: 330), tolerance: 4)
+    #expect(taller.bounds == CGRect(x: 40, y: 30, width: 160, height: 300))
+    #expect(taller.textSize == 20)
+
+    var fromTop = tall
+    fromTop.resize(.top, to: CGPoint(x: 0, y: 130), tolerance: 4)
+    #expect(fromTop.bounds == CGRect(x: 40, y: 130, width: 160, height: 100))
+
+    // Neither side goes past the text, and the box never flips.
+    let line = TextLayout(string: "Hi", fontSize: 20, color: black, width: 160).size.height
+    var squashed = tall
+    squashed.resize(.bottom, to: CGPoint(x: 0, y: 0), tolerance: 4)
+    #expect(squashed.bounds.minY == 30 && squashed.bounds.height == line)
+    var pushedDown = tall
+    pushedDown.resize(.top, to: CGPoint(x: 0, y: 1000), tolerance: 4)
+    #expect(pushedDown.bounds.maxY == 230 && pushedDown.bounds.height == line)
+}
+
+@Test func aTextBoxsCornerChangesItsWidthAndHeight() {
+    var resized = box("Hi", height: 200)
+    resized.resize(.bottomRight, to: CGPoint(x: 400, y: 330), tolerance: 4)
+    #expect(resized.bounds == CGRect(x: 40, y: 30, width: 360, height: 300))
+    #expect(resized.textSize == 20)
+
+    // Shift keeps its proportions, as a shape's corner does.
+    var constrained = box("Hi", width: 160, height: 200)
+    constrained.resize(.bottomRight, to: CGPoint(x: 360, y: 260), tolerance: 4, constrain: true)
+    #expect(constrained.bounds == CGRect(x: 40, y: 30, width: 320, height: 400))
+}
+
+@Test func aTextBoxsSideKeepsTheHeightItWasGiven() {
+    var wider = box("Hi", height: 200)
+    wider.resize(.right, to: CGPoint(x: 400, y: 0), tolerance: 4)
+    #expect(wider.textBoxHeight == 200)
+    #expect(wider.bounds.height == 200)
+}
+
+@Test func scalingATextBoxScalesItsHeight() {
+    #expect(box(height: 200).scaled(by: 2).textBoxHeight == 400)
 }
 
 @Test func textInABoxWrapsToItsWidth() {
@@ -54,10 +137,10 @@ private func wrapped(_ string: String = sentence, width: CGFloat? = 160) -> Anno
     #expect(!boxed.hitTest(CGPoint(x: boxed.bounds.maxX + 20, y: boxed.bounds.minY + 4), tolerance: 0))
 }
 
-@Test func onlyATextBoxHasSideHandles() {
+@Test func onlyATextBoxHasHandlesOnEveryCornerAndSide() {
     #expect(wrapped(width: nil).handles.isEmpty)
     let boxed = wrapped()
-    #expect(boxed.handles.map(\.handle) == [.left, .right])
+    #expect(boxed.handles.map(\.handle) == AnnotationHandle.box)
 }
 
 @Test func draggingATextBoxsSideRewrapsIt() {

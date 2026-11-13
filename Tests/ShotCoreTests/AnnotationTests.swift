@@ -126,6 +126,62 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(EditorTool.allCases.filter(\.editsSelection) == [.select, .text, .note])
 }
 
+@Test func drawingToolsShowTheMarkJustDrawnsHandlesOnlyWhileHovered() {
+    let arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 100, y: 0)))
+    #expect(EditorTool.allCases.filter(\.showsHoverHandles) == [.arrow, .line, .shape, .spotlight, .redact])
+    for tool in [EditorTool.arrow, .line, .shape, .spotlight, .redact] {
+        #expect(!tool.showsHandles(of: arrow, hoveredAt: nil, tolerance: 6))
+        #expect(!tool.showsHandles(of: arrow, hoveredAt: CGPoint(x: 50, y: 40), tolerance: 6))
+        #expect(tool.showsHandles(of: arrow, hoveredAt: CGPoint(x: 50, y: 3), tolerance: 6))
+        // Just off the end, outside the stroke, the end handle's tolerance still counts.
+        #expect(tool.showsHandles(of: arrow, hoveredAt: CGPoint(x: 105, y: 5), tolerance: 6))
+    }
+    for tool in [EditorTool.select, .text, .note] {
+        #expect(tool.showsHandles(of: arrow, hoveredAt: nil, tolerance: 6))
+    }
+    for tool in [EditorTool.hand, .crop, .counter] {
+        #expect(!tool.showsHandles(of: arrow, hoveredAt: CGPoint(x: 50, y: 0), tolerance: 6))
+    }
+}
+
+@Test func penAndHighlightNeverShowOrPressHandlesEvenWhenHovered() {
+    let stroke = annotation(.freehand([.zero, CGPoint(x: 50, y: 50), CGPoint(x: 100, y: 0)]))
+    let marker = annotation(.marker([.zero, CGPoint(x: 100, y: 0)]))
+    for tool in [EditorTool.pen, .highlight] {
+        for mark in [stroke, marker] {
+            let corner = mark.handles[0].point
+            #expect(!tool.showsHandles(of: mark, hoveredAt: corner, tolerance: 6))
+            #expect(tool.pressedHandle(of: mark, at: corner, hoveredAt: corner, tolerance: 6) == nil)
+        }
+    }
+}
+
+@Test func drawingToolsAdjustOnlyAHandleShowingWhenPressed() {
+    let arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 100, y: 0)))
+    let end = CGPoint(x: 100, y: 0)
+    // Pressed on the end without having hovered the arrow: the handle is hidden, so the press draws.
+    #expect(EditorTool.line.pressedHandle(of: arrow, at: end, hoveredAt: nil, tolerance: 6) == nil)
+    #expect(EditorTool.line.pressedHandle(of: arrow, at: end, hoveredAt: CGPoint(x: 100, y: 30), tolerance: 6) == nil)
+    // Hovered over the arrow first: its handles show, so the end resizes and the middle bends it.
+    #expect(EditorTool.line.pressedHandle(of: arrow, at: end, hoveredAt: CGPoint(x: 60, y: 2), tolerance: 6) == .end)
+    #expect(EditorTool.arrow.pressedHandle(of: arrow, at: CGPoint(x: 50, y: 0), hoveredAt: CGPoint(x: 50, y: 0), tolerance: 6) == .mid)
+    // Showing, but pressed away from every handle: it draws.
+    #expect(EditorTool.arrow.pressedHandle(of: arrow, at: CGPoint(x: 25, y: 0), hoveredAt: CGPoint(x: 25, y: 0), tolerance: 6) == nil)
+    var locked = arrow
+    locked.isLocked = true
+    #expect(EditorTool.arrow.pressedHandle(of: locked, at: end, hoveredAt: end, tolerance: 6) == nil)
+    // The select tool resizes from a handle wherever the pointer was.
+    #expect(EditorTool.select.pressedHandle(of: arrow, at: end, hoveredAt: nil, tolerance: 6) == .end)
+}
+
+@Test func hoveringAShapeShowsItsCornerRadiusHandles() {
+    var box = annotation(.shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 200, height: 100)))
+    box.cornerRadius = 10
+    let radius = box.radiusHandles(tolerance: 6)[0]
+    #expect(EditorTool.shape.pressedHandle(of: box, at: radius.point, hoveredAt: CGPoint(x: 100, y: 0), tolerance: 6) == radius.handle)
+    #expect(EditorTool.shape.pressedHandle(of: box, at: radius.point, hoveredAt: nil, tolerance: 6) == nil)
+}
+
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
     #expect(EditorTool.allCases.filter { !$0.takesColorAndWidth } == [.select, .hand, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).takesColorAndWidth)
@@ -280,4 +336,37 @@ func draggingTheMidpointBendsIt(kind: Annotation.Kind) {
     #expect(Annotation.distance(from: CGPoint(x: 5, y: 3), toSegment: a, b) == 3)
     #expect(Annotation.distance(from: CGPoint(x: 13, y: 4), toSegment: a, b) == 5)
     #expect(Annotation.distance(from: CGPoint(x: 3, y: 4), toSegment: a, a) == 5)
+}
+
+@Test func aNoteSavedBeforeItsTextColourFollowsThePaper() throws {
+    let json = #"{"id":"9F0C1E2A-3B4C-4D5E-8F60-718293A4B5C6","kind":{"note":{"_0":"Hi","rect":[[0,0],[200,80]]}},"color":{"r":1,"g":0.8,"b":0,"a":1},"lineWidth":4}"#
+    let decoded = try JSONDecoder().decode(Annotation.self, from: Data(json.utf8))
+    #expect(decoded.noteTextColor == nil)
+    #expect(decoded.noteLayout?.ink == RGBA(1, 0.8, 0).noteFill.contrastingInk)
+    var coloured = decoded
+    coloured.noteTextColor = RGBA.presets[4]
+    #expect(coloured.noteLayout?.ink == RGBA.presets[4])
+    #expect(try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(coloured)) == coloured)
+    // Only a note has a text colour, and a note without one saves no key for it.
+    let encoded = try String(decoding: JSONEncoder().encode(decoded), as: UTF8.self)
+    #expect(!encoded.contains("noteTextColor"))
+    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 10, y: 0)))
+    arrow.noteTextColor = RGBA.presets[4]
+    #expect(arrow.noteTextColor == nil)
+}
+
+@Test func aNewNoteTakesTheChosenTextColour() {
+    var style = AnnotationDraft.Style(
+        color: red, fill: nil, noteColor: RGBA.presets[2], lineWidth: 4, shape: .rectangle, redaction: .blur, redactionAmount: 0.01,
+        spotlight: SpotlightStyle(), alignment: .left, noteAlignment: .center, verticalAlignment: .middle
+    )
+    #expect(AnnotationDraft.note(id: UUID(), from: .zero, to: CGPoint(x: 100, y: 60), style: style).noteTextColor == nil)
+    style.noteTextColor = RGBA.presets[5]
+    #expect(AnnotationDraft.note(id: UUID(), from: .zero, to: CGPoint(x: 100, y: 60), style: style).noteTextColor == RGBA.presets[5])
+}
+
+@Test func aTransparentMarkDrawsNothing() {
+    #expect(RGBA.clear.a == 0)
+    let clearNote = Annotation(kind: .note("Hi", rect: CGRect(x: 0, y: 0, width: 200, height: 80)), color: .clear, lineWidth: 4)
+    #expect(clearNote.noteLayout?.fill.a == 0)
 }

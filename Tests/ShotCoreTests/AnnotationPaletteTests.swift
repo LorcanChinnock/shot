@@ -45,7 +45,7 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     // One picked with the select tool restyles alone.
     var picked = palette(tool: .select, selection: arrow)
     picked.setColor(blue)
-    picked.setLineWidthIndex(0)
+    picked.setLineWidth(points: 2)
     #expect(picked.selection?.color == blue)
     #expect(picked.selection?.lineWidth == 4)
     #expect(picked.style == EditorStyle(tool: .select))
@@ -69,28 +69,47 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     var new = palette(tool: .note, editing: note, isNew: true)
     new.setColor(blue)
     new.setAlignment(.right)
-    new.setLineWidthIndex(2)
+    new.setLineWidth(points: 8)
     #expect(new.style.noteColor == blue)
     #expect(new.style.color == EditorStyle().color)
-    #expect(new.style.alignment == .right)
-    #expect(new.style.widthIndex == 2)
+    // A note's alignment is the next note's, not the next text's.
+    #expect(new.style.noteAlignment == .right)
+    #expect(new.style.alignment == EditorStyle().alignment)
+    #expect(new.style.width == 8)
+}
+
+@Test func newNotesCentreTheirTextAndNewTextStaysLeft() {
+    #expect(palette(tool: .note).alignment == .center)
+    #expect(palette(tool: .note).verticalAlignment == .middle)
+    #expect(palette(tool: .text).alignment == .left)
+    var text = palette(tool: .text)
+    text.setAlignment(.right)
+    #expect(text.style.alignment == .right)
+    #expect(text.style.noteAlignment == .center)
+    var notes = palette(tool: .note)
+    notes.setAlignment(.left)
+    notes.setVerticalAlignment(.top)
+    #expect(notes.canReset)
+    notes.reset()
+    #expect(notes.style.noteAlignment == .center)
+    #expect(notes.style.verticalAlignment == .middle)
 }
 
 @Test func verticalAlignmentShowsForNotesAndSetsTheNoteOrTheNext() {
-    #expect(palette(tool: .note).verticalAlignment == .top)
+    #expect(palette(tool: .note).verticalAlignment == .middle)
     #expect(palette(tool: .text).verticalAlignment == nil)
     #expect(palette(tool: .arrow, selection: note).verticalAlignment == .top)
     #expect(palette(tool: .note, selection: arrow).verticalAlignment == nil)
 
     var typing = palette(tool: .note, editing: note, isNew: true)
-    typing.setVerticalAlignment(.middle)
-    #expect(typing.editingText?.verticalAlignment == .middle)
-    #expect(typing.style.verticalAlignment == .middle)
+    typing.setVerticalAlignment(.bottom)
+    #expect(typing.editingText?.verticalAlignment == .bottom)
+    #expect(typing.style.verticalAlignment == .bottom)
 
     var picked = palette(tool: .select, selection: note)
     picked.setVerticalAlignment(.bottom)
     #expect(picked.selection?.verticalAlignment == .bottom)
-    #expect(picked.style.verticalAlignment == .top)
+    #expect(picked.style.verticalAlignment == .middle)
 }
 
 @Test func eachOptionRowShowsForItsToolOrSelection() {
@@ -104,7 +123,7 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(palette(tool: .shape).redaction == nil)
     #expect(palette(tool: .spotlight).spotlight == SpotlightStyle())
     #expect(palette(tool: .arrow).spotlight == nil)
-    #expect(palette(tool: .note).alignment == .left)
+    #expect(palette(tool: .note).alignment == .center)
     #expect(palette(tool: .arrow).alignment == nil)
     #expect(palette(tool: .arrow, selection: note).alignment == .left)
     #expect(palette(tool: .text).sizesText)
@@ -114,15 +133,168 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(!palette(tool: nil).showsStyle)
 }
 
-@Test func theWidthShownIsTheNearestToTheSelections() {
-    // Widths are 2, 4 and 8 points, at 2 pixels per point.
-    #expect(palette(selection: arrow).lineWidthIndex == 1)
+@Test func theWidthShownIsTheSelectionsInPoints() {
+    // At 2 pixels per point, the arrow's 8 pixels are 4 points.
+    #expect(palette(selection: arrow).shownWidth == 4)
     var odd = arrow
     odd.lineWidth = 13
-    #expect(palette(selection: odd).lineWidthIndex == 2)
-    odd.lineWidth = 1
-    #expect(palette(selection: odd).lineWidthIndex == 0)
-    #expect(palette().lineWidthIndex == EditorStyle().widthIndex)
+    #expect(palette(selection: odd).shownWidth == 6.5)
+    #expect(palette().shownWidth == EditorStyle().width)
+}
+
+@Test func theStepperStepsTheWidthOneStepAtATime() {
+    var drawn = palette(tool: .arrow, selection: arrow)
+    drawn.stepLineWidth(by: 1)
+    #expect(drawn.selection?.lineWidth == 10)
+    #expect(drawn.style.width == 5)
+    drawn.stepLineWidth(by: -1)
+    drawn.stepLineWidth(by: -1)
+    #expect(drawn.selection?.lineWidth == 6)
+    // From between two steps, a step goes to the next one along.
+    var odd = arrow
+    odd.lineWidth = 7
+    var fromOdd = palette(tool: .select, selection: odd)
+    fromOdd.stepLineWidth(by: 1)
+    #expect(fromOdd.selection?.lineWidth == 8)
+    fromOdd.selection = odd
+    fromOdd.stepLineWidth(by: -1)
+    #expect(fromOdd.selection?.lineWidth == 6)
+}
+
+@Test func theStepperStopsAtTheThinnestAndThickest() {
+    var thinnest = palette(tool: .pen)
+    thinnest.style.width = 1
+    #expect(!thinnest.canStepLineWidth(by: -1))
+    #expect(thinnest.canStepLineWidth(by: 1))
+    thinnest.stepLineWidth(by: -1)
+    #expect(thinnest.style.width == 1)
+    var thickest = palette(tool: .pen)
+    thickest.style.width = 16
+    #expect(!thickest.canStepLineWidth(by: 1))
+}
+
+@Test func aTypedSizeIsKeptWithinTheScaleAndRoundedToAHalfPoint() {
+    var text = palette(tool: .text)
+    text.setShownSize(13)
+    #expect(text.shownSize == 13)
+    #expect(abs(text.style.width - 13.0 / 6) < 0.0001)
+    text.setShownSize(200)
+    #expect(text.shownSize == 96)
+    text.setShownSize(2)
+    #expect(text.shownSize == 6)
+    var line = palette(tool: .arrow)
+    line.setShownSize(2.3)
+    #expect(line.style.width == 2.5)
+    line.setShownSize(0.2)
+    #expect(line.style.width == 1)
+    var note = palette(tool: .note)
+    note.setShownSize(17)
+    #expect(note.shownSize == 17)
+}
+
+@Test func theSizeMenuListsEachStepInTheShownUnits() {
+    #expect(palette(tool: .arrow).sizeChoices == EditorStyle.widths)
+    #expect(palette(tool: .text).sizeChoices == [6, 9, 12, 18, 24, 30, 36, 48, 60, 72, 96])
+}
+
+@Test func theStepperShowsTheWidthOrTheTextSize() {
+    #expect(palette(tool: .arrow).shownSize == 4)
+    #expect(palette(tool: .text).shownSize == 24)
+    #expect(palette(tool: .note).shownSize == 20)
+    #expect(palette(tool: .counter).shownSize == 24)
+    #expect(palette(tool: .arrow, selection: note).shownSize == 14)
+}
+
+@Test func eachMarkHasItsOwnColourRows() {
+    #expect(palette(tool: .arrow).colorRows == [.line])
+    #expect(palette(tool: .line).colorRows == [.line])
+    #expect(palette(tool: .pen).colorRows == [.line])
+    #expect(palette(tool: .highlight).colorRows == [.line])
+    #expect(palette(tool: .shape).colorRows == [.outline, .fill])
+    #expect(palette(tool: .text).colorRows == [.text])
+    #expect(palette(tool: .note).colorRows == [.noteText, .paper])
+    #expect(palette(tool: .counter).colorRows == [.counter])
+    #expect(palette(tool: .arrow, selection: box).colorRows == [.outline, .fill])
+    #expect(palette(tool: .arrow, editing: note).colorRows == [.noteText, .paper])
+    #expect(palette(tool: .redact).colorRows.isEmpty)
+    #expect(palette(tool: .spotlight).colorRows.isEmpty)
+}
+
+@Test func onlyRowsWhereTheMarkStaysVisibleOfferTransparent() {
+    func transparent(_ tool: EditorTool) -> [Bool] { palette(tool: tool).colorRows.map(\.offersTransparent) }
+    #expect(transparent(.shape) == [true, true])
+    #expect(transparent(.note) == [false, true])
+    for tool in [EditorTool.arrow, .line, .pen, .highlight, .text, .counter] {
+        #expect(transparent(tool) == [false], "\(tool)")
+    }
+}
+
+@Test func aTransparentColourRememberedFromAnOutlineDoesNotCarryToAToolWithoutTransparent() {
+    var style = EditorStyle(tool: .shape)
+    style.color = .clear
+    style.highlightColor = .clear
+    style.noteColor = .clear
+    func next(_ tool: EditorTool) -> RGBA {
+        AnnotationPalette(style: style, editingText: nil, editingTextIsNew: false, selection: nil, tool: tool, scale: 2, imageLength: 1000, sharedSpotlight: nil).nextColor
+    }
+    #expect(next(.shape) == .clear)
+    #expect(next(.note) == .clear)
+    for tool in [EditorTool.arrow, .line, .pen, .text, .counter] {
+        #expect(next(tool) == EditorStyle().color, "\(tool)")
+    }
+    #expect(next(.highlight) == EditorStyle().highlightColor)
+}
+
+@Test func aMarkAlreadyTransparentKeepsItsColour() {
+    var clearArrow = arrow
+    clearArrow.color = .clear
+    #expect(palette(tool: .arrow, selection: clearArrow).color == .clear)
+}
+
+@Test func theControlsBesideTheColoursStackSoTheBarStaysNarrow() {
+    #expect(palette(tool: .arrow).controlRows == [[.width, .lineDash]])
+    #expect(palette(tool: .line).controlRows == [[.width, .lineDash]])
+    #expect(palette(tool: .pen).controlRows == [[.width, .penLine]])
+    #expect(palette(tool: .counter).controlRows == [[.width]])
+    #expect(palette(tool: .shape).controlRows == [[.width], [.outline]])
+    #expect(palette(tool: .text).controlRows == [[.width, .alignment]])
+    #expect(palette(tool: .note).controlRows == [[.width], [.alignment], [.verticalAlignment]])
+    #expect(palette(tool: .redact).controlRows.isEmpty)
+}
+
+@Test func aShapesOutlineCanBeMadeTransparent() {
+    var drawn = palette(tool: .shape, selection: box)
+    drawn.setColor(.clear)
+    #expect(drawn.selection?.color == .clear)
+    #expect(drawn.style.color == .clear)
+    #expect(drawn.canReset)
+    drawn.reset()
+    #expect(drawn.selection?.color == EditorStyle().color)
+}
+
+@Test func aNotesTextFollowsThePaperUntilAColourIsPicked() {
+    var next = palette(tool: .note)
+    #expect(next.noteTextColor == nil)
+    next.setNoteTextColor(blue)
+    #expect(next.style.noteTextColor == blue)
+    #expect(next.noteTextColor == blue)
+
+    var typed = palette(tool: .note, editing: note, isNew: true)
+    typed.pickCustomNoteText(red)
+    #expect(typed.editingText?.noteTextColor == red)
+    #expect(typed.style.noteTextColor == red)
+    #expect(typed.lastCustom(forFill: false) == nil)
+    #expect(typed.style.customColors[.noteText] == red)
+
+    var selected = palette(tool: .select, selection: note)
+    selected.setNoteTextColor(blue)
+    #expect(selected.selection?.noteTextColor == blue)
+    #expect(selected.style.noteTextColor == nil)
+    #expect(selected.canReset)
+    selected.reset()
+    #expect(selected.selection?.noteTextColor == nil)
+    #expect(palette(tool: .arrow).noteTextColor == nil)
+    #expect(palette(tool: .arrow, selection: arrow).noteTextColor == nil)
 }
 
 @Test func theNextSpotlightTakesTheSharedLook() {
@@ -150,7 +322,7 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
 @Test func resetPutsDrawingOptionsAndTheSelectionBackToTheirDefaults() {
     var drawn = palette(tool: .shape, selection: box)
     drawn.setColor(blue)
-    drawn.setLineWidthIndex(2)
+    drawn.setLineWidth(points: 16)
     drawn.setFill(blue)
     drawn.setShape(.ellipse)
     drawn.style.customColors[.stroke] = blue
@@ -158,11 +330,11 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     drawn.reset()
     let defaults = EditorStyle()
     #expect(drawn.style.color == defaults.color)
-    #expect(drawn.style.widthIndex == defaults.widthIndex)
+    #expect(drawn.style.width == defaults.width)
     #expect(drawn.style.fill == nil)
     #expect(drawn.style.shape == defaults.shape)
     #expect(drawn.selection?.color == defaults.color)
-    #expect(drawn.selection?.lineWidth == EditorStyle.widths[defaults.widthIndex] * 2)
+    #expect(drawn.selection?.lineWidth == defaults.width * 2)
     #expect(drawn.selection?.fill == nil)
     #expect(drawn.shape == .rectangle)
     #expect(drawn.style.customColors == [.stroke: blue])

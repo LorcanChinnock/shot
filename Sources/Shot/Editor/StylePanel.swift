@@ -159,6 +159,7 @@ struct StylePanel: View {
             PanelSliderRow(
                 name: "Padding", value: Double(model.canvasPadding),
                 range: Double(CanvasFrame.paddings.lowerBound)...Double(CanvasFrame.paddings.upperBound),
+                defaultValue: Double(CanvasFrame.none.padding),
                 shown: "\(Int(model.canvasPadding.rounded())) pt", width: Self.inner,
                 set: { model.setCanvasPadding(CGFloat($0)) }, editing: model.setDraggingStyle
             )
@@ -271,7 +272,7 @@ private struct GradientSwatch: View {
 }
 
 /// The see-through background: a grey and white check, 5 pt squares.
-private struct Checkerboard: View {
+struct Checkerboard: View {
     var body: some View {
         Canvas { context, size in
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white))

@@ -10,7 +10,7 @@ group: Edit and share
 
 In the annotation editor, click **Style** in the title bar. The Style panel opens beside the canvas, and clicking **Style** again closes it. It and the Layers panel take turns: opening one closes the other, so the canvas keeps its room.
 
-Nothing is styled until you ask. Each click is one undo step, and so is each slider drag. **Reset** at the top of the panel puts everything it styles back to how a new capture starts, in one undo step, and is greyed out when there's nothing to put back.
+Nothing is styled until you ask. Each click is one undo step, and so is each slider drag. When a slider's default sits partway along it, a small notch marks it, and a drag that comes near it stops there, so it's easy to get back to. **Reset** at the top of the panel puts everything it styles back to how a new capture starts, in one undo step, and is greyed out when there's nothing to put back.
 
 ## Give the screenshot a background
 

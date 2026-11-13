@@ -4,7 +4,7 @@ summary: "Add arrows, text, highlights and blur to a screenshot, then copy or sa
 group: Edit and share
 ---
 
-![The editor's title bar with the arrow tool picked and Copy at the right, and the style bar floating below it with six colours, three line widths and the More style button](../../../docs/media/editor-toolbar.png)
+![The editor's title bar with the arrow tool picked and Copy at the right, and the style bar floating below it with six colours, three line widths](../../../docs/media/editor-toolbar.png)
 
 ## Open the editor
 
@@ -49,7 +49,7 @@ Drag on the screenshot to draw with the tool you picked. While you drag:
 
 Your marks can reach past the edges of the screenshot. The canvas grows to fit them.
 
-With the text tool, click and start typing for a label as wide as its words. To fit text into a column, drag out a box instead: the text wraps to the box's width and the box grows taller as you type. <kbd>Return</kbd> finishes the text, and <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line in a box.
+With the text tool, click and start typing for a label as wide as its words, in the text size the style bar shows. To fit text into a column, drag out a box instead, as you would in a slide app. The box keeps the width and height you drag, and its text uses the same size from the style bar. The text wraps to the box's width and starts at the top, and the box grows taller only when the text no longer fits. An outline shows round the box while you type and while it's selected. <kbd>Return</kbd> starts a new line. A label grows a line at a time, each as wide as its words. To finish, press <kbd>Esc</kbd> or <kbd>⌘Return</kbd>, click the canvas or pick another tool.
 
 The hint at the bottom right of the canvas tells you what the tool does, or what you've selected, with the keys that change it. With an arrow selected it reads "Arrow selected · ⌫ delete · ⇧ snap 45°". It shows for a few seconds each time you pick a tool or select something, then fades so it doesn't cover the screenshot. It and the zoom control also fade while you drag. With VoiceOver on, the hint stays and is read out when it changes.
 
@@ -57,43 +57,46 @@ The hint at the bottom right of the canvas tells you what the tool does, or what
 
 A small style bar floats over the screenshot with the options for the tool you picked. It sits at the top of the screenshot until you draw, then moves next to the mark you selected, above it where there's room, and otherwise below or beside it, so it never covers the mark. It steps out of the way while you drag.
 
-- **Colour and width:** seven colours, white included, a rainbow swatch that picks any colour, and three widths, thin, medium and thick. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
-- **Shape:** a rectangle or an ellipse, after the colours and widths. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
-- **Pen:** **Smooth**, which evens out the wobble in a line when you let go, or **As drawn**, which keeps it exactly as you drew it. Smooth is on at first, and the choice applies to the lines you draw next.
-- **Redact:** blur or pixelate.
-- **Spotlight:** a rectangle or an ellipse, and whether to darken or blur outside it. Every spotlight in the screenshot shares one dim, so the effect applies to all of them.
+The colours are on the left, a row for each, named on its left. Every row has seven colours, white included, and a rainbow swatch that picks any colour. A shape's rows and a note's Background row end with a grey and white check for transparent, which draws nothing there. Other rows leave it out, since a transparent arrow, line or text would vanish. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself.
+
+- **Arrows and lines:** a **Line** row, the width, and whether the line is solid, dashed or dotted. The dashes and dots grow with the width, and an arrow's head stays solid.
+- **Pen:** a **Line** row, the width, and **Smooth** or **As drawn**. Smooth evens out the wobble in a line when you let go, and As drawn keeps it exactly as you drew it. Smooth is on at first, and the choice applies to the lines you draw next.
+- **Highlight:** a **Line** row, and the width.
+- **Shape:** **Line** for the outline, and **Fill** under it for the inside. Transparent leaves a shape unfilled. On the right are the width and the five outlines: a rectangle, ellipse, triangle, diamond or star. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
+- **Text:** a **Text** row, the text size, and left, centre or right alignment.
+- **Sticky note:** **Text**, and **Background** under it for the paper. Until you pick a text colour, the text is black or white, whichever reads better on the paper, and no swatch shows as chosen. Click the chosen colour again to go back to that. On the right are the text size, the alignment, and whether the text sits at the top, middle or bottom, which shows when you drag the note taller than its text. New notes centre their text both ways.
+- **Counter:** a **Fill** row for the circle behind the number, and its size.
+- **Redact:** blur or pixelate, and how strong it is.
+- **Spotlight:** a rectangle or an ellipse, whether to darken or blur outside it, how strongly, and how soft its edge is. Every spotlight in the screenshot shares one dim, so the effect and strength apply to all of them.
+
+The width and text size work like the font size box in a word processor. The down and up arrows step through the usual sizes, and the arrows between them list those sizes to pick from. You can also click the number, type any size and press <kbd>Return</kbd>. It's kept within the smallest and largest sizes, and <kbd>Esc</kbd> puts the old one back. Changing the size or colour while you type updates the text as you go.
+
+Text and sticky notes can mix sizes, for a large heading over smaller words. While you type, select some of the text and change the size, and only what you selected changes. New typing takes the size of the text just before it. With nothing selected, or all of it, the size changes the whole text, and the larger and smaller parts keep their difference. The box shows the size of what you selected, or of the text at the cursor, and a dash when your selection mixes sizes. Each change of size is one step for <kbd>⌘Z</kbd>.
 
 The bar doesn't show while you crop, since the crop has a bar of its own, or when the select tool has nothing, an image or several marks selected. Use **Style** in the title bar for those.
 
-When a tool has more options, **…** at the end of the bar opens **More style**:
-
-- **Shape:** a triangle, diamond or star, and a fill.
-- **Text and sticky notes:** left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
-- **Redact:** how strong the blur or pixelation is.
-- **Spotlight:** a soft edge, and how much to darken or blur outside it, which applies to every spotlight.
-
 Each palette remembers the last colour you picked. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The editor remembers the options you last used.
 
-To go back to the plain look, choose **Edit › Reset Style**, or right-click the style bar and choose **Reset Style**. **Reset** at the bottom of More style does the same. It puts that tool's colour, width and other options back to how Shot starts, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset** also sets the effect and strength of every spotlight in the screenshot, since they share them.
+To go back to the plain look, choose **Edit › Reset Style**, or right-click the style bar and choose **Reset Style**. It puts that tool's colour, width and other options back to how Shot starts, a solid line included, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset Style** also sets the effect and strength of every spotlight in the screenshot, since they share them.
 
-With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into the style bar, and the arrow keys change the width.
+With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into the style bar, and in the width or text size box, the up and down arrow keys change it.
 
 ## Change what you've drawn
 
-What you've just drawn stays selected, so you can fix its colour, width or fill from the style bar beside it without switching tools. The change also applies to what you draw next. It shows no outline or handles, so your next stroke starts a new mark however close to it you press. To move, resize or bend a mark, pick the select tool (<kbd>V</kbd>) and click it.
+What you've just drawn stays selected, so you can fix its colour, width or fill from the style bar beside it without switching tools. The change also applies to what you draw next. Point at an arrow, line, shape, spotlight or redaction you've just drawn and its handles appear, so you can drag one to resize it, bend an arrow or line, or round a shape's corners, still without switching tools. Pen and highlighter strokes show no handles, so you can write close together. They hide when the pointer moves away, and pressing anywhere else starts a new mark, even right next to the last one. To move a mark or change an older one, pick the select tool (<kbd>V</kbd>) and click it.
 
 - **Move** it by dragging, or nudge it with the arrow keys, 1 pixel at a time or 10 with <kbd>Shift</kbd>.
-- **Resize** it with its handles. A text box has a handle on each side, and its text wraps again to the new width. <kbd>Shift</kbd> keeps a box's proportions, or snaps an arrow or line end to 45°. <kbd>⌥</kbd> resizes from the centre. Hold <kbd>Space</kbd> to move the whole shape mid-drag.
+- **Resize** it with its handles. A text box has handles on its corners and sides: they change the box's width and height, and the text wraps again to fit without changing size. <kbd>Shift</kbd> keeps a box's proportions, or snaps an arrow or line end to 45°. <kbd>⌥</kbd> resizes from the centre. Hold <kbd>Space</kbd> to move the whole shape mid-drag.
 - **Bend** an arrow or line by dragging its middle handle.
 - **Round the corners** of a shape with the small round handles inside them, up to a pill on a rectangle.
 - **Edit text** in a text box or sticky note by double-clicking it.
 - **Delete** it with <kbd>Delete</kbd>. <kbd>Esc</kbd> deselects.
 - **Copy, paste and duplicate** it with <kbd>⌘C</kbd>, <kbd>⌘V</kbd> and <kbd>⌘D</kbd>, even into another editor window.
 
-<kbd>⌘Z</kbd> or the Undo button in the title bar undoes, and <kbd>⇧⌘Z</kbd> redoes.
+<kbd>⌘Z</kbd> or the Undo button in the title bar undoes, and <kbd>⇧⌘Z</kbd> redoes, wherever you clicked last. While you're typing in a text box, a note or a field in the style bar, <kbd>⌘Z</kbd> first undoes your typing. Once there's none left, the next <kbd>⌘Z</kbd> finishes the typing and undoes your last change, as the Undo button does.
 
 > [!NOTE]
-> Text you clicked to place and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Return</kbd> or <kbd>Esc</kbd> finishes it, and <kbd>⌘Z</kbd> removes it again. In a note or a text box you dragged out, <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first.
+> Text you clicked to place and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in text or a note, <kbd>Return</kbd> starts a new line, <kbd>Esc</kbd> or <kbd>⌘Return</kbd> finishes it, and then <kbd>⌘Z</kbd> removes it again. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first. While you're typing with either tool, clicking elsewhere on the canvas finishes what you typed and starts the next text or note there, so you can add several labels in a row.
 
 > [!TIP]
 > With VoiceOver, the canvas lists your marks, frontmost first, by their [layer names](#layers), with the full words of a text or note. Press one (VO-Space) to select it.

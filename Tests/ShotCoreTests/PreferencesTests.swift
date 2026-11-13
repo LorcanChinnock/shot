@@ -130,7 +130,8 @@ import Testing
         #expect(style.noteColor == RGBA.presets[2])
         #expect(style.highlightColor == RGBA.presets[2])
         #expect(style.fill == nil)
-        #expect(style.widthIndex == 1)
+        #expect(style.noteTextColor == nil)
+        #expect(style.width == 4)
     }
 
     @Test func editorStyleRemembersToolColoursAndWidth() throws {
@@ -141,13 +142,13 @@ import Testing
         let prefs = Preferences(store: store)
         // The Done-when case: the star shape, blue and the thick width carry over to the next editor.
         let blue = RGBA(0, 0.48, 1)
-        let thick = try #require(EditorStyle.widths.indices.last)
         let custom = RGBA(0.2, 0.4, 0.6, 0.5)
         let style = EditorStyle(
-            tool: .shape, color: blue, noteColor: RGBA.presets[3], highlightColor: RGBA.presets[4], fill: custom, widthIndex: thick,
+            tool: .shape, color: blue, noteColor: RGBA.presets[3], highlightColor: RGBA.presets[4], fill: custom,
+            noteTextColor: RGBA.presets[6], width: 6.5,
             customColors: [.stroke: custom, .note: blue, .highlight: RGBA.presets[1]],
             shape: .star, redaction: .pixelate, redactionAmount: 0.013, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
-            alignment: .center, verticalAlignment: .middle, penLine: .asDrawn
+            alignment: .center, noteAlignment: .right, verticalAlignment: .bottom, penLine: .asDrawn
         )
         Preferences.remember(style, in: store)
         store.set(Data(), forKey: "editorRecentColors")
@@ -168,12 +169,25 @@ import Testing
         #expect(prefs.editorStyle.color == RGBA.presets[2])
         // Every key the change didn't touch is left as it was, here with nothing stored at all.
         store.removeObject(forKey: PreferenceKey.editorTool)
-        store.removeObject(forKey: PreferenceKey.editorWidth)
+        store.removeObject(forKey: PreferenceKey.editorLineWidth)
         Preferences.changeEditorStyle(in: store) { $0.color = RGBA.presets[3] }
         let saved = store.persistentDomain(forName: suite.name) ?? [:]
         #expect(saved[PreferenceKey.editorTool] == nil)
-        #expect(saved[PreferenceKey.editorWidth] == nil)
+        #expect(saved[PreferenceKey.editorLineWidth] == nil)
         #expect(prefs.editorStyle.color == RGBA.presets[3])
+    }
+
+    @Test func theLineDashIsRememberedAndStartsSolid() throws {
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        #expect(prefs.editorStyle.lineDash == .solid)
+        Preferences.changeEditorStyle(in: store) { $0.lineDash = .dotted }
+        #expect(prefs.editorStyle.lineDash == .dotted)
+        store.set("wavy", forKey: PreferenceKey.editorLineDash)
+        #expect(prefs.editorStyle.lineDash == .solid)
     }
 
     @Test func selectAndCropAreNeverTheStartingTool() throws {
@@ -205,15 +219,57 @@ import Testing
         store.set("lasso", forKey: PreferenceKey.editorTool)
         store.set(RGBA.presets.count, forKey: PreferenceKey.editorColor)
         store.set(-1, forKey: PreferenceKey.editorNoteColor)
-        store.set(EditorStyle.widths.count, forKey: PreferenceKey.editorWidth)
+        store.set(EditorStyle.presetWidths.count, forKey: PreferenceKey.editorWidth)
         store.set(1.0, forKey: PreferenceKey.editorRedactionAmount)
         #expect(prefs.editorStyle == EditorStyle())
         store.set("thick", forKey: PreferenceKey.editorWidth)
-        #expect(prefs.editorStyle.widthIndex == EditorStyle().widthIndex)
+        #expect(prefs.editorStyle.width == EditorStyle().width)
         // Each value falls back on its own, so one bad value keeps the rest.
         store.set(EditorTool.text.rawValue, forKey: PreferenceKey.editorTool)
         store.set(5, forKey: PreferenceKey.editorColor)
         #expect(prefs.editorStyle == EditorStyle(tool: .text, color: RGBA.presets[5]))
+    }
+
+    @Test func aWidthFromBeforeTheStepperLandsOnItsStep() throws {
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        // Thin, Medium and Thick were saved as 0, 1 and 2, for 2, 4 and 8 points.
+        for (index, points) in [(0, CGFloat(2)), (1, 4), (2, 8)] {
+            store.set(index, forKey: PreferenceKey.editorWidth)
+            #expect(prefs.editorStyle.width == points)
+        }
+        // A width saved by this version wins over the old index, and is saved in points.
+        Preferences.changeEditorStyle(in: store) { $0.width = 12 }
+        #expect(store.double(forKey: PreferenceKey.editorLineWidth) == 12)
+        #expect(prefs.editorStyle.width == 12)
+        // A width between steps, as typed in the size box, stays; one past the scale comes back within it.
+        store.set(7.2, forKey: PreferenceKey.editorLineWidth)
+        #expect(prefs.editorStyle.width == 7.2)
+        store.set(40.0, forKey: PreferenceKey.editorLineWidth)
+        #expect(prefs.editorStyle.width == 16)
+        Preferences.resetAll(in: store)
+        #expect(prefs.editorStyle.width == EditorStyle.defaultWidth)
+    }
+
+    @Test func notesStartCentredEvenWhereAnOlderVersionSavedTheTop() throws {
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        #expect(prefs.editorStyle.noteAlignment == .center)
+        #expect(prefs.editorStyle.verticalAlignment == .middle)
+        // Older versions saved every default, so the top they saved isn't a choice to keep.
+        store.set("top", forKey: "editorVerticalAlignment")
+        #expect(prefs.editorStyle.verticalAlignment == .middle)
+        Preferences.changeEditorStyle(in: store) { $0.verticalAlignment = .bottom }
+        #expect(prefs.editorStyle.verticalAlignment == .bottom)
+        Preferences.resetAll(in: store)
+        #expect(prefs.editorStyle.verticalAlignment == .middle)
+        #expect(store.object(forKey: "editorVerticalAlignment") == nil)
     }
 
     @Test func toolsFromOlderVersionsBecomeTheToolsThatReplacedThem() throws {

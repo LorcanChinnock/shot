@@ -85,7 +85,7 @@ Cropping looks and works as it does when you [crop a screenshot](#crop). What's 
 
 ## Undo, delete and cancel
 
-- <kbd>⌘Z</kbd> undoes and <kbd>⇧⌘Z</kbd> redoes.
+- <kbd>⌘Z</kbd> undoes and <kbd>⇧⌘Z</kbd> redoes, wherever you clicked last. In a text field, <kbd>⌘Z</kbd> first undoes your typing, then finishes it and undoes your last change.
 - <kbd>Delete</kbd> takes away the selected keyframe, or else the selected section, or else the selected clip or annotation.
 - <kbd>Esc</kbd> cancels an export, or else clears the selected section, or else deselects, or else stops annotating, or else closes the Export panel.
 

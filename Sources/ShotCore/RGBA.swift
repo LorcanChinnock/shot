@@ -19,6 +19,9 @@ public struct RGBA: Equatable, Hashable, Sendable, Codable {
         RGBA(0.2, 0.78, 0.35), RGBA(0, 0.48, 1), RGBA(0, 0, 0), RGBA(1, 1, 1),
     ]
 
+    /// Nothing drawn: the style bar's transparent swatch, for a mark's colour as for a note's paper.
+    public static let clear = RGBA(0, 0, 0, 0)
+
     /// A sticky note's paper: the colour mixed most of the way to white.
     public var noteFill: RGBA {
         RGBA(r + (1 - r) * 0.6, g + (1 - g) * 0.6, b + (1 - b) * 0.6, a)

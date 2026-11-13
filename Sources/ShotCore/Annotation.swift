@@ -73,9 +73,41 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { wrapWidth = kind.isText ? newValue : nil }
     }
     private var wrapWidth: CGFloat?
+    /// How tall a dragged-out text box is at least: its text sits at the top and the box grows past this only when the text
+    /// needs more room. `nil` for a box as tall as its text, and for every other kind. Stored only when set, so annotations
+    /// saved before it still decode.
+    public var textBoxHeight: CGFloat? {
+        get { boxHeight }
+        set { boxHeight = kind.isText ? newValue : nil }
+    }
+    private var boxHeight: CGFloat?
+    /// The colour of a note's text; `nil` picks black or white, whichever reads better on the paper, and is always `nil`
+    /// for every other kind. Stored only when set, so annotations saved before it still decode.
+    public var noteTextColor: RGBA? {
+        get { noteInk }
+        set { noteInk = kind.isNote ? newValue : nil }
+    }
+    private var noteInk: RGBA?
+    /// The size of each part of a text's or note's text as a share of `textSize`, when its parts differ; `nil` when it's
+    /// all one size, as every text was before sizes could differ. Read and set through `textRuns`.
+    private var sizeRuns: [ScaledRun]?
+
+    /// A run of `sizeRuns`: `length` UTF-16 code units at `scale` times the text's size.
+    private struct ScaledRun: Equatable, Sendable, Codable {
+        var length: Int
+        var scale: CGFloat
+    }
+    /// Whether an arrow's or line's stroke is solid, dashed or dotted; always solid for every other kind. Stored only when
+    /// it isn't solid, so annotations saved before it still decode.
+    public var lineDash: LineDash {
+        get { dash ?? .solid }
+        set { dash = takesLineDash && newValue != .solid ? newValue : nil }
+    }
+    private var dash: LineDash?
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop, wrapWidth
+        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop, wrapWidth, boxHeight, sizeRuns, dash
+        case noteInk = "noteTextColor"
         case imageRadius = "cornerRadius"
         case customName = "name"
     }
@@ -98,6 +130,15 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         name = try container.decodeIfPresent(String.self, forKey: .customName)
         crop = kind.isImage ? try container.decodeIfPresent(ImageCrop.self, forKey: .crop) : nil
         wrapWidth = kind.isText ? try container.decodeIfPresent(CGFloat.self, forKey: .wrapWidth) : nil
+        boxHeight = kind.isText ? try container.decodeIfPresent(CGFloat.self, forKey: .boxHeight) : nil
+        noteInk = kind.isNote ? try container.decodeIfPresent(RGBA.self, forKey: .noteInk) : nil
+        sizeRuns = try container.decodeIfPresent([ScaledRun].self, forKey: .sizeRuns)
+        if let runs = sizeRuns, runs.count < 2 || runs.contains(where: { $0.length <= 0 || !($0.scale > 0) })
+            || runs.reduce(0, { $0 + $1.length }) != text?.utf16.count {
+            sizeRuns = nil
+        }
+        // A style from a newer version reads as solid rather than failing the whole document.
+        dash = takesLineDash ? (try? container.decodeIfPresent(LineDash.self, forKey: .dash)) ?? nil : nil
         // A rounded rectangle from before every shape could be rounded keeps its radius, or the fifth of its shorter side
         // that it had when it had none.
         if !kind.isImage {
@@ -180,6 +221,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         fileprivate var isText: Bool {
             if case .text = self { true } else { false }
         }
+
+        fileprivate var isNote: Bool {
+            if case .note = self { true } else { false }
+        }
     }
 
     public init(id: UUID = UUID(), kind: Kind, color: RGBA, fill: RGBA? = nil, lineWidth: CGFloat) {
@@ -220,6 +265,14 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// True for what the style sections and a pasted style can set a corner radius on: a placed image or a shape with corners.
     public var takesCornerRadius: Bool {
         styleKind?.takesCorners == true || roundsShape
+    }
+
+    /// True for the kinds whose stroke can be dashed or dotted: arrows and lines.
+    public var takesLineDash: Bool {
+        switch kind {
+        case .arrow, .line: true
+        case .shape, .highlight, .pixelate, .blur, .spotlight, .text, .counter, .note, .freehand, .marker, .image: false
+        }
     }
 
     public var supportsFill: Bool {
@@ -301,7 +354,58 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         guard case let .note(string, rect) = kind else {
             return nil
         }
-        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, verticalAlignment: verticalAlignment)
+        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, textColor: noteTextColor, verticalAlignment: verticalAlignment, runs: mixedRuns)
+    }
+
+    /// The size of a text's or a note's text, in pixels, which its padding and box follow; the largest of its parts when
+    /// they differ. `nil` for every other kind.
+    public var textSize: CGFloat? {
+        switch kind {
+        case let .text(_, _, fontSize): fontSize
+        case .note: noteFontSize
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .counter, .freehand, .marker, .image: nil
+        }
+    }
+
+    /// The size of each part of a text's or a note's text, in pixels; `nil` for every other kind. Text all in one size,
+    /// as all text was before parts could differ, is one run of `textSize`.
+    public var textRuns: TextRuns? {
+        guard let string = text, let size = textSize else {
+            return nil
+        }
+        let length = string.utf16.count
+        guard let sizeRuns, sizeRuns.reduce(0, { $0 + $1.length }) == length else {
+            return TextRuns(length: length, size: size)
+        }
+        return TextRuns(sizeRuns.map { TextRun(length: $0.length, size: size * $0.scale) })
+    }
+
+    /// `textRuns` when its parts differ in size, for layout; `nil` when it's all one size.
+    var mixedRuns: TextRuns? {
+        sizeRuns == nil ? nil : textRuns
+    }
+
+    /// Gives a text's or note's text these sizes, in pixels, and makes the largest its `textSize`. Runs that don't cover
+    /// the text exactly, and every other kind, are left alone.
+    public mutating func setTextRuns(_ runs: TextRuns) {
+        guard let string = text, runs.length == string.utf16.count, let largest = runs.largest else {
+            return
+        }
+        setTextSize(largest)
+        sizeRuns = runs.isUniform ? nil : runs.runs.map { ScaledRun(length: $0.length, scale: $0.size / largest) }
+    }
+
+    /// Sets a text's or note's size in pixels through its width, as the style bar does, keeping how its parts compare.
+    private mutating func setTextSize(_ size: CGFloat) {
+        switch kind {
+        case let .text(string, origin, fontSize):
+            kind = .text(string, origin: origin, fontSize: size)
+            lineWidth = fontSize > 0 && lineWidth > 0 ? lineWidth * size / fontSize : size / 6
+        case .note:
+            lineWidth = (size - 8) / 3
+        default:
+            break
+        }
     }
 
     /// The quadratic curve an arrow or line follows: its ends and the control point that gives it its bend.
@@ -331,7 +435,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .shape(_, rect), let .highlight(rect), let .pixelate(rect, _), let .blur(rect, _), let .spotlight(rect, _), let .image(_, rect):
             return rect
         case let .text(string, origin, fontSize):
-            return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color, width: textWidth).size)
+            let text = TextLayout(string: string, fontSize: fontSize, color: color, width: textWidth, runs: mixedRuns).size
+            return CGRect(origin: origin, size: TextLayout.boxSize(text: text, minHeight: textBoxHeight))
         case let .counter(_, center):
             return CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
         case .note:
@@ -471,8 +576,25 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// Replaces the text of a text annotation or note; other kinds are left alone.
+    /// Replaces the text of a text annotation or note; other kinds are left alone. Text kept from before keeps its
+    /// sizes, and what's new takes the size before it, as typing does.
     public mutating func setText(_ string: String) {
+        let edited = mixedRuns.flatMap { runs in text.map { runs.edited(from: $0, to: string, fallback: textSize ?? 0) } }
+        replaceText(string)
+        if let edited {
+            sizeRuns = nil
+            setTextRuns(edited)
+        }
+    }
+
+    /// Replaces the text of a text annotation or note and gives it these sizes, as its text field holds them.
+    public mutating func setText(_ string: String, runs: TextRuns) {
+        replaceText(string)
+        sizeRuns = nil
+        setTextRuns(runs)
+    }
+
+    private mutating func replaceText(_ string: String) {
         switch kind {
         case let .text(_, origin, fontSize): kind = .text(string, origin: origin, fontSize: fontSize)
         case let .note(_, rect): kind = .note(string, rect: rect)
@@ -490,20 +612,18 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
     /// The resize handles and where they sit: a line's two ends, or the corners and edge midpoints of a box
     /// (a pen stroke's is its bounds). An image has only the corners, since it keeps its shape.
-    /// A text box has one on each side, to change the width its text wraps to. Other text and counters have none.
+    /// A text box has them all too, to change the width its text wraps to and the height it keeps. Other text and counters
+    /// have none.
     public var handles: [(handle: AnnotationHandle, point: CGPoint)] {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
             let middle = curve.map { Self.curvePoint($0, at: 0.5) } ?? CGPoint(x: (from.x + to.x) / 2, y: (from.y + to.y) / 2)
             return [(.start, from), (.end, to), (.mid, middle)]
-        case .shape, .highlight, .pixelate, .blur, .spotlight, .note, .freehand, .marker:
+        case .shape, .highlight, .pixelate, .blur, .spotlight, .note, .freehand, .marker, .text where textWidth != nil:
             let frame = bounds
             return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
         case let .image(_, rect):
             return AnnotationHandle.corners.map { ($0, $0.point(in: rect)) }
-        case .text where textWidth != nil:
-            let frame = bounds
-            return [AnnotationHandle.left, .right].map { ($0, $0.point(in: frame)) }
         case .text, .counter:
             return []
         }
@@ -613,7 +733,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             let drag = CGVector(dx: point.x - (from.x + to.x) / 2, dy: point.y - (from.y + to.y) / 2)
             bend = hypot(drag.dx, drag.dy) < Self.minBend ? nil : drag
         case let (.text(string, origin, fontSize), _) where textWidth != nil:
-            resizeTextBox(string, origin: origin, fontSize: fontSize, handle: handle, to: point)
+            resizeTextBox(string, origin: origin, fontSize: fontSize, handle: handle, to: point, constrain: constrain)
         case (.arrow, _), (.line, _), (_, .start), (_, .end), (.text, _), (.counter, _): break
         case let (.shape(shape, rect), _): kind = .shape(shape, rect: box(rect))
         case let (.highlight(rect), _): kind = .highlight(box(rect))
@@ -723,7 +843,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         let resized: CGRect
         switch handle.dy {
         case -1:
-            let textHeight = NoteLayout(string: string, rect: CGRect(x: minX, y: 0, width: width, height: 0), fontSize: layout.fontSize, color: color).frame.height
+            let textHeight = NoteLayout(string: string, rect: CGRect(x: minX, y: 0, width: width, height: 0), fontSize: layout.fontSize, color: color, runs: mixedRuns).frame.height
             let minY = min(point.y, frame.maxY - textHeight)
             resized = CGRect(x: minX, y: minY, width: width, height: frame.maxY - minY)
         case 1:
@@ -735,20 +855,24 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         kind = .note(string, rect: resized)
     }
 
-    /// A text box's side handle moves that side to `point`, so its text rewraps; the other side stays put, and the box
-    /// never flips or gets narrower than `TextLayout.minWidth`.
-    private mutating func resizeTextBox(_ string: String, origin: CGPoint, fontSize: CGFloat, handle: AnnotationHandle, to point: CGPoint) {
+    /// A text box's handle moves its sides to `point`: the left and right ones change the width its text wraps to, and the
+    /// top and bottom ones the height it keeps, never the text's size. The other sides stay put, and the box never flips,
+    /// gets narrower than `TextLayout.minWidth` or, from the top, shorter than its text. With `constrain`, a corner keeps
+    /// the box's proportions, as a shape's does.
+    private mutating func resizeTextBox(_ string: String, origin: CGPoint, fontSize: CGFloat, handle: AnnotationHandle, to point: CGPoint, constrain: Bool) {
         let frame = bounds
-        let minWidth = TextLayout.minWidth(fontSize: fontSize)
-        switch handle.dx {
-        case -1:
-            let minX = min(point.x, frame.maxX - minWidth)
-            kind = .text(string, origin: CGPoint(x: minX, y: origin.y), fontSize: fontSize)
-            textWidth = frame.maxX - minX
-        case 1:
-            textWidth = max(point.x - frame.minX, minWidth)
-        default:
-            break
+        var point = point
+        if constrain, handle.dx != 0, handle.dy != 0 {
+            let (min, max) = Self.boxCorners(of: frame, handle: handle, to: point, constrain: true, fromCenter: false)
+            point = CGPoint(x: handle.dx < 0 ? min.x : max.x, y: handle.dy < 0 ? min.y : max.y)
+        }
+        let resized = TextLayout.resizedBox(frame, handle: handle, to: point, minWidth: TextLayout.minWidth(fontSize: fontSize)) { width in
+            TextLayout(string: string, fontSize: fontSize, color: color, width: width, runs: mixedRuns).size.height
+        }
+        kind = .text(string, origin: resized.origin, fontSize: fontSize)
+        textWidth = resized.width
+        if handle.dy != 0 {
+            textBoxHeight = resized.height
         }
     }
 

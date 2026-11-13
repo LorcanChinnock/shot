@@ -22,7 +22,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     /// selected, so which one is only known when the button comes up.
     private var pressedText: Annotation?
     private var pressedTextWasSelected = false
-    private var textField: NSTextField?
+    private var textField: RunsTextField?
     /// The text or note whose text field is open, hidden while it's edited; it may not be in the document yet.
     /// The model holds it so the toolbar can recolour and resize it.
     private var editingText: Annotation? {
@@ -53,6 +53,16 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
     }
     private var hoverArea: NSTrackingArea?
+    /// Where the pointer last moved over the canvas, in image pixels, or `nil` once it leaves or a press draws. With a
+    /// drawing tool, the mark just drawn shows its handles only while this is over it.
+    private var hoverPoint: CGPoint? {
+        didSet {
+            if selectionShowsHandles(hoveredAt: hoverPoint) != selectionShowsHandles(hoveredAt: oldValue) {
+                needsDisplay = true
+                window?.invalidateCursorRects(for: self)
+            }
+        }
+    }
 
     init(model: EditorModel) {
         self.model = model
@@ -148,6 +158,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var handleTolerance: CGFloat { 6 / viewScale }
     /// How far, in view points, a press on text or a note has to move before it counts as a drag.
     private static let dragThreshold: CGFloat = 4
+
+    private func selectionShowsHandles(hoveredAt hover: CGPoint?) -> Bool {
+        model.selection.map { model.tool.showsHandles(of: $0, hoveredAt: hover, tolerance: handleTolerance) } ?? false
+    }
 
     /// The topmost text or note under `point`.
     private func textOrNote(at point: CGPoint) -> Annotation? {
@@ -255,11 +269,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if let textBoxDraft {
             SelectionStyle.outline(viewRect(textBoxDraft))
         }
+        if let textField, case .text = editingText?.kind, editingText?.textWidth != nil {
+            SelectionStyle.outline(textField.frame)
+        }
 
         for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
             SelectionStyle.outline(viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
         }
-        if model.tool.editsSelection, let selected = model.selection, selected.id != editingText?.id {
+        if selectionShowsHandles(hoveredAt: hoverPoint), let selected = model.selection, selected.id != editingText?.id {
             SelectionStyle.outline(viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth).union(selected.paintedBounds)))
             if editingText == nil, !selected.isLocked {
                 for handle in selected.handles {
@@ -292,7 +309,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return []
         }
         // The single selection shows its resize handles, so its badge steps out past the corner one.
-        let withHandles = model.tool.editsSelection ? model.selection.flatMap { $0.isLocked ? nil : $0.id } : nil
+        let withHandles = selectionShowsHandles(hoveredAt: hoverPoint) ? model.selection.flatMap { $0.isLocked ? nil : $0.id } : nil
         return model.document.annotations.compactMap { annotation in
             let selected = model.selectedIDs.contains(annotation.id)
             guard CanvasCropBadge.shows(on: annotation, selected: selected, hovered: annotation.id == hoveredImageID) else {
@@ -362,6 +379,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     override func mouseMoved(with event: NSEvent) {
         super.mouseMoved(with: event)
         let viewPoint = convert(event.locationInWindow, from: nil)
+        hoverPoint = viewport.imagePoint(viewPoint)
         // A badge already showing keeps its image hovered, since it reaches past the image's corner.
         if let badge = cropBadge(at: viewPoint) {
             hoveredImageID = badge
@@ -377,6 +395,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
         hoveredImageID = nil
+        hoverPoint = nil
         setToolTip(nil)
     }
 
@@ -548,9 +567,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard panPoint == nil else {
             return
         }
-        if textField != nil {
+        // With the text or note tool, the press that finishes one text goes on to start the next, or opens the text it
+        // lands on; with any other tool it only finishes it.
+        let finishedTyping = textField != nil
+        if finishedTyping {
             commitText()
-            return
+            guard model.tool == .text || model.tool == .note else {
+                return
+            }
         }
         window?.makeFirstResponder(self)
         if spaceHeld || model.tool == .hand {
@@ -568,16 +592,17 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         lastPoint = point
         movedSinceMouseDown = false
         let selectedBeforePress = model.selectedID
-        // The annotation just drawn stays selected for the style bar until the next press. Only select, text and note
-        // resize from handles; any other tool draws anew, however close to the mark the press is.
+        // The annotation just drawn stays selected for the style bar until the next press. Text and note resize from its
+        // handles; other tools only from a handle the pointer had already revealed by hovering, and otherwise draw anew.
         if model.tool != .select, let selected = model.selection {
-            if model.tool.editsSelection, let handle = selected.handle(at: point, tolerance: handleTolerance) {
+            if let handle = model.tool.pressedHandle(of: selected, at: point, hoveredAt: hoverPoint, tolerance: handleTolerance) {
                 resizeHandle = handle
                 resizeStart = selected
                 return
             }
             model.selectedID = nil
         }
+        hoverPoint = nil
         switch model.tool {
         case .select:
             let tolerance = 6 / viewScale
@@ -611,19 +636,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         case .note:
             // Clicking a note with the note tool edits it rather than stacking a new one on top.
             pressedText = textOrNote(at: point)
-            pressedTextWasSelected = pressedText?.id == selectedBeforePress
+            pressedTextWasSelected = finishedTyping || pressedText?.id == selectedBeforePress
             if let pressedText {
                 model.selectedID = pressedText.id
             }
         case .counter:
-            let counter = Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth)
+            let counter = Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.nextColor, lineWidth: model.lineWidth)
             model.add(counter)
             land(counter.id)
         case .text:
             // Pressing existing text selects it to move or edit instead of starting more text on top of it. Elsewhere,
             // the release places the text: a click where it was pressed, a drag a box that wraps it.
             pressedText = textOrNote(at: point)
-            pressedTextWasSelected = pressedText?.id == selectedBeforePress
+            pressedTextWasSelected = finishedTyping || pressedText?.id == selectedBeforePress
             if let pressedText {
                 model.selectedID = pressedText.id
             }
@@ -720,6 +745,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             pressedText = nil
             viewportDidChange()
         }
+        // A drawing tool's handle drag ends with the pointer still on the mark, so its handles stay until the pointer leaves.
+        if resizeHandle != nil, !model.tool.editsSelection {
+            hoverPoint = imagePoint(event)
+        }
         if let pressedText, resizeHandle == nil {
             if movedSinceMouseDown {
                 model.endGesture()
@@ -735,8 +764,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         if model.tool == .text, resizeHandle == nil, let start = dragStart {
-            let placed = textPlacement(from: start, to: imagePoint(event))
-            beginText(at: placed.origin, width: placed.width)
+            let box = textBox(from: start, to: imagePoint(event))
+            beginText(at: box?.origin ?? start, box: box?.size)
             return
         }
         if model.tool == .note, resizeHandle == nil, let start = dragStart {
@@ -1093,9 +1122,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Text
 
-    /// Where a press at `start` released at `end` puts new text, and the width it wraps to if the press dragged out a box.
-    private func textPlacement(from start: CGPoint, to end: CGPoint) -> (origin: CGPoint, width: CGFloat?) {
-        TextLayout.placement(from: start, to: end, fontSize: model.fontSize, threshold: Self.dragThreshold / viewScale)
+    /// The box a press at `start` released at `end` drags out for new text; `nil` for a click.
+    private func textBox(from start: CGPoint, to end: CGPoint) -> CGRect? {
+        TextLayout.box(from: start, to: end, fontSize: model.fontSize, threshold: Self.dragThreshold / viewScale)
     }
 
     /// The box a drag with the Text tool is drawing out, in image pixels; `nil` until the drag passes the threshold.
@@ -1103,34 +1132,33 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard model.tool == .text, textField == nil, pressedText == nil, resizeHandle == nil, let start = dragStart, let end = lastPoint else {
             return nil
         }
-        let placed = textPlacement(from: start, to: end)
-        guard let width = placed.width else {
-            return nil
-        }
-        return CGRect(x: placed.origin.x, y: placed.origin.y, width: width, height: max(abs(end.y - start.y), model.fontSize))
+        return textBox(from: start, to: end)
     }
 
-    /// Opens a text field at `point` for new text, wrapping to `width` if it has one, or over `existing` text to edit it.
-    private func beginText(at point: CGPoint, width: CGFloat? = nil, editing existing: Annotation? = nil) {
+    /// Opens a text field at `point` for new text in the tool's size, in a `box` of that size if one was dragged out, or
+    /// over `existing` text to edit it.
+    private func beginText(at point: CGPoint, box: CGSize? = nil, editing existing: Annotation? = nil) {
         if let existing {
             editingText = existing
         } else {
-            var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth)
+            let size = model.fontSize
+            // Text's size is six times its width, which the style bar's size box shows.
+            var text = Annotation(kind: .text("", origin: point, fontSize: size), color: model.nextColor, lineWidth: size / 6)
             text.alignment = model.alignment
-            text.textWidth = width
+            text.textWidth = box?.width
+            text.textBoxHeight = box?.height
             editingText = text
         }
         // A double-click that wobbles mustn't drag the text being edited.
         dragStart = nil
-        let field = NSTextField(string: existing?.text ?? "")
+        guard let editingText else {
+            return
+        }
+        let field = makeField(for: editingText)
         field.isBordered = false
         field.drawsBackground = true
         field.backgroundColor = NSColor.white.withAlphaComponent(0.6)
-        field.focusRingType = .none
-        field.delegate = self
-        field.target = self
-        field.action = #selector(textFieldAction)
-        if editingText?.textWidth != nil {
+        if editingText.textWidth != nil {
             field.usesSingleLineMode = false
             field.cell?.wraps = true
             field.cell?.isScrollable = false
@@ -1142,6 +1170,42 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         // Sized before it takes focus, as a note's field is, so the field editor starts at the field's real size.
         layoutTextField()
         window?.makeFirstResponder(field)
+        syncEditing()
+    }
+
+    /// A text field over `annotation`, which commits on Esc or ⌘Return and keeps the model told what's typed and selected.
+    private func makeField(for annotation: Annotation) -> RunsTextField {
+        let field = RunsTextField(annotation: annotation)
+        field.focusRingType = .none
+        field.delegate = self
+        field.onFinish = { [weak self] in self?.commitText() }
+        field.onSelectionChange = { [weak self] in self?.syncEditing() }
+        field.onSizesChange = { [weak self] in
+            self?.syncEditing()
+            self?.layoutTextField()
+        }
+        return field
+    }
+
+    /// Tells the model the text being typed, in its sizes, and what's selected in it, for the style bar.
+    private func syncEditing() {
+        if let edited = editedText, edited != editingText {
+            editingText = edited
+        }
+        if model.editingSelection != textField?.selection {
+            model.editingSelection = textField?.selection
+        }
+    }
+
+    /// Gives the text field the sizes the style bar set on the text being typed, then shows it at the zoom.
+    private func restyleField(_ field: RunsTextField, as text: Annotation, color: RGBA) {
+        if let runs = text.textRuns {
+            field.setSizes(runs)
+        }
+        field.restyle(
+            emptySize: text.textSize ?? 12, color: NSColor(srgbRed: color.r, green: color.g, blue: color.b, alpha: 1),
+            alignment: text.alignment.textAlignment, viewScale: viewScale
+        )
     }
 
     /// Keeps the open text field over its text, at its size and colour, as the zoom, scroll, window or toolbar changes.
@@ -1153,63 +1217,31 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let field = textField, let text = editingText, case let .text(_, textOrigin, fontSize) = text.kind else {
             return
         }
-        let size = fontSize * viewScale
-        if field.font?.pointSize != size {
-            field.font = .boldSystemFont(ofSize: size)
-        }
-        field.textColor = NSColor(srgbRed: text.color.r, green: text.color.g, blue: text.color.b, alpha: 1)
-        field.alignment = text.alignment.textAlignment
-        if let width = text.textWidth {
-            let layout = TextLayout(string: field.stringValue, fontSize: fontSize, color: text.color, width: width)
-            // A borderless field insets its text 2 pt on each side.
-            field.frame = viewRect(CGRect(origin: textOrigin, size: layout.size)).insetBy(dx: -2, dy: 0)
+        restyleField(field, as: text, color: text.color)
+        let layout = TextLayout(string: field.text, fontSize: fontSize, color: text.color, width: text.textWidth, runs: field.sizes)
+        let size = TextLayout.boxSize(text: layout.size, minHeight: text.textBoxHeight)
+        // A borderless field insets its text 2 pt on each side.
+        let box = viewRect(CGRect(origin: textOrigin, size: size)).insetBy(dx: -2, dy: 0)
+        guard text.textWidth == nil else {
+            // A text box's field fills the box, and its outline shows round it while typing.
+            field.frame = box
+            needsDisplay = true
             return
         }
-        let origin = viewRect(CGRect(origin: textOrigin, size: .zero)).origin
-        let fitted: CGFloat
-        if field.stringValue.isEmpty {
-            field.frame = CGRect(x: origin.x, y: origin.y, width: 240, height: size * 1.4)
-            fitted = 0
-        } else {
-            field.sizeToFit()
-            fitted = field.frame.width
-            field.frame = CGRect(x: origin.x, y: origin.y, width: max(240, fitted + 20), height: field.frame.height)
-        }
-        // The field is wider than its text, so it reaches back past the anchor by the spare width the alignment puts before the text.
-        field.frame.origin.x -= (field.frame.width - fitted) * text.alignment.fraction
-    }
-
-    @objc private func textFieldAction() {
-        commitText()
+        field.frame = TextLayout.fieldFrame(unwrapping: box, isEmpty: field.text.isEmpty, alignment: text.alignment, minWidth: 240)
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-            commitText()
-            return true
-        }
-        // Return commits; Shift-Return starts a new line in a note or a text box.
-        if commandSelector == #selector(NSResponder.insertNewline(_:)), editingTakesLineBreaks, NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
-            textView.insertNewlineIgnoringFieldEditor(nil)
-            return true
-        }
-        return false
+        (control as? RunsTextField)?.perform(commandSelector, in: textView) ?? false
     }
 
     func controlTextDidChange(_ notification: Notification) {
+        syncEditing()
         layoutTextField()
         updateStyleBar()
     }
 
     var isEditingText: Bool { textField != nil }
-
-    /// Notes and text boxes wrap, so they take line breaks; text placed with a click stays on one line.
-    private var editingTakesLineBreaks: Bool {
-        if case .note = editingText?.kind {
-            return true
-        }
-        return editingText?.textWidth != nil
-    }
 
     private func commitText() {
         guard let edited = editedText else {
@@ -1224,7 +1256,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard var text = editingText, let field = textField else {
             return nil
         }
-        text.setText(field.stringValue)
+        text.setText(field.text, runs: field.sizes)
         return text
     }
 
@@ -1244,43 +1276,37 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Opens a text field over `note`, which is either new or already in the document.
     private func beginNote(_ note: Annotation) {
-        guard case let .note(string, _) = note.kind, note.noteLayout != nil else {
+        guard case .note = note.kind, note.noteLayout != nil else {
             return
         }
         dragStart = nil
         editingText = note
-        let field = NSTextField(string: string)
+        let field = makeField(for: note)
         field.isBordered = false
         field.drawsBackground = false
-        field.focusRingType = .none
         field.usesSingleLineMode = false
         field.cell?.wraps = true
         field.cell?.isScrollable = false
         field.maximumNumberOfLines = 0
         field.lineBreakMode = .byWordWrapping
         field.placeholderString = String(localized: "Note")
-        field.delegate = self
-        field.target = self
-        field.action = #selector(textFieldAction)
         addSubview(field)
         textField = field
         layoutNoteField()
         window?.makeFirstResponder(field)
+        syncEditing()
     }
 
     /// Fits the text field to the note's text area as the text grows.
     private func layoutNoteField() {
-        guard let field = textField, let layout = editedText?.noteLayout else {
+        guard let field = textField, let note = editingText, let ink = note.noteLayout?.ink else {
             return
         }
         // The zoom changes with the window size and the zoom commands, so the font follows it here.
-        let size = layout.fontSize * viewScale
-        if field.font?.pointSize != size {
-            field.font = .systemFont(ofSize: size)
+        restyleField(field, as: note, color: ink)
+        guard let layout = editedText?.noteLayout else {
+            return
         }
-        let ink = layout.ink
-        field.textColor = NSColor(srgbRed: ink.r, green: ink.g, blue: ink.b, alpha: 1)
-        field.alignment = (editedText?.alignment ?? .left).textAlignment
         // A borderless field insets its text 2 pt on each side.
         field.frame = viewRect(layout.alignedTextRect).insetBy(dx: -2, dy: 0)
         needsDisplay = true
@@ -1291,6 +1317,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         let editedID = editingText?.id
         textField = nil
         editingText = nil
+        model.editingSelection = nil
         needsDisplay = true
         field?.delegate = nil
         field?.removeFromSuperview()

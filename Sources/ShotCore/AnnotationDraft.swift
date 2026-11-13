@@ -9,29 +9,38 @@ public enum AnnotationDraft {
         public var color: RGBA
         public var fill: RGBA?
         public var noteColor: RGBA
+        /// A new note's text colour; `nil` follows the paper.
+        public var noteTextColor: RGBA?
         public var lineWidth: CGFloat
+        /// Whether a new arrow or line is solid, dashed or dotted.
+        public var lineDash: LineDash
         public var shape: BoxShape
         public var redaction: Redaction
         public var redactionAmount: CGFloat
         public var spotlight: SpotlightStyle
         public var alignment: TextAlign
+        /// How a new note's lines line up; `alignment` is for text.
+        public var noteAlignment: TextAlign
         public var verticalAlignment: VerticalTextAlign
         public var penLine: PenLine
 
         public init(
             color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
-            redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign,
-            verticalAlignment: VerticalTextAlign, penLine: PenLine = .smooth
+            redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign, noteAlignment: TextAlign,
+            verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil, lineDash: LineDash = .solid, penLine: PenLine = .smooth
         ) {
             self.color = color
             self.fill = fill
             self.noteColor = noteColor
+            self.noteTextColor = noteTextColor
             self.lineWidth = lineWidth
+            self.lineDash = lineDash
             self.shape = shape
             self.redaction = redaction
             self.redactionAmount = redactionAmount
             self.spotlight = spotlight
             self.alignment = alignment
+            self.noteAlignment = noteAlignment
             self.verticalAlignment = verticalAlignment
             self.penLine = penLine
         }
@@ -98,15 +107,17 @@ public enum AnnotationDraft {
         if shape.supportsFill {
             shape.fill = style.fill
         }
+        shape.lineDash = style.lineDash
         return shape
     }
 
     /// An empty note placed by a drag from `start` to `end`, ready for its text.
     public static func note(id: UUID, from start: CGPoint, to end: CGPoint, style: Style) -> Annotation {
         var note = Annotation(id: id, kind: .note("", rect: .zero), color: style.noteColor, lineWidth: style.lineWidth)
-        note.alignment = style.alignment
+        note.alignment = style.noteAlignment
         note.verticalAlignment = style.verticalAlignment
         note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: end, fontSize: note.noteFontSize))
+        note.noteTextColor = style.noteTextColor
         return note
     }
 

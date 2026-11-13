@@ -16,9 +16,20 @@ public enum CoreTextShaper {
         CoreTextLine(CTLineCreateWithAttributedString(attributed(string, font: font, color: color)))
     }
 
+    /// `string` as one line in `color`, each part in its font: `fonts` runs from the start, each with its length in UTF-16
+    /// code units, and covers the string.
+    public static func line(_ string: String, fonts: [(length: Int, font: TextFont)], color: RGBA) -> CoreTextLine {
+        CoreTextLine(CTLineCreateWithAttributedString(attributed(string, fonts: fonts, color: color)))
+    }
+
     /// `string`, one paragraph with no line breaks in it, ready to be broken into lines.
     public static func paragraph(_ string: String, font: TextFont, color: RGBA) -> CoreTextParagraph {
         CoreTextParagraph(attributed(string, font: font, color: color))
+    }
+
+    /// `string`, one paragraph with no line breaks in it, each part in its font as `line(_:fonts:color:)` takes them.
+    public static func paragraph(_ string: String, fonts: [(length: Int, font: TextFont)], color: RGBA) -> CoreTextParagraph {
+        CoreTextParagraph(attributed(string, fonts: fonts, color: color))
     }
 
     private static func ctFont(_ font: TextFont) -> CTFont {
@@ -32,6 +43,22 @@ public enum CoreTextShaper {
     private static func attributed(_ string: String, font: TextFont, color: RGBA) -> CFAttributedString {
         let attributes = [kCTFontAttributeName: ctFont(font), kCTForegroundColorAttributeName: color.cgColor] as CFDictionary
         return CFAttributedStringCreate(nil, string as CFString, attributes)
+    }
+
+    private static func attributed(_ string: String, fonts: [(length: Int, font: TextFont)], color: RGBA) -> CFAttributedString {
+        guard fonts.count > 1, let text = CFAttributedStringCreateMutable(nil, 0) else {
+            return attributed(string, font: fonts.first?.font ?? TextFont(size: 12), color: color)
+        }
+        CFAttributedStringReplaceString(text, CFRange(location: 0, length: 0), string as CFString)
+        let length = CFAttributedStringGetLength(text)
+        CFAttributedStringSetAttribute(text, CFRange(location: 0, length: length), kCTForegroundColorAttributeName, color.cgColor)
+        var start = 0
+        for (count, font) in fonts where start < length {
+            let range = CFRange(location: start, length: min(count, length - start))
+            CFAttributedStringSetAttribute(text, range, kCTFontAttributeName, ctFont(font))
+            start += count
+        }
+        return text
     }
 }
 

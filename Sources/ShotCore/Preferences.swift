@@ -45,13 +45,25 @@ public enum PreferenceKey {
     public static let editorHighlightColor = "editorHighlightColor"
     public static let editorFill = "editorFill"
     public static let editorCustomColors = "editorCustomColors"
+    /// An index into the three widths, 2, 4 and 8 points, that versions before the width stepper offered. Read only, to
+    /// carry a width chosen then over to `editorLineWidth`.
     public static let editorWidth = "editorWidth"
+    /// The line width in points, one of `EditorStyle.widths`.
+    public static let editorLineWidth = "editorLineWidth"
+    /// A new note's text colour, empty for black or white to suit the paper.
+    public static let editorNoteTextColor = "editorNoteTextColor"
     public static let editorShape = "editorShape"
+    /// Whether the next arrow or line is solid, dashed or dotted.
+    public static let editorLineDash = "editorLineDash"
     public static let editorRedaction = "editorRedaction"
     public static let editorRedactionAmount = "editorRedactionAmount"
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
-    public static let editorVerticalAlignment = "editorVerticalAlignment"
+    /// How a new note's lines line up.
+    public static let editorNoteAlignment = "editorNoteAlignment"
+    /// Where a new note's text sits. Its own key since notes started centred, so the top an older version saved for
+    /// everyone by default doesn't carry over.
+    public static let editorVerticalAlignment = "editorNoteVerticalAlignment"
     public static let editorPenLine = "editorPenLine"
     public static let editorObjectStyles = "editorObjectStyles"
     /// The shape the editor's crop was last held to.
@@ -150,12 +162,14 @@ public struct Preferences {
             PreferenceKey.editorHighlightColor: Data(),
             PreferenceKey.editorFill: Data(),
             PreferenceKey.editorCustomColors: Data(),
-            PreferenceKey.editorWidth: EditorStyle().widthIndex,
+            PreferenceKey.editorNoteTextColor: Data(),
             PreferenceKey.editorShape: EditorStyle().shape.rawValue,
+            PreferenceKey.editorLineDash: EditorStyle().lineDash.rawValue,
             PreferenceKey.editorRedaction: EditorStyle().redaction.rawValue,
             PreferenceKey.editorRedactionAmount: Double(EditorStyle().redactionAmount),
             PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
+            PreferenceKey.editorNoteAlignment: EditorStyle().noteAlignment.rawValue,
             PreferenceKey.editorVerticalAlignment: EditorStyle().verticalAlignment.rawValue,
             PreferenceKey.editorPenLine: EditorStyle().penLine.rawValue,
             PreferenceKey.editorObjectStyles: Data(),
@@ -203,8 +217,11 @@ public struct Preferences {
         for key in defaults.keys {
             store.removeObject(forKey: key)
         }
-        // Older versions kept recent custom colours.
-        store.removeObject(forKey: "editorRecentColors")
+        // Older versions kept recent custom colours and a note's place top to bottom under another key. The width has no
+        // registered default, so an older version's is still read.
+        for key in ["editorRecentColors", "editorVerticalAlignment", PreferenceKey.editorWidth, PreferenceKey.editorLineWidth] {
+            store.removeObject(forKey: key)
+        }
     }
 
     /// Deletes the shortcut saved for text capture, which Shot no longer has.
@@ -305,11 +322,17 @@ public struct Preferences {
         if changed(\.customColors) {
             store.set(try? JSONEncoder().encode(style.customColors), forKey: PreferenceKey.editorCustomColors)
         }
-        if changed(\.widthIndex) {
-            store.set(style.widthIndex, forKey: PreferenceKey.editorWidth)
+        if changed(\.noteTextColor) {
+            store.set(style.noteTextColor.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.editorNoteTextColor)
+        }
+        if changed(\.width) {
+            store.set(Double(style.width), forKey: PreferenceKey.editorLineWidth)
         }
         if changed(\.shape) {
             store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
+        }
+        if changed(\.lineDash) {
+            store.set(style.lineDash.rawValue, forKey: PreferenceKey.editorLineDash)
         }
         if changed(\.redaction) {
             store.set(style.redaction.rawValue, forKey: PreferenceKey.editorRedaction)
@@ -322,6 +345,9 @@ public struct Preferences {
         }
         if changed(\.alignment) {
             store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
+        }
+        if changed(\.noteAlignment) {
+            store.set(style.noteAlignment.rawValue, forKey: PreferenceKey.editorNoteAlignment)
         }
         if changed(\.verticalAlignment) {
             store.set(style.verticalAlignment.rawValue, forKey: PreferenceKey.editorVerticalAlignment)
@@ -447,13 +473,24 @@ public struct Preferences {
         let legacyTools: [String: EditorTool] = ["rect": .shape, "ellipse": .shape, "pixelate": .redact, "blur": .redact]
         let toolName = store.string(forKey: PreferenceKey.editorTool) ?? ""
         let tool = EditorTool(rawValue: toolName) ?? legacyTools[toolName]
+        // Older versions saved Thin, Medium or Thick as an index into the three widths they offered.
+        let legacyWidth = index(PreferenceKey.editorWidth, in: EditorStyle.presetWidths.indices, default: -1)
+        let width = if let points = store.object(forKey: PreferenceKey.editorLineWidth) as? Double, points.isFinite {
+            EditorStyle.clampedWidth(CGFloat(points))
+        } else if legacyWidth >= 0 {
+            EditorStyle.presetWidths[legacyWidth]
+        } else {
+            defaults.width
+        }
         return EditorStyle(
             tool: tool.flatMap { $0.isDrawing ? $0 : nil } ?? defaults.tool,
             color: colour(PreferenceKey.editorColor, default: defaults.color),
             noteColor: colour(PreferenceKey.editorNoteColor, default: defaults.noteColor),
             highlightColor: decoded(PreferenceKey.editorHighlightColor) ?? defaults.highlightColor,
             fill: decoded(PreferenceKey.editorFill),
-            widthIndex: index(PreferenceKey.editorWidth, in: EditorStyle.widths.indices, default: defaults.widthIndex),
+            noteTextColor: decoded(PreferenceKey.editorNoteTextColor),
+            width: width,
+            lineDash: LineDash(rawValue: store.string(forKey: PreferenceKey.editorLineDash) ?? "") ?? defaults.lineDash,
             customColors: decoded(PreferenceKey.editorCustomColors) ?? defaults.customColors,
             // `rounded` was a shape of its own before every shape could be rounded.
             shape: store.string(forKey: PreferenceKey.editorShape).flatMap { BoxShape(rawValue: $0 == "rounded" ? "rectangle" : $0) } ?? defaults.shape,
@@ -462,6 +499,7 @@ public struct Preferences {
                 .flatMap { Redaction.amounts.contains(CGFloat($0)) ? CGFloat($0) : nil } ?? defaults.redactionAmount,
             spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight,
             alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment,
+            noteAlignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorNoteAlignment) ?? "") ?? defaults.noteAlignment,
             verticalAlignment: VerticalTextAlign(rawValue: store.string(forKey: PreferenceKey.editorVerticalAlignment) ?? "") ?? defaults.verticalAlignment,
             penLine: PenLine(rawValue: store.string(forKey: PreferenceKey.editorPenLine) ?? "") ?? defaults.penLine,
             objectStyles: decoded(PreferenceKey.editorObjectStyles) ?? defaults.objectStyles

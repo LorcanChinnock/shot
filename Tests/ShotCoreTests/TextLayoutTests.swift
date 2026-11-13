@@ -46,6 +46,22 @@ private func style(of line: CoreTextLine) throws -> (font: CTFont, color: CGColo
     #expect(layout.lineHeight == metrics.lineHeight)
 }
 
+@Test func clickedTextGrowsALineAtATimeEachAsWideAsItsWords() {
+    let origin = CGPoint(x: 30, y: 40)
+    func text(_ string: String) -> Annotation {
+        Annotation(kind: .text(string, origin: origin, fontSize: 10), color: yellow, lineWidth: 2)
+    }
+    let one = text("Hello there").bounds
+    let broken = text("Hello there\n").bounds
+    #expect(broken.origin == origin)
+    #expect(broken.width == one.width)
+    #expect(broken.height == one.height * 2)
+    let two = text("Hello there\nHi").bounds
+    #expect(two == broken)
+    #expect(text("Hi\nHello there").bounds.width == one.width)
+    #expect(texts(TextLayout(string: "Hello there\n", fontSize: 10, color: yellow).lines, of: "Hello there\n") == ["Hello there", ""])
+}
+
 @Test func emptyTextIsOneBlankLine() {
     let layout = TextLayout(string: "", fontSize: 10, color: yellow)
     #expect(texts(layout.lines, of: " ") == [" "])
@@ -149,4 +165,11 @@ func noteTextThatFillsTheNoteDoesntMove(alignment: VerticalTextAlign) {
     let thin = NoteLayout.placementRect(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 110, y: 160), fontSize: font)
     #expect(thin.width == NoteLayout.minWidth(fontSize: font))
     #expect(thin.height == 60)
+}
+
+@Test func clickTextFieldLeavesRoomToTypeAndFollowsAlignment() {
+    let box = CGRect(x: 100, y: 50, width: 80, height: 30)
+    #expect(TextLayout.fieldFrame(unwrapping: box, isEmpty: false, alignment: .left, minWidth: 40) == CGRect(x: 100, y: 50, width: 100, height: 30))
+    #expect(TextLayout.fieldFrame(unwrapping: box, isEmpty: false, alignment: .right, minWidth: 40) == CGRect(x: 80, y: 50, width: 100, height: 30))
+    #expect(TextLayout.fieldFrame(unwrapping: box, isEmpty: true, alignment: .center, minWidth: 240) == CGRect(x: -20, y: 50, width: 240, height: 30))
 }

@@ -90,6 +90,11 @@ public enum VideoInspectorPanel {
         return min(max(raw, range.lowerBound), range.upperBound)
     }
 
+    /// Where a new clip puts the property's slider, which the slider marks as its default.
+    public static func sliderDefault(_ property: AnimatedProperty) -> Double {
+        sliderValue(property, of: PropertyValues())
+    }
+
     /// `values` with the property set from its slider at `slider`.
     public static func setting(_ property: AnimatedProperty, slider: Double, in values: PropertyValues) -> PropertyValues {
         var changed = values

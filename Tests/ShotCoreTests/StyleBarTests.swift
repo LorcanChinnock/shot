@@ -69,18 +69,41 @@ private let bar = CGSize(width: 260, height: 32)
     #expect(StyleBarContent.content(showsStyle: true, tool: .crop, showsRedaction: true, showsSpotlight: true) == nil)
 }
 
-@Test func moreStyleShowsOnlyWhenItHoldsMoreThanReset() {
-    let bar = StyleBarContent.colorAndWidth
-    #expect(!bar.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
-    #expect(bar.offersMoreStyle(hasShape: true, hasFill: true, hasAlignment: false))
-    #expect(bar.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: true))
-    #expect(StyleBarContent.redaction.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
-    #expect(StyleBarContent.spotlight.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
+@Test func onlyAFillClearsToNone() {
+    #expect(StyleBarColorRow.fill.clearsToNone)
+    for row in [StyleBarColorRow.line, .outline, .text, .noteText, .paper, .counter] {
+        #expect(!row.clearsToNone)
+    }
 }
 
-@Test func theBarSwitchesRectangleAndEllipseAndMoreStyleKeepsTheOtherShapes() {
-    #expect(BoxShape.styleBarShapes == [.rectangle, .ellipse])
-    #expect(BoxShape.moreStyleShapes == [.triangle, .diamond, .star])
+@Test func theWidthsStepEvenlyThroughTheOldPresets() {
+    let widths = EditorStyle.widths
+    #expect(widths == widths.sorted())
+    for preset in EditorStyle.presetWidths {
+        #expect(widths.contains(preset))
+    }
+    #expect(widths.contains(EditorStyle.defaultWidth))
+    for (thinner, thicker) in zip(widths, widths.dropFirst()) {
+        let ratio = thicker / thinner
+        #expect(ratio >= 1.2 && ratio <= 1.5, "\(thinner) to \(thicker)")
+    }
+    #expect(EditorStyle.step(from: 7.2, up: true) == 8)
+    #expect(EditorStyle.step(from: 7.2, up: false) == 6)
+    #expect(EditorStyle.step(from: 16, up: true) == nil)
+    #expect(EditorStyle.step(from: 1, up: false) == nil)
+    #expect(EditorStyle.clampedWidth(100) == 16)
+}
+
+@Test func theTextSizesAreTheOldPresetsAndStepEvenly() {
+    let sizes = EditorStyle.widths.map { EditorStyle.shownSize(width: $0, sizing: .text) }
+    // Small, Medium and Large were 12, 24 and 48 points.
+    for size in [12.0, 24, 48] {
+        #expect(sizes.contains(CGFloat(size)))
+    }
+    #expect(sizes.first == 6)
+    #expect(sizes.last == 96)
+    #expect(EditorStyle.shownSize(width: 4, sizing: .note) == 20)
+    #expect(EditorStyle.shownSize(width: 4, sizing: .line) == 4)
 }
 
 @Test func theBarOffersEveryPresetColourWhiteIncluded() {
@@ -100,4 +123,54 @@ private let bar = CGSize(width: 260, height: 32)
     let mark = CGRect(x: 100, y: 40, width: 200, height: 860)
     #expect(StyleBarPlacement.origin(bar: bar, mark: mark, in: canvas) == CGPoint(x: 310, y: 454))
     #expect(StyleBarPlacement.origin(bar: bar, mark: mark, in: canvas, bottom: 60) == CGPoint(x: 310, y: 408))
+}
+
+@Test func aTwoRowBarKeepsClearOfTheMarkAndTheFoot() {
+    let tall = CGSize(width: 433, height: 66)
+    let marks = [
+        CGRect(x: 300, y: 200, width: 120, height: 80), CGRect(x: 300, y: 20, width: 120, height: 80),
+        CGRect(x: 100, y: 10, width: 200, height: 480),
+    ]
+    for mark in marks {
+        let frame = CGRect(origin: StyleBarPlacement.origin(bar: tall, mark: mark, in: canvas, bottom: 60), size: tall)
+        #expect(!frame.intersects(mark), "\(mark)")
+        #expect(CGRect(x: 12, y: 12, width: canvas.width - 24, height: canvas.height - 12 - 60).contains(frame), "\(mark)")
+    }
+}
+
+@Test func aBarThatFitsOnlyInTheInsetsIsCentredSoAllOfItShows() {
+    let wide = CGSize(width: 507, height: 66)
+    let narrow = CGSize(width: 516, height: 500)
+    #expect(StyleBarPlacement.origin(bar: wide, mark: nil, in: narrow).x == 4.5)
+    let beside = StyleBarPlacement.origin(bar: wide, mark: CGRect(x: 0, y: 300, width: 40, height: 40), in: narrow)
+    #expect(beside.x == 4.5)
+}
+
+@Test func aBarThatFitsOnlyInTheInsetsStillGoesAboveTheMark() {
+    let wide = CGSize(width: 507, height: 66)
+    let mark = CGRect(x: 200, y: 200, width: 100, height: 80)
+    #expect(StyleBarPlacement.origin(bar: wide, mark: mark, in: CGSize(width: 516, height: 500)) == CGPoint(x: 4.5, y: 124))
+}
+
+@Test func theSizeBoxReadsANumberTypedEitherWay() {
+    #expect(SizeInput.parse("12") == 12)
+    #expect(SizeInput.parse(" 12,5 ") == 12.5)
+    #expect(SizeInput.parse("10.5pt") == 10.5)
+    #expect(SizeInput.parse("18 PT") == 18)
+    #expect(SizeInput.parse("") == nil)
+    #expect(SizeInput.parse("big") == nil)
+    #expect(SizeInput.parse("-3") == nil)
+    #expect(SizeInput.parse("0") == nil)
+    #expect(SizeInput.parse("inf") == nil)
+}
+
+@Test func everySizeInTheMenuStoresItsStepSoTheArrowsMoveOn() {
+    for kind in [EditorStyle.SizeKind.line, .text, .note, .counter] {
+        for step in EditorStyle.widths {
+            let shown = EditorStyle.shownSize(width: step, sizing: kind)
+            #expect(EditorStyle.width(forShownSize: shown, sizing: kind) == step, "\(kind) \(shown)")
+        }
+    }
+    // A counter size typed between steps keeps its in-between width.
+    #expect(!EditorStyle.widths.contains(EditorStyle.width(forShownSize: 25, sizing: .counter)))
 }

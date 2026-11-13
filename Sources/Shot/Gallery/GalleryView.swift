@@ -92,7 +92,7 @@ struct GalleryRootView: View {
                 Image(systemName: "square")
                     .font(.scaled(10, weight: .medium))
                     .accessibilityHidden(true)
-                ThemeSlider(value: Bindable(model).tileSize, range: Gallery.tileSizes, width: 70)
+                ThemeSlider(value: Bindable(model).tileSize, range: Gallery.tileSizes, width: 70, defaultValue: Gallery.defaultTileSize)
                     .themeTip("Thumbnail size (⌘+ and ⌘−)")
                     .accessibilityLabel(Text("Thumbnail size"))
                 Image(systemName: "square")

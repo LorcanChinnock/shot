@@ -69,8 +69,6 @@ final class VideoEditorModel {
     }
     /// The time of the keyframe being worked on, in seconds from the start of the selected clip.
     private(set) var selectedKeyframe: Double?
-    /// Whether More style, the style bar's popover of the drawing options that don't fit in it, is open.
-    var showsMoreStyle = false
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
     private(set) var annotationTool: EditorTool?
@@ -88,6 +86,8 @@ final class VideoEditorModel {
     var annotationStyle = Preferences().editorStyle
     /// The text or note whose text field is open, with the colour and size picked for it so far; it may not be on the timeline yet.
     var editingText: Annotation?
+    /// What's selected in the text being typed, in UTF-16 code units, for the size box; the canvas keeps it current.
+    var editingSelection: Range<Int>?
     /// Set by the annotation canvas: turns the text or note still being typed into an annotation, as the image editor's does.
     @ObservationIgnored var commitPendingText: (() -> Void)?
     /// Called when the panel opens, closes or changes height, so the window can grow or shrink to fit.
@@ -1069,15 +1069,15 @@ extension VideoEditorModel {
 
     /// Canvas pixels per point of a new annotation's strokes and corners, so they look the same on a 4K recording as on a small one.
     var styleScale: CGFloat { max(1, project.canvasSize.width / 960) }
-    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * styleScale }
+    var lineWidth: CGFloat { annotationStyle.width * styleScale }
     var fontSize: CGFloat { lineWidth * 6 }
     /// What the palette gives the annotation the canvas draws next.
     var draftStyle: AnnotationDraft.Style {
         let style = annotationStyle
         return AnnotationDraft.Style(
             color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
-            redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment,
-            verticalAlignment: style.verticalAlignment, penLine: style.penLine
+            redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment, noteAlignment: style.noteAlignment,
+            verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor, lineDash: style.lineDash, penLine: style.penLine
         )
     }
 
@@ -1102,7 +1102,7 @@ extension VideoEditorModel {
     private var palette: ShotCore.AnnotationPalette {
         ShotCore.AnnotationPalette(
             style: annotationStyle, editingText: editingText, editingTextIsNew: editingText.map { project.annotationClip($0.id) == nil } ?? false,
-            selection: selectedAnnotation?.annotation, tool: annotationTool, scale: styleScale,
+            editingSelection: editingSelection, selection: selectedAnnotation?.annotation, tool: annotationTool, scale: styleScale,
             imageLength: max(project.canvasSize.width, project.canvasSize.height),
             sharedSpotlight: project.annotationClips.map(\.annotation).spotlightStyle
         )
@@ -1142,6 +1142,15 @@ extension VideoEditorModel {
     var sizesText: Bool { palette.sizesText }
 
     var showsFill: Bool { palette.showsFill }
+
+    /// Whether the line the palette shows is solid, dashed or dotted. `nil` when it isn't an arrow or line.
+    var paletteLineDash: LineDash? { palette.lineDash }
+
+    func setLineDash(_ dash: LineDash) {
+        var changed = palette
+        changed.setLineDash(dash)
+        adopt(changed)
+    }
 
     /// The outline the palette shows: the selected shape's, else the next shape's. `nil` when neither is a shape.
     var paletteShape: BoxShape? { palette.shape }
@@ -1237,15 +1246,56 @@ extension VideoEditorModel {
         }
     }
 
-    /// The width the palette shows and sets: the text being typed's, else the selected annotation's nearest, else the
-    /// next annotation's.
-    var lineWidthIndex: Int {
-        get { palette.lineWidthIndex }
-        set {
-            var changed = palette
-            changed.setLineWidthIndex(newValue)
-            adopt(changed)
-        }
+    /// The colour rows the style bar shows, top to bottom.
+    var paletteColorRows: [StyleBarColorRow] { palette.colorRows }
+
+    /// The controls on the right of the style bar's colour rows, a row at a time.
+    var paletteControlRows: [[StyleBarControl]] { palette.controlRows }
+
+    /// The note's text colour the style bar shows; `nil` while it's black or white to suit the paper.
+    var paletteNoteTextColor: RGBA? { palette.noteTextColor }
+
+    func setNoteTextColor(_ color: RGBA?) {
+        var changed = palette
+        changed.setNoteTextColor(color)
+        adopt(changed)
+    }
+
+    /// Sets the note's text colour to one picked from the colour editor, as `pickCustom(_:forFill:)` does a colour.
+    func pickCustomNoteText(_ color: RGBA) {
+        var changed = palette
+        changed.pickCustomNoteText(color)
+        adopt(changed, coalescing: selectedClipID.map { "\($0)-custom-noteText" })
+        Preferences.changeEditorStyle { $0.customColors[.noteText] = color }
+    }
+
+    /// The note text palette's last custom colour.
+    func lastCustomNoteText() -> RGBA? {
+        palette.style.customColors[.noteText]
+    }
+
+    /// The size the style bar's size box shows: the line width in points, or the text size.
+    var paletteShownSize: CGFloat? { palette.shownSize }
+
+    /// The sizes the size box's menu lists.
+    var paletteSizeChoices: [CGFloat] { palette.sizeChoices }
+
+    /// Sets the size typed in the size box or picked from its menu, as one undo step.
+    func setShownSize(_ size: CGFloat) {
+        var changed = palette
+        changed.setShownSize(size)
+        adopt(changed)
+    }
+
+    func canStepLineWidth(by steps: Int) -> Bool {
+        palette.canStepLineWidth(by: steps)
+    }
+
+    /// Steps the width the style bar shows thinner or thicker, or the text smaller or larger, as one undo step.
+    func stepLineWidth(by steps: Int) {
+        var changed = palette
+        changed.stepLineWidth(by: steps)
+        adopt(changed)
     }
 
     /// Call as the colour editor opens, so its run of picks doesn't join the last one's undo step.
@@ -1269,10 +1319,10 @@ extension VideoEditorModel {
         palette.lastCustom(forFill: forFill)
     }
 
-    /// True when the drawing options aren't the defaults, so More style's Reset has something to do.
+    /// True when the drawing options aren't the defaults, so Reset Style has something to do.
     var canResetToolOptions: Bool { palette.canReset }
 
-    /// More style's Reset: puts the drawing options back to how a new install starts, for the selected annotation, the
+    /// Reset Style: puts the drawing options back to how a new install starts, for the selected annotation, the
     /// text being typed and the next annotation. A spotlight's dim goes back for every spotlight, since they share it.
     func resetToolOptions() {
         let before = palette
