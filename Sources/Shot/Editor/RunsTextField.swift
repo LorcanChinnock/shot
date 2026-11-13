@@ -77,6 +77,14 @@ final class RunsTextField: NSTextField {
             font = font(size: emptySize)
             self.alignment = alignment
         }
+        // A note's placeholder is in the note's text colour, as what's typed will be.
+        if let placeholder = placeholderAttributedString?.string ?? placeholderString, !placeholder.isEmpty {
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = alignment
+            placeholderAttributedString = NSAttributedString(string: placeholder, attributes: [
+                .font: font(size: emptySize), .foregroundColor: color, .paragraphStyle: paragraph,
+            ])
+        }
         if editor?.hasMarkedText() == true {
             return
         }
