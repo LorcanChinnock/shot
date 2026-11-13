@@ -57,13 +57,17 @@ The hint at the bottom right of the canvas tells you what the tool does, or what
 
 A small style bar floats over the screenshot with the options for the tool you picked. It sits at the top of the screenshot until you draw, then moves next to the mark you selected, above it where there's room, and otherwise below or beside it, so it never covers the mark. It steps out of the way while you drag.
 
-- **Colour and width:** seven colours, white included, a rainbow swatch that picks any colour, and three widths, thin, medium and thick. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
-- **Shape:** a second row with a rectangle, ellipse, triangle, diamond or star, then **Fill**: none, the seven colours or any other. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
-- **Text and sticky notes:** a second row with left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
+The colours are on the left, a row for each, named on its left. Every row has the same swatches: seven colours, white included, a rainbow swatch that picks any colour, and a grey and white check for transparent, which draws nothing. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself.
+
+- **Arrows, lines, pens and highlights:** a **Line** row, and the width.
+- **Shape:** **Line** for the outline, and **Fill** under it for the inside. Transparent leaves a shape unfilled. On the right are the width and the five outlines: a rectangle, ellipse, triangle, diamond or star. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
+- **Text:** a **Text** row, the text size, and left, centre or right alignment.
+- **Sticky note:** **Text**, and **Background** under it for the paper. Until you pick a text colour, the text is black or white, whichever reads better on the paper, and no swatch shows as chosen. Click the chosen colour again to go back to that. On the right are the text size, the alignment, and whether the text sits at the top, middle or bottom, which shows when you drag the note taller than its text.
+- **Counter:** a **Fill** row for the circle behind the number, and its size.
 - **Redact:** blur or pixelate, and how strong it is.
 - **Spotlight:** a rectangle or an ellipse, whether to darken or blur outside it, how strongly, and how soft its edge is. Every spotlight in the screenshot shares one dim, so the effect and strength apply to all of them.
 
-Arrows, lines, pens, highlights and counters have only the colours and widths.
+The width and text size have down and up arrows, with the size in points between them. Changing the size or colour while you type updates the text as you go.
 
 The bar doesn't show while you crop, since the crop has a bar of its own, or when the select tool has nothing, an image or several marks selected. Use **Style** in the title bar for those.
 
@@ -71,7 +75,7 @@ Each palette remembers the last colour you picked. The highlight and sticky note
 
 To go back to the plain look, choose **Edit › Reset Style**, or right-click the style bar and choose **Reset Style**. It puts that tool's colour, width and other options back to how Shot starts, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset Style** also sets the effect and strength of every spotlight in the screenshot, since they share them.
 
-With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into the style bar, and the arrow keys change the width.
+With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into the style bar, and with the width's or text size's arrows chosen, the arrow keys change it.
 
 ## Change what you've drawn
 

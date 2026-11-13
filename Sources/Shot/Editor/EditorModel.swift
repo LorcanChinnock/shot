@@ -94,6 +94,10 @@ final class EditorModel {
     var fill: RGBA? {
         didSet { rememberStyle { $0.fill = fill } }
     }
+    /// The colour of a new note's text; `nil` is black or white to suit the paper.
+    var noteTextColor: RGBA? {
+        didSet { rememberStyle { $0.noteTextColor = noteTextColor } }
+    }
     /// The outline of the next shape.
     var shape: BoxShape {
         didSet { rememberStyle { $0.shape = shape } }
@@ -200,6 +204,7 @@ final class EditorModel {
         noteColor = style.noteColor
         highlightColor = style.highlightColor
         fill = style.fill
+        noteTextColor = style.noteTextColor
         shape = style.shape
         redaction = style.redaction
         redactionAmount = style.redactionAmount
@@ -359,7 +364,7 @@ final class EditorModel {
     /// The style the tool's next annotation gets.
     private var nextStyle: EditorStyle {
         EditorStyle(
-            tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, widthIndex: widthIndex,
+            tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, noteTextColor: noteTextColor, widthIndex: widthIndex,
             customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
             alignment: alignment, verticalAlignment: verticalAlignment, objectStyles: objectStyles
         )
@@ -380,6 +385,7 @@ final class EditorModel {
         if next.noteColor != noteColor { noteColor = next.noteColor }
         if next.highlightColor != highlightColor { highlightColor = next.highlightColor }
         if next.fill != fill { fill = next.fill }
+        if next.noteTextColor != noteTextColor { noteTextColor = next.noteTextColor }
         if next.widthIndex != widthIndex { widthIndex = next.widthIndex }
         if next.shape != shape { shape = next.shape }
         if next.redaction != redaction { redaction = next.redaction }
@@ -772,15 +778,45 @@ final class EditorModel {
         palette.lastCustom(forFill: forFill)
     }
 
-    /// The width the toolbar shows and sets: the text being typed's, else the selection's nearest, else the width for the
-    /// next annotation.
-    var lineWidthIndex: Int {
-        get { palette.lineWidthIndex }
-        set {
-            var changed = palette
-            changed.setLineWidthIndex(newValue)
-            adopt(changed)
-        }
+    /// The colour rows the style bar shows, top to bottom.
+    var paletteColorRows: [StyleBarColorRow] { palette.colorRows }
+
+    /// The controls on the right of the style bar's colour rows, a row at a time.
+    var paletteControlRows: [[StyleBarControl]] { palette.controlRows }
+
+    /// The note's text colour the style bar shows; `nil` while it's black or white to suit the paper.
+    var paletteNoteTextColor: RGBA? { palette.noteTextColor }
+
+    func setNoteTextColor(_ color: RGBA?) {
+        var changed = palette
+        changed.setNoteTextColor(color)
+        adopt(changed)
+    }
+
+    /// Sets the note's text colour to one picked from the colour editor, as `pickCustom(_:forFill:)` does a colour.
+    func pickCustomNoteText(_ color: RGBA) {
+        var changed = palette
+        changed.pickCustomNoteText(color)
+        adopt(changed, coalescing: selection.map { "\($0.id)-noteText" })
+    }
+
+    /// The note text palette's last custom colour.
+    func lastCustomNoteText() -> RGBA? {
+        palette.style.customColors[.noteText]
+    }
+
+    /// The size the style bar's stepper shows: the line width in points, or the text size.
+    var paletteShownSize: CGFloat { palette.shownSize }
+
+    func canStepLineWidth(by steps: Int) -> Bool {
+        palette.canStepLineWidth(by: steps)
+    }
+
+    /// Steps the width the style bar shows thinner or thicker, or the text smaller or larger, as one undo step.
+    func stepLineWidth(by steps: Int) {
+        var changed = palette
+        changed.stepLineWidth(by: steps)
+        adopt(changed)
     }
 
     var lineWidth: CGFloat { Self.baseWidths[widthIndex] * scale }
@@ -790,7 +826,7 @@ final class EditorModel {
         AnnotationDraft.Style(
             color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
             redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment,
-            verticalAlignment: verticalAlignment
+            verticalAlignment: verticalAlignment, noteTextColor: noteTextColor
         )
     }
     /// Space kept between an annotation and a canvas edge that grew to hold it.

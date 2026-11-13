@@ -73,9 +73,17 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { wrapWidth = kind.isText ? newValue : nil }
     }
     private var wrapWidth: CGFloat?
+    /// The colour of a note's text; `nil` picks black or white, whichever reads better on the paper, and is always `nil`
+    /// for every other kind. Stored only when set, so annotations saved before it still decode.
+    public var noteTextColor: RGBA? {
+        get { noteInk }
+        set { noteInk = kind.isNote ? newValue : nil }
+    }
+    private var noteInk: RGBA?
 
     private enum CodingKeys: String, CodingKey {
         case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop, wrapWidth
+        case noteInk = "noteTextColor"
         case imageRadius = "cornerRadius"
         case customName = "name"
     }
@@ -98,6 +106,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         name = try container.decodeIfPresent(String.self, forKey: .customName)
         crop = kind.isImage ? try container.decodeIfPresent(ImageCrop.self, forKey: .crop) : nil
         wrapWidth = kind.isText ? try container.decodeIfPresent(CGFloat.self, forKey: .wrapWidth) : nil
+        noteInk = kind.isNote ? try container.decodeIfPresent(RGBA.self, forKey: .noteInk) : nil
         // A rounded rectangle from before every shape could be rounded keeps its radius, or the fifth of its shorter side
         // that it had when it had none.
         if !kind.isImage {
@@ -179,6 +188,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
         fileprivate var isText: Bool {
             if case .text = self { true } else { false }
+        }
+
+        fileprivate var isNote: Bool {
+            if case .note = self { true } else { false }
         }
     }
 
@@ -301,7 +314,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         guard case let .note(string, rect) = kind else {
             return nil
         }
-        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, verticalAlignment: verticalAlignment)
+        return NoteLayout(string: string, rect: rect, fontSize: noteFontSize, color: color, textColor: noteTextColor, verticalAlignment: verticalAlignment)
     }
 
     /// The quadratic curve an arrow or line follows: its ends and the control point that gives it its bend.

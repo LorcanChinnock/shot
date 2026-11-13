@@ -1075,7 +1075,7 @@ extension VideoEditorModel {
         return AnnotationDraft.Style(
             color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
             redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment,
-            verticalAlignment: style.verticalAlignment
+            verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor
         )
     }
 
@@ -1226,15 +1226,46 @@ extension VideoEditorModel {
         }
     }
 
-    /// The width the palette shows and sets: the text being typed's, else the selected annotation's nearest, else the
-    /// next annotation's.
-    var lineWidthIndex: Int {
-        get { palette.lineWidthIndex }
-        set {
-            var changed = palette
-            changed.setLineWidthIndex(newValue)
-            adopt(changed)
-        }
+    /// The colour rows the style bar shows, top to bottom.
+    var paletteColorRows: [StyleBarColorRow] { palette.colorRows }
+
+    /// The controls on the right of the style bar's colour rows, a row at a time.
+    var paletteControlRows: [[StyleBarControl]] { palette.controlRows }
+
+    /// The note's text colour the style bar shows; `nil` while it's black or white to suit the paper.
+    var paletteNoteTextColor: RGBA? { palette.noteTextColor }
+
+    func setNoteTextColor(_ color: RGBA?) {
+        var changed = palette
+        changed.setNoteTextColor(color)
+        adopt(changed)
+    }
+
+    /// Sets the note's text colour to one picked from the colour editor, as `pickCustom(_:forFill:)` does a colour.
+    func pickCustomNoteText(_ color: RGBA) {
+        var changed = palette
+        changed.pickCustomNoteText(color)
+        adopt(changed, coalescing: selectedClipID.map { "\($0)-custom-noteText" })
+        Preferences.changeEditorStyle { $0.customColors[.noteText] = color }
+    }
+
+    /// The note text palette's last custom colour.
+    func lastCustomNoteText() -> RGBA? {
+        palette.style.customColors[.noteText]
+    }
+
+    /// The size the style bar's stepper shows: the line width in points, or the text size.
+    var paletteShownSize: CGFloat { palette.shownSize }
+
+    func canStepLineWidth(by steps: Int) -> Bool {
+        palette.canStepLineWidth(by: steps)
+    }
+
+    /// Steps the width the style bar shows thinner or thicker, or the text smaller or larger, as one undo step.
+    func stepLineWidth(by steps: Int) {
+        var changed = palette
+        changed.stepLineWidth(by: steps)
+        adopt(changed)
     }
 
     /// Call as the colour editor opens, so its run of picks doesn't join the last one's undo step.

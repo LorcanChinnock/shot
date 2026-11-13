@@ -4,8 +4,9 @@ import Foundation
 /// What the image editor's style bar holds, from Edit › Image editor · annotate: the small floating bar beside the
 /// selected mark, or at the top of the canvas for the tool's next mark.
 public enum StyleBarContent: Equatable, Sendable {
-    /// Colour swatches and three widths for arrows, lines, shapes, pens, text, notes, highlights and counters, with a
-    /// second row for a shape's outlines and fill, or a text's or note's alignment.
+    /// Rows of colour swatches on the left for arrows, lines, shapes, pens, text, notes, highlights and counters, with the
+    /// width or text size, a shape's outlines and a text's alignment on the right (`AnnotationPalette.colorRows` and
+    /// `controlRows`).
     case colorAndWidth
     /// Blur or pixelate and the amount, in one row.
     case redaction
@@ -29,15 +30,6 @@ public enum StyleBarContent: Equatable, Sendable {
             return .spotlight
         }
         return nil
-    }
-
-    /// Whether the bar has a second row under its colours and widths: only for a mark with a shape, a fill or an
-    /// alignment. A redaction and a spotlight have no colours, so their options fit in one row.
-    public func hasSecondRow(hasShape: Bool, hasFill: Bool, hasAlignment: Bool) -> Bool {
-        switch self {
-        case .colorAndWidth: hasShape || hasFill || hasAlignment
-        case .redaction, .spotlight: false
-        }
     }
 }
 
@@ -78,7 +70,9 @@ public enum StyleBarPlacement {
             CGPoint(x: mark.maxX + gap, y: y),
             CGPoint(x: mark.minX - gap - bar.width, y: y),
         ]
-        let room = CGRect(x: inset, y: inset, width: canvas.width - inset * 2, height: canvas.height - inset - floor)
+        // A bar wider than the room between the side insets may use them, as `clamp` centres it.
+        let side = min(inset, max(0, (canvas.width - bar.width) / 2))
+        let room = CGRect(x: side, y: inset, width: canvas.width - side * 2, height: canvas.height - inset - floor)
         for origin in candidates {
             let frame = CGRect(origin: origin, size: bar)
             if room.contains(frame), !frame.intersects(mark) {
@@ -88,8 +82,69 @@ public enum StyleBarPlacement {
         return CGPoint(x: x, y: inset)
     }
 
-    /// Keeps a bar `size` long inside `length` with the inset either side, or at the inset when it can't fit.
+    /// Keeps a bar `size` long inside `length` with the inset either side. One that fits only by going into the insets is
+    /// centred, so all of it shows, and one longer than `length` stays at the inset.
     private static func clamp(_ value: CGFloat, size: CGFloat, within length: CGFloat) -> CGFloat {
-        max(inset, min(value, length - inset - size))
+        if size > length - inset * 2, size <= length {
+            return (length - size) / 2
+        }
+        return max(inset, min(value, length - inset - size))
     }
+}
+
+/// A row of colours in the style bar, each named on its left. Every row has the same swatches: the seven presets, the
+/// custom colour, then transparent.
+public enum StyleBarColorRow: Equatable, Sendable {
+    /// The colour of an arrow, line, shape's outline, pen or highlighter stroke, named Line.
+    case line
+    /// A shape's inside, named Fill. Transparent leaves it unfilled.
+    case fill
+    /// A text's colour, named Text.
+    case text
+    /// A note's text, named Text. With no swatch chosen it's black or white, whichever reads better on the paper.
+    case noteText
+    /// A note's paper, named Background.
+    case paper
+    /// A counter's disc, named Fill, behind its white number.
+    case counter
+
+    /// The rows for a mark of `kind`, top to bottom: Line above Fill for a shape, Text above Background for a note.
+    public static func rows(for kind: Annotation.Kind) -> [StyleBarColorRow] {
+        switch kind {
+        case .shape: [.line, .fill]
+        case .text: [.text]
+        case .note: [.noteText, .paper]
+        case .counter: [.counter]
+        case .arrow, .line, .freehand, .marker, .highlight: [.line]
+        case .pixelate, .blur, .spotlight, .image: []
+        }
+    }
+
+    /// The rows for the next mark `tool` draws.
+    public static func rows(for tool: EditorTool) -> [StyleBarColorRow] {
+        switch tool {
+        case .shape: [.line, .fill]
+        case .text: [.text]
+        case .note: [.noteText, .paper]
+        case .counter: [.counter]
+        case .arrow, .line, .pen, .highlight: [.line]
+        case .select, .hand, .spotlight, .redact, .crop: []
+        }
+    }
+
+    /// Whether this row's transparent swatch clears the colour to `nil` rather than to `RGBA.clear`: only a fill, which
+    /// has always kept none that way.
+    public var clearsToNone: Bool { self == .fill }
+}
+
+/// A control on the right of the style bar's colour rows.
+public enum StyleBarControl: Equatable, Sendable {
+    /// Thinner and thicker, or for text, a note or a counter, smaller and larger, with the size between them.
+    case width
+    /// A shape's five outlines.
+    case outline
+    /// Left, centre or right.
+    case alignment
+    /// A note's text at the top, middle or bottom.
+    case verticalAlignment
 }

@@ -5979,6 +5979,58 @@
         }
       }
     },
+    "Automatic" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatisch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automático"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatico"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automático"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动"
+          }
+        }
+      }
+    },
     "B: leave out browser toolbars" : {
       "localizations" : {
         "de" : {
@@ -44792,6 +44844,58 @@
         }
       }
     },
+    "Smaller" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kleiner"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más pequeño"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus petit"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più piccolo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小さめ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 작게"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "较小"
+          }
+        }
+      }
+    },
     "Snap" : {
       "localizations" : {
         "de" : {
@@ -48805,106 +48909,106 @@
         }
       }
     },
-    "Thick" : {
+    "Thicker" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dick"
+            "value" : "Dicker"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grueso"
+            "value" : "Más grueso"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Épais"
+            "value" : "Plus épais"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spesso"
+            "value" : "Più spesso"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "太"
+            "value" : "太く"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "굵게"
+            "value" : "더 굵게"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grosso"
+            "value" : "Mais grosso"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "粗"
+            "value" : "更粗"
           }
         }
       }
     },
-    "Thin" : {
+    "Thinner" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dünn"
+            "value" : "Dünner"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fino"
+            "value" : "Más fino"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fin"
+            "value" : "Plus fin"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sottile"
+            "value" : "Più sottile"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "細"
+            "value" : "細く"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "가늘게"
+            "value" : "더 가늘게"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fino"
+            "value" : "Mais fino"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "细"
+            "value" : "更细"
           }
         }
       }
@@ -52338,6 +52442,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "窗口阴影"
+          }
+        }
+      }
+    },
+    "With no colour chosen, the text is black or white, whichever reads better on the paper. Click the chosen colour again to go back to that." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ohne gewählte Farbe ist der Text schwarz oder weiß, je nachdem, was sich auf dem Papier besser lesen lässt. Klicke erneut auf die gewählte Farbe, um dazu zurückzukehren."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si no eliges un color, el texto es negro o blanco, lo que se lea mejor sobre el papel. Vuelve a hacer clic en el color elegido para volver a eso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sans couleur choisie, le texte est noir ou blanc, selon ce qui se lit le mieux sur le papier. Cliquez à nouveau sur la couleur choisie pour y revenir."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senza un colore scelto, il testo è nero o bianco, a seconda di cosa si legge meglio sulla carta. Fai di nuovo clic sul colore scelto per tornare a questa impostazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "色を選ばないと、テキストは紙の上で読みやすい黒か白になります。選んだ色をもう一度クリックすると、それに戻ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "색을 선택하지 않으면 텍스트는 종이 위에서 더 잘 읽히는 검은색이나 흰색이 됩니다. 선택한 색을 다시 클릭하면 그 상태로 돌아갑니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem uma cor escolhida, o texto fica preto ou branco, o que for mais legível no papel. Clique de novo na cor escolhida para voltar a isso."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未选择颜色时，文本为黑色或白色，以在纸张上更易阅读者为准。再次点按所选颜色即可恢复。"
           }
         }
       }

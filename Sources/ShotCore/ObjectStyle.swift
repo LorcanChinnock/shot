@@ -243,8 +243,8 @@ public struct Border: Equatable, Hashable, Sendable, Codable {
     public static func widths(_ kind: Kind, on target: StyleKind) -> [CGFloat] {
         switch (kind, target) {
         case (.hairline, _): []
-        case (.solid, _): EditorStyle.widths
-        case (.outline, .text): EditorStyle.widths.map { $0 / 2 }
+        case (.solid, _): EditorStyle.presetWidths
+        case (.outline, .text): EditorStyle.presetWidths.map { $0 / 2 }
         case (.outline, _): [4, 9, 15]
         }
     }

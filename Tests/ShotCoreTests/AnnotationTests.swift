@@ -281,3 +281,36 @@ func draggingTheMidpointBendsIt(kind: Annotation.Kind) {
     #expect(Annotation.distance(from: CGPoint(x: 13, y: 4), toSegment: a, b) == 5)
     #expect(Annotation.distance(from: CGPoint(x: 3, y: 4), toSegment: a, a) == 5)
 }
+
+@Test func aNoteSavedBeforeItsTextColourFollowsThePaper() throws {
+    let json = #"{"id":"9F0C1E2A-3B4C-4D5E-8F60-718293A4B5C6","kind":{"note":{"_0":"Hi","rect":[[0,0],[200,80]]}},"color":{"r":1,"g":0.8,"b":0,"a":1},"lineWidth":4}"#
+    let decoded = try JSONDecoder().decode(Annotation.self, from: Data(json.utf8))
+    #expect(decoded.noteTextColor == nil)
+    #expect(decoded.noteLayout?.ink == RGBA(1, 0.8, 0).noteFill.contrastingInk)
+    var coloured = decoded
+    coloured.noteTextColor = RGBA.presets[4]
+    #expect(coloured.noteLayout?.ink == RGBA.presets[4])
+    #expect(try JSONDecoder().decode(Annotation.self, from: JSONEncoder().encode(coloured)) == coloured)
+    // Only a note has a text colour, and a note without one saves no key for it.
+    let encoded = try String(decoding: JSONEncoder().encode(decoded), as: UTF8.self)
+    #expect(!encoded.contains("noteTextColor"))
+    var arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 10, y: 0)))
+    arrow.noteTextColor = RGBA.presets[4]
+    #expect(arrow.noteTextColor == nil)
+}
+
+@Test func aNewNoteTakesTheChosenTextColour() {
+    var style = AnnotationDraft.Style(
+        color: red, fill: nil, noteColor: RGBA.presets[2], lineWidth: 4, shape: .rectangle, redaction: .blur, redactionAmount: 0.01,
+        spotlight: SpotlightStyle(), alignment: .left, verticalAlignment: .top
+    )
+    #expect(AnnotationDraft.note(id: UUID(), from: .zero, to: CGPoint(x: 100, y: 60), style: style).noteTextColor == nil)
+    style.noteTextColor = RGBA.presets[5]
+    #expect(AnnotationDraft.note(id: UUID(), from: .zero, to: CGPoint(x: 100, y: 60), style: style).noteTextColor == RGBA.presets[5])
+}
+
+@Test func aTransparentMarkDrawsNothing() {
+    #expect(RGBA.clear.a == 0)
+    let clearNote = Annotation(kind: .note("Hi", rect: CGRect(x: 0, y: 0, width: 200, height: 80)), color: .clear, lineWidth: 4)
+    #expect(clearNote.noteLayout?.fill.a == 0)
+}

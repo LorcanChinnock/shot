@@ -102,7 +102,8 @@ public struct NoteLayout {
         return CGRect(x: rect.minX, y: rect.minY, width: max(rect.width, minWidth(fontSize: fontSize)), height: rect.height)
     }
 
-    public init(string: String, rect: CGRect, fontSize: CGFloat, color: RGBA, verticalAlignment: VerticalTextAlign = .top) {
+    /// `textColor` colours the text; `nil` picks black or white, whichever reads better on the paper.
+    public init(string: String, rect: CGRect, fontSize: CGFloat, color: RGBA, textColor: RGBA? = nil, verticalAlignment: VerticalTextAlign = .top) {
         self.fontSize = fontSize
         self.verticalAlignment = verticalAlignment
         padding = Self.padding(fontSize: fontSize)
@@ -110,7 +111,7 @@ public struct NoteLayout {
         shadowOffset = fontSize * 0.15
         shadowBlur = fontSize * 0.5
         fill = color.noteFill
-        ink = fill.contrastingInk
+        ink = textColor ?? fill.contrastingInk
 
         let width = max(rect.width, Self.minWidth(fontSize: fontSize))
         let wrapWidth = width - padding * 2

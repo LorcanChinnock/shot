@@ -64,8 +64,35 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
 
 /// The tool, colours and width a new editor window starts with: the last ones used.
 public struct EditorStyle: Equatable, Sendable {
-    /// Line widths in points; the image's scale multiplies them.
-    public static let widths: [CGFloat] = [2, 4, 8]
+    /// The line widths the style bar steps through, in points; the image's scale multiplies them. Each step is about a
+    /// quarter to a half bigger than the last, and the three widths older versions offered, 2, 4 and 8, are on it, so
+    /// their marks and remembered widths land on a step.
+    public static let widths: [CGFloat] = [1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 16]
+    /// The three widths older versions offered, Thin, Medium and Thick, which the Style panel's border sizes still use.
+    public static let presetWidths: [CGFloat] = [2, 4, 8]
+    /// Medium, 4 pt.
+    public static let defaultWidthIndex = 4
+
+    /// The index into `widths` of the step nearest `points`.
+    public static func nearestWidthIndex(to points: CGFloat) -> Int {
+        widths.indices.min { abs(widths[$0] - points) < abs(widths[$1] - points) } ?? defaultWidthIndex
+    }
+
+    /// The size the style bar shows for a width of `points`: the width itself for a line, or the text's size in points
+    /// for text, a note or a counter, which their width sets.
+    public static func shownSize(width points: CGFloat, sizing kind: SizeKind) -> CGFloat {
+        switch kind {
+        case .line: points
+        case .text: points * 6
+        case .note: points * 3 + 8
+        case .counter: ((points * 3 + 10) * 1.1).rounded()
+        }
+    }
+
+    /// What a width sets the size of.
+    public enum SizeKind: Equatable, Sendable {
+        case line, text, note, counter
+    }
 
     public var tool: EditorTool
     public var color: RGBA
@@ -75,6 +102,8 @@ public struct EditorStyle: Equatable, Sendable {
     public var highlightColor: RGBA
     /// What new shapes are filled with; `nil` leaves them unfilled.
     public var fill: RGBA?
+    /// The colour of a new note's text; `nil` picks black or white, whichever reads better on the paper.
+    public var noteTextColor: RGBA?
     /// Index into `widths`.
     public var widthIndex: Int
     /// The last custom colour picked in each palette, which its rainbow swatch offers again.
@@ -92,7 +121,8 @@ public struct EditorStyle: Equatable, Sendable {
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
-        highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, widthIndex: Int = 1, customColors: [ColorSlot: RGBA] = [:],
+        highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, noteTextColor: RGBA? = nil,
+        widthIndex: Int = EditorStyle.defaultWidthIndex, customColors: [ColorSlot: RGBA] = [:],
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
         spotlight: SpotlightStyle = SpotlightStyle(),
         alignment: TextAlign = .left, verticalAlignment: VerticalTextAlign = .top, objectStyles: [StyleKind: ObjectStyle] = [:]
@@ -102,6 +132,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.noteColor = noteColor
         self.highlightColor = highlightColor
         self.fill = fill
+        self.noteTextColor = noteTextColor
         self.widthIndex = widthIndex
         self.customColors = customColors
         self.shape = shape
@@ -135,7 +166,8 @@ public struct EditorStyle: Equatable, Sendable {
 
 /// A palette that remembers its own last custom colour.
 public enum ColorSlot: String, Codable, CodingKeyRepresentable, Sendable {
-    case stroke, fill, note, highlight
+    /// `noteText` is a note's text colour, which only `AnnotationPalette.pickCustomNoteText(_:)` picks.
+    case stroke, fill, note, highlight, noteText
 
     /// The fill palette's slot, else the note's or highlighter's for the one shown or about to be drawn, else the stroke's.
     public init(forFill: Bool, shown: Annotation?, tool: EditorTool?) {

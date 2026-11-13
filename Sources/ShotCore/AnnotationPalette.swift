@@ -102,6 +102,68 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
     }
 
+    /// The colour of the note shown's text, or the next note's; `nil` when it follows the paper, as it does until one is
+    /// picked, and when the one shown isn't a note.
+    public var noteTextColor: RGBA? {
+        if let shown {
+            return shown.noteTextColor
+        }
+        return tool == .note ? style.noteTextColor : nil
+    }
+
+    /// Sets the colour of the note shown's text, and the next note's; `nil` goes back to following the paper.
+    public mutating func setNoteTextColor(_ color: RGBA?) {
+        if editingText != nil {
+            editingText?.noteTextColor = color
+            if editingTextIsNew {
+                style.noteTextColor = color
+            }
+            return
+        }
+        selection?.noteTextColor = color
+        if stylesNextAnnotation {
+            style.noteTextColor = color
+        }
+    }
+
+    /// Sets a note's text colour to one picked from the colour editor, which becomes that palette's last custom colour.
+    public mutating func pickCustomNoteText(_ color: RGBA) {
+        setNoteTextColor(color)
+        style.customColors[.noteText] = color
+    }
+
+    /// The colour rows the style bar shows, top to bottom, for the text being typed, else the selection, else the tool.
+    public var colorRows: [StyleBarColorRow] {
+        guard showsStyle else {
+            return []
+        }
+        if let shown {
+            return StyleBarColorRow.rows(for: shown.kind)
+        }
+        return tool.map(StyleBarColorRow.rows(for:)) ?? []
+    }
+
+    /// The controls on the right of the colour rows, a row at a time, top to bottom: the width first, then a shape's
+    /// outlines under it, and a text's alignment beside it. A note's alignments go under its size, one a row, since beside
+    /// it they'd make the bar too wide to fit a small window with its panels open.
+    public var controlRows: [[StyleBarControl]] {
+        guard showsStyle else {
+            return []
+        }
+        var rows: [[StyleBarControl]] = [[.width]]
+        if shape != nil {
+            rows.append([.outline])
+        }
+        if alignment != nil {
+            if verticalAlignment != nil {
+                rows += [[.alignment], [.verticalAlignment]]
+            } else {
+                rows[0].append(.alignment)
+            }
+        }
+        return rows
+    }
+
     /// Sets the colour, or the fill, to one picked from the colour editor, which also becomes the palette's last custom colour.
     public mutating func pickCustom(_ color: RGBA, forFill: Bool) {
         if forFill {
@@ -150,6 +212,38 @@ public struct AnnotationPalette: Equatable, Sendable {
             return style.widthIndex
         }
         return EditorStyle.widths.indices.min { abs(EditorStyle.widths[$0] * scale - shown.lineWidth) < abs(EditorStyle.widths[$1] * scale - shown.lineWidth) } ?? style.widthIndex
+    }
+
+    /// The size the style bar's stepper shows: the line width in points, or for text, a note or a counter, its text size.
+    public var shownSize: CGFloat {
+        let kind: EditorStyle.SizeKind
+        switch shown?.kind {
+        case .text: kind = .text
+        case .note: kind = .note
+        case .counter: kind = .counter
+        case nil:
+            switch tool {
+            case .text: kind = .text
+            case .note: kind = .note
+            case .counter: kind = .counter
+            default: kind = .line
+            }
+        default: kind = .line
+        }
+        return EditorStyle.shownSize(width: EditorStyle.widths[lineWidthIndex], sizing: kind)
+    }
+
+    /// Whether the width can step `by` steps along `EditorStyle.widths`: not past its thinnest or thickest.
+    public func canStepLineWidth(by steps: Int) -> Bool {
+        EditorStyle.widths.indices.contains(lineWidthIndex + steps)
+    }
+
+    /// Steps the width shown `by` steps along `EditorStyle.widths`, from the step nearest it.
+    public mutating func stepLineWidth(by steps: Int) {
+        guard canStepLineWidth(by: steps) else {
+            return
+        }
+        setLineWidthIndex(lineWidthIndex + steps)
     }
 
     public mutating func setLineWidthIndex(_ index: Int) {
@@ -334,7 +428,10 @@ public struct AnnotationPalette: Equatable, Sendable {
             switch ColorSlot(forFill: false, shown: shown, tool: tool) {
             case .note: setColor(defaults.noteColor)
             case .highlight: setColor(defaults.highlightColor)
-            case .stroke, .fill: setColor(defaults.color)
+            case .stroke, .fill, .noteText: setColor(defaults.color)
+            }
+            if colorRows.contains(.noteText) {
+                setNoteTextColor(defaults.noteTextColor)
             }
             setLineWidthIndex(defaults.widthIndex)
             if showsFill {

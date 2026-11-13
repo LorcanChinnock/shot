@@ -130,7 +130,8 @@ import Testing
         #expect(style.noteColor == RGBA.presets[2])
         #expect(style.highlightColor == RGBA.presets[2])
         #expect(style.fill == nil)
-        #expect(style.widthIndex == 1)
+        #expect(style.noteTextColor == nil)
+        #expect(EditorStyle.widths[style.widthIndex] == 4)
     }
 
     @Test func editorStyleRemembersToolColoursAndWidth() throws {
@@ -144,7 +145,8 @@ import Testing
         let thick = try #require(EditorStyle.widths.indices.last)
         let custom = RGBA(0.2, 0.4, 0.6, 0.5)
         let style = EditorStyle(
-            tool: .shape, color: blue, noteColor: RGBA.presets[3], highlightColor: RGBA.presets[4], fill: custom, widthIndex: thick,
+            tool: .shape, color: blue, noteColor: RGBA.presets[3], highlightColor: RGBA.presets[4], fill: custom,
+            noteTextColor: RGBA.presets[6], widthIndex: thick,
             customColors: [.stroke: custom, .note: blue, .highlight: RGBA.presets[1]],
             shape: .star, redaction: .pixelate, redactionAmount: 0.013, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
             alignment: .center, verticalAlignment: .middle
@@ -168,11 +170,11 @@ import Testing
         #expect(prefs.editorStyle.color == RGBA.presets[2])
         // Every key the change didn't touch is left as it was, here with nothing stored at all.
         store.removeObject(forKey: PreferenceKey.editorTool)
-        store.removeObject(forKey: PreferenceKey.editorWidth)
+        store.removeObject(forKey: PreferenceKey.editorLineWidth)
         Preferences.changeEditorStyle(in: store) { $0.color = RGBA.presets[3] }
         let saved = store.persistentDomain(forName: suite.name) ?? [:]
         #expect(saved[PreferenceKey.editorTool] == nil)
-        #expect(saved[PreferenceKey.editorWidth] == nil)
+        #expect(saved[PreferenceKey.editorLineWidth] == nil)
         #expect(prefs.editorStyle.color == RGBA.presets[3])
     }
 
@@ -205,7 +207,7 @@ import Testing
         store.set("lasso", forKey: PreferenceKey.editorTool)
         store.set(RGBA.presets.count, forKey: PreferenceKey.editorColor)
         store.set(-1, forKey: PreferenceKey.editorNoteColor)
-        store.set(EditorStyle.widths.count, forKey: PreferenceKey.editorWidth)
+        store.set(EditorStyle.presetWidths.count, forKey: PreferenceKey.editorWidth)
         store.set(1.0, forKey: PreferenceKey.editorRedactionAmount)
         #expect(prefs.editorStyle == EditorStyle())
         store.set("thick", forKey: PreferenceKey.editorWidth)
@@ -214,6 +216,27 @@ import Testing
         store.set(EditorTool.text.rawValue, forKey: PreferenceKey.editorTool)
         store.set(5, forKey: PreferenceKey.editorColor)
         #expect(prefs.editorStyle == EditorStyle(tool: .text, color: RGBA.presets[5]))
+    }
+
+    @Test func aWidthFromBeforeTheStepperLandsOnItsStep() throws {
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        // Thin, Medium and Thick were saved as 0, 1 and 2, for 2, 4 and 8 points.
+        for (index, points) in [(0, CGFloat(2)), (1, 4), (2, 8)] {
+            store.set(index, forKey: PreferenceKey.editorWidth)
+            #expect(EditorStyle.widths[prefs.editorStyle.widthIndex] == points)
+        }
+        // A width saved by this version wins over the old index, and is saved in points.
+        Preferences.changeEditorStyle(in: store) { $0.widthIndex = EditorStyle.widths.firstIndex(of: 12)! }
+        #expect(store.double(forKey: PreferenceKey.editorLineWidth) == 12)
+        #expect(EditorStyle.widths[prefs.editorStyle.widthIndex] == 12)
+        store.set(7.2, forKey: PreferenceKey.editorLineWidth)
+        #expect(EditorStyle.widths[prefs.editorStyle.widthIndex] == 8)
+        Preferences.resetAll(in: store)
+        #expect(prefs.editorStyle.widthIndex == EditorStyle.defaultWidthIndex)
     }
 
     @Test func toolsFromOlderVersionsBecomeTheToolsThatReplacedThem() throws {

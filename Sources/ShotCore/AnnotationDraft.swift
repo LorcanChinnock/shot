@@ -9,6 +9,8 @@ public enum AnnotationDraft {
         public var color: RGBA
         public var fill: RGBA?
         public var noteColor: RGBA
+        /// A new note's text colour; `nil` follows the paper.
+        public var noteTextColor: RGBA?
         public var lineWidth: CGFloat
         public var shape: BoxShape
         public var redaction: Redaction
@@ -20,11 +22,12 @@ public enum AnnotationDraft {
         public init(
             color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
             redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign,
-            verticalAlignment: VerticalTextAlign
+            verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil
         ) {
             self.color = color
             self.fill = fill
             self.noteColor = noteColor
+            self.noteTextColor = noteTextColor
             self.lineWidth = lineWidth
             self.shape = shape
             self.redaction = redaction
@@ -91,6 +94,7 @@ public enum AnnotationDraft {
         note.alignment = style.alignment
         note.verticalAlignment = style.verticalAlignment
         note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: end, fontSize: note.noteFontSize))
+        note.noteTextColor = style.noteTextColor
         return note
     }
 

@@ -271,7 +271,7 @@ private struct GradientSwatch: View {
 }
 
 /// The see-through background: a grey and white check, 5 pt squares.
-private struct Checkerboard: View {
+struct Checkerboard: View {
     var body: some View {
         Canvas { context, size in
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white))

@@ -23,7 +23,7 @@ private func marker(_ points: [CGPoint], lineWidth: CGFloat = 4) -> Annotation {
 }
 
 @Test func theMiddleWidthIsAboutALineOfTextTall() {
-    #expect(marker(across, lineWidth: EditorStyle.widths[1]).markerWidth == 18)
+    #expect(marker(across, lineWidth: 4).markerWidth == 18)
 }
 
 @Test func aMarkerMultipliesIntoTheImageWithFlatEnds() throws {
