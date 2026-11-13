@@ -74,3 +74,13 @@ private let arrow = mark(.arrow(from: .zero, to: CGPoint(x: 100, y: 60)))
     // A fit smaller than the smallest step has nowhere further out to go.
     #expect(!ZoomControl.canZoomOut(0.05))
 }
+
+@Test func hintShowsOnlyWhileFreshAndNotDragging() {
+    #expect(CanvasHint.isShown(isFresh: true, isDragging: false, voiceOver: false))
+    #expect(!CanvasHint.isShown(isFresh: false, isDragging: false, voiceOver: false))
+    #expect(!CanvasHint.isShown(isFresh: true, isDragging: true, voiceOver: false))
+}
+
+@Test func hintStaysForVoiceOver() {
+    #expect(CanvasHint.isShown(isFresh: false, isDragging: true, voiceOver: true))
+}

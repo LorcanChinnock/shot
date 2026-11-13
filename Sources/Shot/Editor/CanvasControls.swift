@@ -5,9 +5,14 @@ import SwiftUI
 /// What sits along the canvas's foot, from Edit › Image editor · annotate: the zoom control at the bottom left, and the
 /// hint at the bottom right, each 16 pt in. The hint gives way first when the canvas is narrow. In
 /// crop mode the crop bar (`CropBarOverlay`) takes the hint's place.
+///
+/// Neither stays over the picture: both fade while a drag draws or moves something, and the hint fades a few seconds
+/// after it changes and lets clicks through to the canvas. Fading keeps their space, so the style bar's clearance holds.
 struct CanvasFoot: View {
     @Bindable var model: EditorModel
     let canvas: EditorCanvasView
+    @State private var isHintFresh = true
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
 
     static let inset: CGFloat = 16
 
@@ -15,14 +20,31 @@ struct CanvasFoot: View {
         HStack(alignment: .bottom, spacing: 8) {
             CanvasZoomControl(model: model, canvas: canvas)
                 .onGeometryChange(for: CGSize.self, of: \.size) { model.canvasFootLeading = $0 }
+                .opacity(model.isCanvasDragging ? 0 : 1)
+                .allowsHitTesting(!model.isCanvasDragging)
+                .animation(Motion.leave, value: model.isCanvasDragging)
             Spacer(minLength: 12)
             if let hint = model.canvasHint {
                 CanvasHintPill(hint: hint)
                     .layoutPriority(-1)
+                    .opacity(showsHint ? 1 : 0)
+                    .allowsHitTesting(false)
+                    .animation(Motion.leave, value: showsHint)
+                    .task(id: hint) {
+                        isHintFresh = true
+                        try? await Task.sleep(for: CanvasHint.showsFor)
+                        if !Task.isCancelled {
+                            isHintFresh = false
+                        }
+                    }
             }
         }
         .padding(Self.inset)
         .onGeometryChange(for: CGFloat.self, of: \.size.height) { model.canvasFootHeight = $0 }
+    }
+
+    private var showsHint: Bool {
+        CanvasHint.isShown(isFresh: isHintFresh, isDragging: model.isCanvasDragging, voiceOver: voiceOver)
     }
 }
 
