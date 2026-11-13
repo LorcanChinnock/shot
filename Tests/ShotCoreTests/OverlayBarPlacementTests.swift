@@ -31,7 +31,7 @@ private func place(
 }
 
 @Test func overlayBarKeepsTheSameGapOverAHiddenDock() {
-    // A Dock that hides itself keeps only a 4 pt strip, and the overlay draws over it when it pops up.
+    // Before macOS 26, a Dock that hides itself keeps a 4 pt strip.
     let hiddenDock = CGRect(x: 0, y: 4, width: 1440, height: 871)
     #expect(OverlayBarPlacement.bottom.frame(of: bar, visible: hiddenDock) == CGRect(x: 570, y: 20, width: 300, height: 38))
 }

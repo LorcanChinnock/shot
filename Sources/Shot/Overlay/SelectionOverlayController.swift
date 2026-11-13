@@ -73,6 +73,9 @@ final class SelectionOverlayController {
     private var panels: [OverlayPanel] = []
     /// The card that asks for Accessibility access after Browser is picked without it, while it shows.
     private var permissionCard: BrowserPermissionCard?
+    /// A Dock that hides itself and was showing as the overlay opened: the AppKit frame of its screen, and how far up it
+    /// reached. Taken once, since a frozen screen keeps showing it after the Dock itself slides away.
+    private(set) var shownDock: (screen: CGRect, height: CGFloat)?
     var showsPermissionCard: Bool { permissionCard != nil }
     private var views: [SelectionOverlayView] = []
     private var continuation: CheckedContinuation<OverlaySelection?, Never>?
@@ -126,6 +129,7 @@ final class SelectionOverlayController {
     }
 
     private func show(_ displays: [OverlayDisplay]) {
+        shownDock = Self.autoHideDockIfShowing()
         for (index, display) in displays.enumerated() {
             let panel = OverlayPanel(contentRect: display.frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.level = .screenSaver
@@ -166,6 +170,27 @@ final class SelectionOverlayController {
         updateHover(redraw: true)
         SelectionOverlayView.cursor.set()
         revealBar()
+    }
+
+    /// The Dock keeps one window at its level over the whole of its screen, which is on screen only while a Dock that hides
+    /// itself is showing.
+    private static func autoHideDockIfShowing() -> (screen: CGRect, height: CGFloat)? {
+        let dock = UserDefaults(suiteName: "com.apple.dock")
+        guard let height = AutoHideDock.height(
+            autohide: dock?.bool(forKey: "autohide") ?? false,
+            orientation: dock?.string(forKey: "orientation"),
+            tileSize: (dock?.object(forKey: "tilesize") as? NSNumber).map { CGFloat($0.doubleValue) }
+        ) else {
+            return nil
+        }
+        let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? []
+        let dockWindow = windows.first {
+            $0[kCGWindowOwnerName as String] as? String == "Dock" && $0[kCGWindowLayer as String] as? Int == Int(CGWindowLevelForKey(.dockWindow))
+        }
+        guard let bounds = dockWindow?[kCGWindowBounds as String] as? NSDictionary, let frame = CGRect(dictionaryRepresentation: bounds) else {
+            return nil
+        }
+        return (Geometry.flip(frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0), height)
     }
 
     /// Shows the bar and starts the pause after which it goes again; it stays while the pointer is on it.
