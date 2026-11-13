@@ -328,7 +328,7 @@ extension StyleBarColorRow {
     }
 }
 
-/// A size box like a word processor's font size: smaller and larger arrows either side of the size, which can be typed
+/// A size box like a word processor's font size: smaller and larger arrows before the size, which can be typed
 /// over, and a menu of the scale's sizes. Return or clicking away sets a typed size, kept within the scale and rounded to
 /// a half point, and Esc puts the shown one back. The up and down arrow keys step it, and left and right too from an
 /// arrow button. VoiceOver reads the field as an adjustable control, with the menu beside it.
@@ -353,9 +353,9 @@ private struct StyleBarSizeBox: View {
         let track = RoundedRectangle(cornerRadius: 8, style: .circular)
         HStack(spacing: 0) {
             arrow("chevron.down", help: down, by: -1)
+            arrow("chevron.up", help: up, by: 1)
             field
             menu
-            arrow("chevron.up", help: up, by: 1)
         }
         .padding(2)
         .background(Theme.fieldFill, in: track)
