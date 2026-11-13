@@ -7,11 +7,18 @@ private let log = Logger.shot("video-editor")
 private final class VideoEditorWindow: NSWindow {
     var onCommand: ((String, Bool, Bool) -> Bool)?
     var onKey: ((NSEvent) -> Bool)?
+    var undoing: EditorUndo?
 
-    /// An annotation's text field is being edited, which keeps its keys, including the shortcuts.
+    /// An annotation's text field is being edited, which keeps its keys, including the shortcuts other than ⌘Z.
     private var isEditingText: Bool { firstResponder is NSText }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        // ⌘Z is taken here, before the Edit menu, which would leave it to a text field with nothing left to undo.
+        let command = EditorUndo.command(in: event)
+        if command.isUndo, let undoing {
+            undoing.perform(redo: command.redo, in: self)
+            return true
+        }
         guard !isEditingText else {
             return super.performKeyEquivalent(with: event)
         }
@@ -20,6 +27,24 @@ private final class VideoEditorWindow: NSWindow {
             return true
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    // Edit › Undo and Redo reach the window when no text view takes them first. NSWindow's own pass them to its undo
+    // manager, which only holds a text field's typing, so they'd be greyed out whenever nothing is typed.
+
+    @objc func undo(_ sender: Any?) {
+        undoing?.perform(redo: false, in: self)
+    }
+
+    @objc func redo(_ sender: Any?) {
+        undoing?.perform(redo: true, in: self)
+    }
+
+    override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+        if let undoing, item.action == #selector(undo(_:)) || item.action == #selector(redo(_:)) {
+            return undoing.route(redo: item.action == #selector(redo(_:)), in: self).isEnabled
+        }
+        return super.validateUserInterfaceItem(item)
     }
 
     /// Space, the arrow keys, Delete and Escape work wherever focus is, except in a text field.
@@ -144,6 +169,16 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
         editorWindow.onKey = { [weak self] event in
             self?.handleKey(event) ?? false
         }
+        editorWindow.undoing = EditorUndo(
+            canUndo: { [model] in model.history.canUndo },
+            canRedo: { [model] in model.history.canRedo },
+            undo: { [model] in model.undo() },
+            redo: { [model] in model.redo() },
+            finishEditing: { [model, weak editorWindow] in
+                model.commitPendingText?()
+                editorWindow?.makeFirstResponder(nil)
+            }
+        )
     }
 
     /// Grows or shrinks the window as the panel does, keeping its top edge where it is.
@@ -167,8 +202,6 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
 
     private func handleCommand(_ key: String, shift: Bool, option: Bool) -> Bool {
         switch key {
-        case "z":
-            shift ? model.redo() : model.undo()
         // ⌥⌘C and ⌥⌘V copy and paste a style, so they're matched before ⌘C.
         case "c" where option:
             model.copyStyle()

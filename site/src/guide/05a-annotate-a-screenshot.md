@@ -89,10 +89,10 @@ What you've just drawn stays selected, so you can fix its colour, width or fill 
 - **Delete** it with <kbd>Delete</kbd>. <kbd>Esc</kbd> deselects.
 - **Copy, paste and duplicate** it with <kbd>⌘C</kbd>, <kbd>⌘V</kbd> and <kbd>⌘D</kbd>, even into another editor window.
 
-<kbd>⌘Z</kbd> or the Undo button in the title bar undoes, and <kbd>⇧⌘Z</kbd> redoes.
+<kbd>⌘Z</kbd> or the Undo button in the title bar undoes, and <kbd>⇧⌘Z</kbd> redoes, wherever you clicked last. While you're typing in a text box, a note or a field in the style bar, <kbd>⌘Z</kbd> first undoes your typing. Once there's none left, the next <kbd>⌘Z</kbd> finishes the typing and undoes your last change, as the Undo button does.
 
 > [!NOTE]
-> Text you clicked to place and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Return</kbd> or <kbd>Esc</kbd> finishes it, and <kbd>⌘Z</kbd> removes it again. In a note or a text box you dragged out, <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first.
+> Text you clicked to place and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Return</kbd> or <kbd>Esc</kbd> finishes it, and then <kbd>⌘Z</kbd> removes it again. In a note or a text box you dragged out, <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first.
 
 > [!TIP]
 > With VoiceOver, the canvas lists your marks, frontmost first, by their [layer names](#layers), with the full words of a text or note. Press one (VO-Space) to select it.
