@@ -79,7 +79,7 @@ With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into
 
 ## Change what you've drawn
 
-What you've just drawn stays selected, so you can fix its colour, width or fill from the style bar beside it without switching tools. The change also applies to what you draw next. It shows no outline or handles, so your next stroke starts a new mark however close to it you press. To move, resize or bend a mark, pick the select tool (<kbd>V</kbd>) and click it.
+What you've just drawn stays selected, so you can fix its colour, width or fill from the style bar beside it without switching tools. The change also applies to what you draw next. Point at an arrow, line, shape, spotlight or redaction you've just drawn and its handles appear, so you can drag one to resize it, bend an arrow or line, or round a shape's corners, still without switching tools. Pen and highlighter strokes show no handles, so you can write close together. They hide when the pointer moves away, and pressing anywhere else starts a new mark, even right next to the last one. To move a mark or change an older one, pick the select tool (<kbd>V</kbd>) and click it.
 
 - **Move** it by dragging, or nudge it with the arrow keys, 1 pixel at a time or 10 with <kbd>Shift</kbd>.
 - **Resize** it with its handles. A text box has a handle on each side, and its text wraps again to the new width. <kbd>Shift</kbd> keeps a box's proportions, or snaps an arrow or line end to 45°. <kbd>⌥</kbd> resizes from the centre. Hold <kbd>Space</kbd> to move the whole shape mid-drag.

@@ -35,14 +35,47 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     /// False for select, hand and crop, which an editor never starts with.
     public var isDrawing: Bool { self != .select && self != .hand && self != .crop }
 
-    /// True for the tools that show the selection's outline and handles and resize from them: select, and text and
-    /// note, whose press picks existing text or a note to move. The others keep the mark just drawn selected for the
-    /// style bar, but show nothing round it, so a press beside it always draws.
+    /// True for the tools that always show the selection's outline and handles and resize from them: select, and text
+    /// and note, whose press picks existing text or a note to move. The others keep the mark just drawn selected for
+    /// the style bar; see `showsHoverHandles` for which of them reveal its handles on hover.
     public var editsSelection: Bool {
         switch self {
         case .select, .text, .note: true
         case .hand, .arrow, .line, .shape, .pen, .highlight, .spotlight, .redact, .counter, .crop: false
         }
+    }
+
+    /// True for the tools whose mark just drawn shows its handles while the pointer hovers it: arrow and line (ends and
+    /// bend), and the boxes of shape, spotlight and redact (corners, edges and corner radius). Pen and highlight never
+    /// do, so strokes written close together always start new marks, and a counter has no handles.
+    public var showsHoverHandles: Bool {
+        switch self {
+        case .arrow, .line, .shape, .spotlight, .redact: true
+        case .select, .hand, .pen, .text, .note, .highlight, .counter, .crop: false
+        }
+    }
+
+    /// Whether `selection` shows its outline and handles. The tools that edit the selection always show them. A tool
+    /// that `showsHoverHandles` shows them round the mark just drawn only while the pointer, last moved to `hover`, is over the mark
+    /// or within `tolerance` of one of its handles. `hover` is where the pointer last moved, not where it's pressed, so
+    /// a press that lands on a handle the pointer never hovered finds it hidden and draws.
+    public func showsHandles(of selection: Annotation, hoveredAt hover: CGPoint?, tolerance: CGFloat) -> Bool {
+        if editsSelection {
+            return true
+        }
+        guard showsHoverHandles, let hover else {
+            return false
+        }
+        return selection.hitTest(hover, tolerance: tolerance) || selection.handle(at: hover, tolerance: tolerance) != nil
+    }
+
+    /// The handle of `selection` a press at `point` adjusts, or `nil` when the press draws or picks instead. Only a
+    /// showing handle counts, and a drawing tool never adjusts a locked mark.
+    public func pressedHandle(of selection: Annotation, at point: CGPoint, hoveredAt hover: CGPoint?, tolerance: CGFloat) -> AnnotationHandle? {
+        guard showsHandles(of: selection, hoveredAt: hover, tolerance: tolerance), editsSelection || !selection.isLocked else {
+            return nil
+        }
+        return selection.handle(at: point, tolerance: tolerance)
     }
 
     /// True for the tools that draw in the chosen colour and width.

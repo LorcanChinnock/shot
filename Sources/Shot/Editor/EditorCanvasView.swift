@@ -53,6 +53,16 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
     }
     private var hoverArea: NSTrackingArea?
+    /// Where the pointer last moved over the canvas, in image pixels, or `nil` once it leaves or a press draws. With a
+    /// drawing tool, the mark just drawn shows its handles only while this is over it.
+    private var hoverPoint: CGPoint? {
+        didSet {
+            if selectionShowsHandles(hoveredAt: hoverPoint) != selectionShowsHandles(hoveredAt: oldValue) {
+                needsDisplay = true
+                window?.invalidateCursorRects(for: self)
+            }
+        }
+    }
 
     init(model: EditorModel) {
         self.model = model
@@ -148,6 +158,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var handleTolerance: CGFloat { 6 / viewScale }
     /// How far, in view points, a press on text or a note has to move before it counts as a drag.
     private static let dragThreshold: CGFloat = 4
+
+    private func selectionShowsHandles(hoveredAt hover: CGPoint?) -> Bool {
+        model.selection.map { model.tool.showsHandles(of: $0, hoveredAt: hover, tolerance: handleTolerance) } ?? false
+    }
 
     /// The topmost text or note under `point`.
     private func textOrNote(at point: CGPoint) -> Annotation? {
@@ -259,7 +273,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
             SelectionStyle.outline(viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
         }
-        if model.tool.editsSelection, let selected = model.selection, selected.id != editingText?.id {
+        if selectionShowsHandles(hoveredAt: hoverPoint), let selected = model.selection, selected.id != editingText?.id {
             SelectionStyle.outline(viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth).union(selected.paintedBounds)))
             if editingText == nil, !selected.isLocked {
                 for handle in selected.handles {
@@ -292,7 +306,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return []
         }
         // The single selection shows its resize handles, so its badge steps out past the corner one.
-        let withHandles = model.tool.editsSelection ? model.selection.flatMap { $0.isLocked ? nil : $0.id } : nil
+        let withHandles = selectionShowsHandles(hoveredAt: hoverPoint) ? model.selection.flatMap { $0.isLocked ? nil : $0.id } : nil
         return model.document.annotations.compactMap { annotation in
             let selected = model.selectedIDs.contains(annotation.id)
             guard CanvasCropBadge.shows(on: annotation, selected: selected, hovered: annotation.id == hoveredImageID) else {
@@ -362,6 +376,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     override func mouseMoved(with event: NSEvent) {
         super.mouseMoved(with: event)
         let viewPoint = convert(event.locationInWindow, from: nil)
+        hoverPoint = viewport.imagePoint(viewPoint)
         // A badge already showing keeps its image hovered, since it reaches past the image's corner.
         if let badge = cropBadge(at: viewPoint) {
             hoveredImageID = badge
@@ -377,6 +392,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
         hoveredImageID = nil
+        hoverPoint = nil
         setToolTip(nil)
     }
 
@@ -568,16 +584,17 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         lastPoint = point
         movedSinceMouseDown = false
         let selectedBeforePress = model.selectedID
-        // The annotation just drawn stays selected for the style bar until the next press. Only select, text and note
-        // resize from handles; any other tool draws anew, however close to the mark the press is.
+        // The annotation just drawn stays selected for the style bar until the next press. Text and note resize from its
+        // handles; other tools only from a handle the pointer had already revealed by hovering, and otherwise draw anew.
         if model.tool != .select, let selected = model.selection {
-            if model.tool.editsSelection, let handle = selected.handle(at: point, tolerance: handleTolerance) {
+            if let handle = model.tool.pressedHandle(of: selected, at: point, hoveredAt: hoverPoint, tolerance: handleTolerance) {
                 resizeHandle = handle
                 resizeStart = selected
                 return
             }
             model.selectedID = nil
         }
+        hoverPoint = nil
         switch model.tool {
         case .select:
             let tolerance = 6 / viewScale
@@ -719,6 +736,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             spaceMove = nil
             pressedText = nil
             viewportDidChange()
+        }
+        // A drawing tool's handle drag ends with the pointer still on the mark, so its handles stay until the pointer leaves.
+        if resizeHandle != nil, !model.tool.editsSelection {
+            hoverPoint = imagePoint(event)
         }
         if let pressedText, resizeHandle == nil {
             if movedSinceMouseDown {

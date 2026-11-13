@@ -126,6 +126,62 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(EditorTool.allCases.filter(\.editsSelection) == [.select, .text, .note])
 }
 
+@Test func drawingToolsShowTheMarkJustDrawnsHandlesOnlyWhileHovered() {
+    let arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 100, y: 0)))
+    #expect(EditorTool.allCases.filter(\.showsHoverHandles) == [.arrow, .line, .shape, .spotlight, .redact])
+    for tool in [EditorTool.arrow, .line, .shape, .spotlight, .redact] {
+        #expect(!tool.showsHandles(of: arrow, hoveredAt: nil, tolerance: 6))
+        #expect(!tool.showsHandles(of: arrow, hoveredAt: CGPoint(x: 50, y: 40), tolerance: 6))
+        #expect(tool.showsHandles(of: arrow, hoveredAt: CGPoint(x: 50, y: 3), tolerance: 6))
+        // Just off the end, outside the stroke, the end handle's tolerance still counts.
+        #expect(tool.showsHandles(of: arrow, hoveredAt: CGPoint(x: 105, y: 5), tolerance: 6))
+    }
+    for tool in [EditorTool.select, .text, .note] {
+        #expect(tool.showsHandles(of: arrow, hoveredAt: nil, tolerance: 6))
+    }
+    for tool in [EditorTool.hand, .crop, .counter] {
+        #expect(!tool.showsHandles(of: arrow, hoveredAt: CGPoint(x: 50, y: 0), tolerance: 6))
+    }
+}
+
+@Test func penAndHighlightNeverShowOrPressHandlesEvenWhenHovered() {
+    let stroke = annotation(.freehand([.zero, CGPoint(x: 50, y: 50), CGPoint(x: 100, y: 0)]))
+    let marker = annotation(.marker([.zero, CGPoint(x: 100, y: 0)]))
+    for tool in [EditorTool.pen, .highlight] {
+        for mark in [stroke, marker] {
+            let corner = mark.handles[0].point
+            #expect(!tool.showsHandles(of: mark, hoveredAt: corner, tolerance: 6))
+            #expect(tool.pressedHandle(of: mark, at: corner, hoveredAt: corner, tolerance: 6) == nil)
+        }
+    }
+}
+
+@Test func drawingToolsAdjustOnlyAHandleShowingWhenPressed() {
+    let arrow = annotation(.arrow(from: .zero, to: CGPoint(x: 100, y: 0)))
+    let end = CGPoint(x: 100, y: 0)
+    // Pressed on the end without having hovered the arrow: the handle is hidden, so the press draws.
+    #expect(EditorTool.line.pressedHandle(of: arrow, at: end, hoveredAt: nil, tolerance: 6) == nil)
+    #expect(EditorTool.line.pressedHandle(of: arrow, at: end, hoveredAt: CGPoint(x: 100, y: 30), tolerance: 6) == nil)
+    // Hovered over the arrow first: its handles show, so the end resizes and the middle bends it.
+    #expect(EditorTool.line.pressedHandle(of: arrow, at: end, hoveredAt: CGPoint(x: 60, y: 2), tolerance: 6) == .end)
+    #expect(EditorTool.arrow.pressedHandle(of: arrow, at: CGPoint(x: 50, y: 0), hoveredAt: CGPoint(x: 50, y: 0), tolerance: 6) == .mid)
+    // Showing, but pressed away from every handle: it draws.
+    #expect(EditorTool.arrow.pressedHandle(of: arrow, at: CGPoint(x: 25, y: 0), hoveredAt: CGPoint(x: 25, y: 0), tolerance: 6) == nil)
+    var locked = arrow
+    locked.isLocked = true
+    #expect(EditorTool.arrow.pressedHandle(of: locked, at: end, hoveredAt: end, tolerance: 6) == nil)
+    // The select tool resizes from a handle wherever the pointer was.
+    #expect(EditorTool.select.pressedHandle(of: arrow, at: end, hoveredAt: nil, tolerance: 6) == .end)
+}
+
+@Test func hoveringAShapeShowsItsCornerRadiusHandles() {
+    var box = annotation(.shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 200, height: 100)))
+    box.cornerRadius = 10
+    let radius = box.radiusHandles(tolerance: 6)[0]
+    #expect(EditorTool.shape.pressedHandle(of: box, at: radius.point, hoveredAt: CGPoint(x: 100, y: 0), tolerance: 6) == radius.handle)
+    #expect(EditorTool.shape.pressedHandle(of: box, at: radius.point, hoveredAt: nil, tolerance: 6) == nil)
+}
+
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
     #expect(EditorTool.allCases.filter { !$0.takesColorAndWidth } == [.select, .hand, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).takesColorAndWidth)
