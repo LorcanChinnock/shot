@@ -259,7 +259,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
             SelectionStyle.outline(viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
         }
-        if let selected = model.selection, selected.id != editingText?.id {
+        if model.tool.editsSelection, let selected = model.selection, selected.id != editingText?.id {
             SelectionStyle.outline(viewRect(selected.bounds.insetBy(dx: -selected.lineWidth, dy: -selected.lineWidth).union(selected.paintedBounds)))
             if editingText == nil, !selected.isLocked {
                 for handle in selected.handles {
@@ -292,7 +292,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return []
         }
         // The single selection shows its resize handles, so its badge steps out past the corner one.
-        let withHandles = model.selection.flatMap { $0.isLocked ? nil : $0.id }
+        let withHandles = model.tool.editsSelection ? model.selection.flatMap { $0.isLocked ? nil : $0.id } : nil
         return model.document.annotations.compactMap { annotation in
             let selected = model.selectedIDs.contains(annotation.id)
             guard CanvasCropBadge.shows(on: annotation, selected: selected, hovered: annotation.id == hoveredImageID) else {
@@ -568,9 +568,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         lastPoint = point
         movedSinceMouseDown = false
         let selectedBeforePress = model.selectedID
-        // The annotation just drawn stays selected, with handles that still resize it, until the next press elsewhere.
+        // The annotation just drawn stays selected for the style bar until the next press. Only select, text and note
+        // resize from handles; any other tool draws anew, however close to the mark the press is.
         if model.tool != .select, let selected = model.selection {
-            if let handle = selected.handle(at: point, tolerance: handleTolerance) {
+            if model.tool.editsSelection, let handle = selected.handle(at: point, tolerance: handleTolerance) {
                 resizeHandle = handle
                 resizeStart = selected
                 return
