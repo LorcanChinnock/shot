@@ -38,7 +38,7 @@ Shot takes over <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> only once it has Scree
 
 ## Browser needs Accessibility
 
-Turning on **Browser page only** on the capture bar, or pressing <kbd>B</kbd>, shows this card until Shot has Accessibility access. Shot needs it to find where a browser shows its page, so it can leave out the tabs and address bar. Click **Grant Access**, then in the macOS prompt click **Open System Settings** and turn on Shot under **Privacy & Security › Accessibility**. Your next capture can capture just the page. Until then, **Use Window** captures the whole browser window, and Esc closes the card.
+Turning on **Leave out browser toolbars** on the capture bar, or pressing <kbd>B</kbd>, shows this card until Shot has Accessibility access. Shot needs it to find where a browser shows its page, so it can leave out the tabs and address bar. Click **Grant Access**, then in the macOS prompt click **Open System Settings** and turn on Shot under **Privacy & Security › Accessibility**. Your next capture can capture just the page. Until then, **Use Window** captures the whole browser window, and Esc closes the card.
 
 ## Scrolling capture shows a warning
 

@@ -835,7 +835,7 @@ final class SelectionOverlayView: NSView {
             parts = [String(localized: "Click a screen")]
         }
         parts.append(String(localized: "Tab: area, window or screen"))
-        parts.append(String(localized: "B: browser page only"))
+        parts.append(String(localized: "B: leave out browser toolbars"))
         if controller.offersScrolling {
             parts.append(String(localized: "S: scroll"))
         }
@@ -849,7 +849,7 @@ final class SelectionOverlayView: NSView {
         return parts.joined(separator: "   ·   ")
     }
 
-    /// One button of the bar. `label` shows beside the icon: the picked mode's name, Scroll, or the delay while it's on.
+    /// One button of the bar. `label` shows beside the icon: the picked mode's name, the delay or the ratio while it's on.
     private struct BarButton {
         enum Look {
             /// The picked mode: the one ink control on the overlay.
@@ -890,10 +890,10 @@ final class SelectionOverlayView: NSView {
         }
         if controller.offersScrolling {
             let scroll = String(localized: "Scroll")
-            options.append(BarButton(symbol: "arrow.down.to.line", label: scroll, on: controller.scrolling, look: .plain, name: scroll, key: "S", action: .scrolling))
+            options.append(BarButton(symbol: "arrow.up.and.down.text.horizontal", label: nil, on: controller.scrolling, look: .plain, name: scroll, key: "S", action: .scrolling))
         }
         if controller.windowMode {
-            let page = String(localized: "Browser page only")
+            let page = String(localized: "Leave out browser toolbars")
             options.append(BarButton(symbol: "globe", label: nil, on: controller.browserMode, look: .plain, name: page, key: "B", action: .pageOnly))
         }
         if controller.target == .area {
@@ -923,7 +923,7 @@ final class SelectionOverlayView: NSView {
     }
 
     /// The capture bar (Foundations › Capture bar): whether this is a screenshot or a recording, the three modes, then Delay,
-    /// Scroll and the mode's own option (Browser page only for Window, Ratio for Area), then the magnifier, crosshair and
+    /// Scroll and the mode's own option (Leave out browser toolbars for Window, Ratio for Area), then the magnifier, crosshair and
     /// size toggles. A click does what Tab, B, D, S, R, M, C and I do. It shows on the screen with the pointer only, at the
     /// bottom unless what's being picked reaches it, and hides while an area is dragged out.
     private func drawBar(avoiding hole: CGRect?) {
@@ -960,12 +960,12 @@ final class SelectionOverlayView: NSView {
         }
         func width(_ button: BarButton) -> CGFloat {
             guard let label = button.label else {
-                // Icon only: a mode is a little wider than tall, and a toggle, Delay, Ratio or Page is square.
-                return button.look == .toggle || [.delay, .ratio, .pageOnly].contains(button.action) ? height : textSize.points(38).rounded()
+                // Icon only: a mode is a little wider than tall, and a toggle, Delay, Scroll, Ratio or Page is square.
+                return button.look == .toggle || [.delay, .ratio, .pageOnly, .scrolling].contains(button.action) ? height : textSize.points(38).rounded()
             }
             let iconWidth = icon(button, .white)?.size.width.rounded(.up) ?? 0
             let labelWidth = (label as NSString).size(withAttributes: [.font: font(button)]).width.rounded(.up)
-            // The board pads the picked mode 10 before its icon and 12 after its name, and Delay and Scroll 10 either side.
+            // The board pads the picked mode 10 before its icon and 12 after its name, and Delay and Ratio 10 either side.
             let trailing: CGFloat = button.look == .picked ? 12 : 10
             let spacing: CGFloat = button.look == .picked ? 7 : 6
             return 10 + iconWidth + spacing + labelWidth + trailing
