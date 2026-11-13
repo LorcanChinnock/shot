@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0-beta.88](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.87...v0.7.0-beta.88) (2026-11-13)
+
+
+### Features
+
+* **capture:** make Browser a page toggle shown in Window mode ([#1283](https://github.com/LorcanChinnock/shot/issues/1283)) ([6c8d371](https://github.com/LorcanChinnock/shot/commit/6c8d371e070841ad7802f8c84ddcdac863f16dda))
+
+
+### Bug Fixes
+
+* **capture:** keep the capture bar 16 pt clear of the Dock, hidden or not ([#1288](https://github.com/LorcanChinnock/shot/issues/1288)) ([0a7e66c](https://github.com/LorcanChinnock/shot/commit/0a7e66c705a6a4ad8ac41c41c4a9a1058b76fd14))
+* **capture:** keep the capture bar above the Dock ([#1285](https://github.com/LorcanChinnock/shot/issues/1285)) ([04123ba](https://github.com/LorcanChinnock/shot/commit/04123baafdb1b9ad07cb53d0995a5204f34bc431))
+
 ## [0.7.0-beta.87](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.86...v0.7.0-beta.87) (2026-11-12)
 
 
