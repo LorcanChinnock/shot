@@ -245,7 +245,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         if draft.bounds.width + draft.bounds.height >= 4 {
-            model.addAnnotation(draft)
+            model.addAnnotation(AnnotationDraft.finished(draft, style: model.draftStyle, tolerance: AnnotationDraft.steadyTolerance / fit))
         } else {
             model.previewAnnotation(nil)
         }

@@ -169,6 +169,22 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(!drawn.canReset)
 }
 
+@Test func thePenOffersSmoothOrAsDrawnForItsNextStroke() {
+    #expect(palette(tool: .pen).penLine == .smooth)
+    #expect(palette(tool: .arrow).penLine == nil)
+    let stroke = Annotation(kind: .freehand([.zero, CGPoint(x: 10, y: 10)]), color: red, lineWidth: 4)
+    #expect(palette(tool: .pen, selection: stroke).penLine == .smooth)
+    #expect(palette(tool: .select, selection: stroke).penLine == nil)
+
+    var drawing = palette(tool: .pen, selection: stroke)
+    drawing.setPenLine(.asDrawn)
+    #expect(drawing.penLine == .asDrawn)
+    #expect(drawing.selection == stroke)
+    #expect(drawing.canReset)
+    drawing.reset()
+    #expect(drawing.penLine == .smooth)
+}
+
 @Test func resetKeepsEachToolsOwnDefaultColour() {
     var noting = palette(tool: .note)
     noting.setColor(blue)

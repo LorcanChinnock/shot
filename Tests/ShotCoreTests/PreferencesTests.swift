@@ -147,7 +147,7 @@ import Testing
             tool: .shape, color: blue, noteColor: RGBA.presets[3], highlightColor: RGBA.presets[4], fill: custom, widthIndex: thick,
             customColors: [.stroke: custom, .note: blue, .highlight: RGBA.presets[1]],
             shape: .star, redaction: .pixelate, redactionAmount: 0.013, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
-            alignment: .center, verticalAlignment: .middle
+            alignment: .center, verticalAlignment: .middle, penLine: .asDrawn
         )
         Preferences.remember(style, in: store)
         store.set(Data(), forKey: "editorRecentColors")

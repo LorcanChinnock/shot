@@ -116,6 +116,10 @@ final class EditorModel {
     var verticalAlignment: VerticalTextAlign {
         didSet { rememberStyle { $0.verticalAlignment = verticalAlignment } }
     }
+    /// Whether the next pen stroke is smoothed when the drag ends.
+    var penLine: PenLine {
+        didSet { rememberStyle { $0.penLine = penLine } }
+    }
     /// The last custom colour picked in each palette.
     private(set) var customColors: [ColorSlot: RGBA]
     var widthIndex: Int {
@@ -208,6 +212,7 @@ final class EditorModel {
         spotlight = style.spotlight
         alignment = style.alignment
         verticalAlignment = style.verticalAlignment
+        penLine = style.penLine
         customColors = style.customColors
         widthIndex = style.widthIndex
         objectStyles = style.objectStyles
@@ -363,7 +368,7 @@ final class EditorModel {
         EditorStyle(
             tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, widthIndex: widthIndex,
             customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
-            alignment: alignment, verticalAlignment: verticalAlignment, objectStyles: objectStyles
+            alignment: alignment, verticalAlignment: verticalAlignment, penLine: penLine, objectStyles: objectStyles
         )
     }
 
@@ -389,6 +394,7 @@ final class EditorModel {
         if next.spotlight != spotlight { spotlight = next.spotlight }
         if next.alignment != alignment { alignment = next.alignment }
         if next.verticalAlignment != verticalAlignment { verticalAlignment = next.verticalAlignment }
+        if next.penLine != penLine { penLine = next.penLine }
         for (slot, colour) in next.customColors where customColors[slot] != colour {
             customColors[slot] = colour
             rememberStyle { $0.customColors[slot] = colour }
@@ -428,6 +434,15 @@ final class EditorModel {
     func setShape(_ newShape: BoxShape) {
         var changed = palette
         changed.setShape(newShape)
+        adopt(changed)
+    }
+
+    /// Whether the next pen stroke is smoothed, shown while the pen draws. `nil` for any other tool.
+    var palettePenLine: PenLine? { palette.penLine }
+
+    func setPenLine(_ newPenLine: PenLine) {
+        var changed = palette
+        changed.setPenLine(newPenLine)
         adopt(changed)
     }
 
@@ -792,7 +807,7 @@ final class EditorModel {
         AnnotationDraft.Style(
             color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
             redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment,
-            verticalAlignment: verticalAlignment
+            verticalAlignment: verticalAlignment, penLine: penLine
         )
     }
     /// Space kept between an annotation and a canvas edge that grew to hold it.

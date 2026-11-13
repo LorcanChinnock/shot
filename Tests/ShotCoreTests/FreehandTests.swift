@@ -37,6 +37,50 @@ private func render(_ doc: EditorDocument, scale: CGFloat) throws -> CGImage {
 private func isInk(_ p: [CGFloat]) -> Bool { p[2] > 0.9 && p[0] < 0.1 }
 private func isBase(_ p: [CGFloat]) -> Bool { p[0] > 0.9 && p[2] < 0.1 }
 
+// MARK: Steadying
+
+/// A line from (0, 50) to (200, 50) that wobbles up and down by `wobble`, as a hand on a trackpad draws it.
+private func shakyLine(wobble: CGFloat) -> [CGPoint] {
+    (0...40).map { i in CGPoint(x: CGFloat(i) * 5, y: 50 + (i.isMultiple(of: 2) ? wobble : -wobble)) }
+}
+
+@Test func steadyingAShakyLineLeavesItsEndsAndLittleElse() {
+    let shaky = shakyLine(wobble: 1)
+    let steadied = Freehand.steadied(shaky, tolerance: 2)
+    #expect(steadied.first == shaky.first)
+    #expect(steadied.last == shaky.last)
+    #expect(steadied.count <= 3)
+}
+
+@Test func steadyingKeepsEveryPointFartherOffThanTheTolerance() {
+    let shaky = shakyLine(wobble: 1)
+    let steadied = Freehand.steadied(shaky, tolerance: 2)
+    for point in shaky {
+        let nearest = zip(steadied, steadied.dropFirst()).map { Annotation.distance(from: point, toSegment: $0, $1) }.min() ?? .infinity
+        #expect(nearest <= 2)
+    }
+}
+
+@Test func steadyingKeepsADeliberateCorner() {
+    #expect(Freehand.steadied(tick, tolerance: 2) == [tick[0], tick[2], tick[4]])
+}
+
+@Test func steadyingLeavesADotOrAShortStrokeAlone() {
+    let dot = [CGPoint(x: 10, y: 10)]
+    #expect(Freehand.steadied(dot, tolerance: 2) == dot)
+    let dash = [CGPoint(x: 10, y: 10), CGPoint(x: 11, y: 10)]
+    #expect(Freehand.steadied(dash, tolerance: 2) == dash)
+    #expect(Freehand.steadied([], tolerance: 2).isEmpty)
+}
+
+@Test func aLoopStaysALoop() {
+    let circle = loop(center: CGPoint(x: 100, y: 100), radius: 40)
+    let steadied = Freehand.steadied(circle, tolerance: 2)
+    #expect(steadied.count >= 8)
+    #expect(steadied.first == circle.first)
+    #expect(steadied.last == circle.last)
+}
+
 // MARK: Smoothing
 
 @Test func theSmoothedPathIsACurveThroughEveryPoint() {
