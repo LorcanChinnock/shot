@@ -132,6 +132,10 @@ public struct EditorStyle: Equatable, Sendable {
     public static func width(forShownSize size: CGFloat, sizing kind: SizeKind) -> CGFloat {
         let lowest = shownSize(width: widths[0], sizing: kind), highest = shownSize(width: widths[widths.count - 1], sizing: kind)
         let rounded = (min(max(size, lowest), highest) * 2).rounded() / 2
+        // A counter's size is shown rounded, so the inverse below misses the step a menu entry came from.
+        if let step = widths.first(where: { shownSize(width: $0, sizing: kind) == rounded }) {
+            return step
+        }
         let width = switch kind {
         case .line: rounded
         case .text: rounded / 6

@@ -163,3 +163,14 @@ private let bar = CGSize(width: 260, height: 32)
     #expect(SizeInput.parse("0") == nil)
     #expect(SizeInput.parse("inf") == nil)
 }
+
+@Test func everySizeInTheMenuStoresItsStepSoTheArrowsMoveOn() {
+    for kind in [EditorStyle.SizeKind.line, .text, .note, .counter] {
+        for step in EditorStyle.widths {
+            let shown = EditorStyle.shownSize(width: step, sizing: kind)
+            #expect(EditorStyle.width(forShownSize: shown, sizing: kind) == step, "\(kind) \(shown)")
+        }
+    }
+    // A counter size typed between steps keeps its in-between width.
+    #expect(!EditorStyle.widths.contains(EditorStyle.width(forShownSize: 25, sizing: .counter)))
+}
