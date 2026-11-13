@@ -73,11 +73,11 @@ function entry(line: string, kind: Kind): Entry {
   let body = line.slice(2);
   const scope = /^\*\*([^*:]+):\*\*\s*/.exec(body);
   if (scope) body = body.slice(scope[0].length);
-  // The commit link, then the PR link, then a ", closes #N" the PR link already covers.
+  // The commit link and a ", closes #N" the PR link already covers, then the PR link, which then ends the line.
   body = body.replace(/\s*\(\[[0-9a-f]{7,}\]\([^)]*\)\)/g, '');
+  body = body.replace(/,?\s*closes(?:\s*\[#\d+\]\([^)]*\))+/g, '').trim();
   const pr = /\s*\(\[#(\d+)\]\([^)]*\)\)\s*$/.exec(body);
-  if (pr) body = body.slice(0, pr.index);
-  body = body.replace(/,?\s*closes \[#\d+\]\([^)]*\)/g, '').trim();
+  if (pr) body = body.slice(0, pr.index).trim();
   const text = sentence(body);
   const key = scope?.[1].trim();
   return {
