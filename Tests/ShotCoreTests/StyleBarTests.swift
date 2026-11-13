@@ -71,7 +71,7 @@ private let bar = CGSize(width: 260, height: 32)
 
 @Test func onlyAFillClearsToNone() {
     #expect(StyleBarColorRow.fill.clearsToNone)
-    for row in [StyleBarColorRow.line, .text, .noteText, .paper, .counter] {
+    for row in [StyleBarColorRow.line, .outline, .text, .noteText, .paper, .counter] {
         #expect(!row.clearsToNone)
     }
 }

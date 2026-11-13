@@ -633,7 +633,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 model.selectedID = pressedText.id
             }
         case .counter:
-            let counter = Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.color, lineWidth: model.lineWidth)
+            let counter = Annotation(kind: .counter(model.document.annotations.nextCounterNumber, center: point), color: model.nextColor, lineWidth: model.lineWidth)
             model.add(counter)
             land(counter.id)
         case .text:
@@ -1141,7 +1141,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         } else {
             let size = fontSize ?? model.fontSize
             // Text's size is six times its width, which the style bar's size box shows.
-            var text = Annotation(kind: .text("", origin: point, fontSize: size), color: model.color, lineWidth: size / 6)
+            var text = Annotation(kind: .text("", origin: point, fontSize: size), color: model.nextColor, lineWidth: size / 6)
             text.alignment = model.alignment
             text.textWidth = width
             editingText = text

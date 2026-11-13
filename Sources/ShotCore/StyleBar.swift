@@ -92,11 +92,13 @@ public enum StyleBarPlacement {
     }
 }
 
-/// A row of colours in the style bar, each named on its left. Every row has the same swatches: the seven presets, the
-/// custom colour, then transparent.
+/// A row of colours in the style bar, each named on its left. Every row has the same swatches: the seven presets and the
+/// custom colour, then transparent where `offersTransparent`.
 public enum StyleBarColorRow: Equatable, Sendable {
-    /// The colour of an arrow, line, shape's outline, pen or highlighter stroke, named Line.
+    /// The colour of an arrow, line, pen or highlighter stroke, named Line.
     case line
+    /// A shape's outline, named Line. Transparent leaves only its fill.
+    case outline
     /// A shape's inside, named Fill. Transparent leaves it unfilled.
     case fill
     /// A text's colour, named Text.
@@ -111,7 +113,7 @@ public enum StyleBarColorRow: Equatable, Sendable {
     /// The rows for a mark of `kind`, top to bottom: Line above Fill for a shape, Text above Background for a note.
     public static func rows(for kind: Annotation.Kind) -> [StyleBarColorRow] {
         switch kind {
-        case .shape: [.line, .fill]
+        case .shape: [.outline, .fill]
         case .text: [.text]
         case .note: [.noteText, .paper]
         case .counter: [.counter]
@@ -123,12 +125,31 @@ public enum StyleBarColorRow: Equatable, Sendable {
     /// The rows for the next mark `tool` draws.
     public static func rows(for tool: EditorTool) -> [StyleBarColorRow] {
         switch tool {
-        case .shape: [.line, .fill]
+        case .shape: [.outline, .fill]
         case .text: [.text]
         case .note: [.noteText, .paper]
         case .counter: [.counter]
         case .arrow, .line, .pen, .highlight: [.line]
         case .select, .hand, .spotlight, .redact, .crop: []
+        }
+    }
+
+    /// The row that shows the main colour (`Annotation.color`) of the next mark `tool` draws: a shape's outline, a note's
+    /// paper, else its only row.
+    public static func colorRow(for tool: EditorTool) -> StyleBarColorRow? {
+        switch tool {
+        case .shape: .outline
+        case .note: .paper
+        default: rows(for: tool).first
+        }
+    }
+
+    /// Whether the row ends with a transparent swatch: only where the mark keeps another part that shows, a shape's
+    /// outline and fill and a note's paper. Elsewhere transparent would make the mark vanish.
+    public var offersTransparent: Bool {
+        switch self {
+        case .outline, .fill, .paper: true
+        case .line, .text, .noteText, .counter: false
         }
     }
 

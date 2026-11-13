@@ -57,7 +57,7 @@ The hint at the bottom right of the canvas tells you what the tool does, or what
 
 A small style bar floats over the screenshot with the options for the tool you picked. It sits at the top of the screenshot until you draw, then moves next to the mark you selected, above it where there's room, and otherwise below or beside it, so it never covers the mark. It steps out of the way while you drag.
 
-The colours are on the left, a row for each, named on its left. Every row has the same swatches: seven colours, white included, a rainbow swatch that picks any colour, and a grey and white check for transparent, which draws nothing. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself.
+The colours are on the left, a row for each, named on its left. Every row has seven colours, white included, and a rainbow swatch that picks any colour. A shape's rows and a note's Background row end with a grey and white check for transparent, which draws nothing there. Other rows leave it out, since a transparent arrow, line or text would vanish. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself.
 
 - **Arrows, lines, pens and highlights:** a **Line** row, and the width.
 - **Shape:** **Line** for the outline, and **Fill** under it for the inside. Transparent leaves a shape unfilled. On the right are the width and the five outlines: a rectangle, ellipse, triangle, diamond or star. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.

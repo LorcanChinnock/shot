@@ -74,7 +74,8 @@ protocol StyleBarEditing: AnyObject, Observable {
 extension EditorModel: StyleBarEditing {}
 
 /// The bar. On the left, a row of colours for each colour the mark has, named on its left: Line, and Fill under it for a
-/// shape; Text, and Background under it for a note. Each row has the seven colours, a custom one and transparent. On the
+/// shape; Text, and Background under it for a note. Each row has the seven colours and a custom one, then transparent
+/// where the mark stays visible without that colour. On the
 /// right, the width or text size, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
 /// options in one row in place of the colours. Right-clicking it offers Reset Style, as the Edit menu does. The video
 /// editor shows it too, at the top of the video's well.
@@ -216,12 +217,15 @@ struct StyleBar<Model: StyleBarEditing>: View {
 
     private var labelColor: ContrastAware { ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink) }
 
-    /// One colour row: the seven colours, the custom one, then transparent. A note's text has none chosen while it's black
-    /// or white to suit the paper, and clicking its chosen colour again goes back to that.
+    /// One colour row: the seven colours, the custom one, then transparent if the row offers it. A note's text has none
+    /// chosen while it's black or white to suit the paper, and clicking its chosen colour again goes back to that.
     @ViewBuilder private func colorRow(_ row: StyleBarColorRow) -> some View {
         switch row {
-        case .line, .text, .paper, .counter:
-            swatches(selected: model.paletteColor, clear: .clear, help: String(localized: "Custom colour"), lastCustom: model.lastCustom(forFill: false)) {
+        case .line, .outline, .text, .paper, .counter:
+            swatches(
+                selected: model.paletteColor, transparent: row.offersTransparent, clear: .clear, help: String(localized: "Custom colour"),
+                lastCustom: model.lastCustom(forFill: false)
+            ) {
                 model.paletteColor = $0 ?? .clear
             } pickCustom: {
                 model.pickCustom($0, forFill: false)
@@ -229,7 +233,7 @@ struct StyleBar<Model: StyleBarEditing>: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text(row.title))
         case .fill:
-            swatches(selected: model.paletteFill, clear: nil, help: String(localized: "Custom fill colour"), lastCustom: model.lastCustom(forFill: true)) {
+            swatches(selected: model.paletteFill, transparent: true, clear: nil, help: String(localized: "Custom fill colour"), lastCustom: model.lastCustom(forFill: true)) {
                 model.paletteFill = $0
             } pickCustom: {
                 model.pickCustom($0, forFill: true)
@@ -238,7 +242,7 @@ struct StyleBar<Model: StyleBarEditing>: View {
             .accessibilityLabel(Text(row.title))
         case .noteText:
             let chosen = model.paletteNoteTextColor
-            swatches(selected: chosen, clear: .clear, help: String(localized: "Custom colour"), lastCustom: model.lastCustomNoteText(), matchesNone: false) { color in
+            swatches(selected: chosen, help: String(localized: "Custom colour"), lastCustom: model.lastCustomNoteText(), matchesNone: false) { color in
                 model.setNoteTextColor(color == chosen ? nil : color)
             } pickCustom: {
                 model.pickCustomNoteText($0)
@@ -262,10 +266,11 @@ struct StyleBar<Model: StyleBarEditing>: View {
         }
     }
 
-    /// The preset colours, the rainbow swatch for a custom one, then transparent, which sets `clear`. `selected` is the
-    /// colour shown; with `matchesNone` off, a `nil` one shows no swatch chosen rather than transparent.
+    /// The preset colours, the rainbow swatch for a custom one, then if `transparent`, a transparent swatch that sets
+    /// `clear`. `selected` is the colour shown; with `matchesNone` off, a `nil` one shows no swatch chosen rather than
+    /// transparent.
     private func swatches(
-        selected: RGBA?, clear: RGBA?, help: String, lastCustom: RGBA?, matchesNone: Bool = true,
+        selected: RGBA?, transparent: Bool = false, clear: RGBA? = nil, help: String, lastCustom: RGBA?, matchesNone: Bool = true,
         choose: @escaping (RGBA?) -> Void, pickCustom: @escaping (RGBA) -> Void
     ) -> some View {
         let isClear = selected.map { $0.a == 0 } ?? matchesNone
@@ -286,7 +291,9 @@ struct StyleBar<Model: StyleBarEditing>: View {
                 editorShown: { _ in },
                 compact: true
             )
-            StyleBarSwatch(color: nil, name: String(localized: "Transparent"), selected: isClear) { choose(clear) }
+            if transparent {
+                StyleBarSwatch(color: nil, name: String(localized: "Transparent"), selected: isClear) { choose(clear) }
+            }
         }
         .frame(height: 24)
     }
@@ -326,7 +333,7 @@ extension StyleBarColorRow {
     /// The name on the row's left.
     var title: String {
         switch self {
-        case .line: String(localized: "Line")
+        case .line, .outline: String(localized: "Line")
         case .fill, .counter: String(localized: "Fill")
         case .text, .noteText: String(localized: "Text")
         case .paper: String(localized: "Background")

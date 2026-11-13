@@ -210,14 +210,45 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(palette(tool: .line).colorRows == [.line])
     #expect(palette(tool: .pen).colorRows == [.line])
     #expect(palette(tool: .highlight).colorRows == [.line])
-    #expect(palette(tool: .shape).colorRows == [.line, .fill])
+    #expect(palette(tool: .shape).colorRows == [.outline, .fill])
     #expect(palette(tool: .text).colorRows == [.text])
     #expect(palette(tool: .note).colorRows == [.noteText, .paper])
     #expect(palette(tool: .counter).colorRows == [.counter])
-    #expect(palette(tool: .arrow, selection: box).colorRows == [.line, .fill])
+    #expect(palette(tool: .arrow, selection: box).colorRows == [.outline, .fill])
     #expect(palette(tool: .arrow, editing: note).colorRows == [.noteText, .paper])
     #expect(palette(tool: .redact).colorRows.isEmpty)
     #expect(palette(tool: .spotlight).colorRows.isEmpty)
+}
+
+@Test func onlyRowsWhereTheMarkStaysVisibleOfferTransparent() {
+    func transparent(_ tool: EditorTool) -> [Bool] { palette(tool: tool).colorRows.map(\.offersTransparent) }
+    #expect(transparent(.shape) == [true, true])
+    #expect(transparent(.note) == [false, true])
+    for tool in [EditorTool.arrow, .line, .pen, .highlight, .text, .counter] {
+        #expect(transparent(tool) == [false], "\(tool)")
+    }
+}
+
+@Test func aTransparentColourRememberedFromAnOutlineDoesNotCarryToAToolWithoutTransparent() {
+    var style = EditorStyle(tool: .shape)
+    style.color = .clear
+    style.highlightColor = .clear
+    style.noteColor = .clear
+    func next(_ tool: EditorTool) -> RGBA {
+        AnnotationPalette(style: style, editingText: nil, editingTextIsNew: false, selection: nil, tool: tool, scale: 2, imageLength: 1000, sharedSpotlight: nil).nextColor
+    }
+    #expect(next(.shape) == .clear)
+    #expect(next(.note) == .clear)
+    for tool in [EditorTool.arrow, .line, .pen, .text, .counter] {
+        #expect(next(tool) == EditorStyle().color, "\(tool)")
+    }
+    #expect(next(.highlight) == EditorStyle().highlightColor)
+}
+
+@Test func aMarkAlreadyTransparentKeepsItsColour() {
+    var clearArrow = arrow
+    clearArrow.color = .clear
+    #expect(palette(tool: .arrow, selection: clearArrow).color == .clear)
 }
 
 @Test func theControlsBesideTheColoursStackSoTheBarStaysNarrow() {
@@ -229,8 +260,8 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(palette(tool: .redact).controlRows.isEmpty)
 }
 
-@Test func aMarkCanBeMadeTransparent() {
-    var drawn = palette(tool: .arrow, selection: arrow)
+@Test func aShapesOutlineCanBeMadeTransparent() {
+    var drawn = palette(tool: .shape, selection: box)
     drawn.setColor(.clear)
     #expect(drawn.selection?.color == .clear)
     #expect(drawn.style.color == .clear)

@@ -158,10 +158,10 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
                 model.selectClip(nil as UUID?)
             }
         case .counter:
-            model.addAnnotation(Annotation(kind: .counter(model.project.nextCounterNumber, center: point), color: model.annotationStyle.color, lineWidth: model.lineWidth))
+            model.addAnnotation(Annotation(kind: .counter(model.project.nextCounterNumber, center: point), color: model.nextColor, lineWidth: model.lineWidth))
             dragStart = nil
         case .text:
-            var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.annotationStyle.color, lineWidth: model.lineWidth)
+            var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.nextColor, lineWidth: model.lineWidth)
             text.alignment = model.annotationStyle.alignment
             beginField(for: text, isNew: true)
             dragStart = nil

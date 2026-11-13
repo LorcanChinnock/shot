@@ -56,14 +56,21 @@ public struct AnnotationPalette: Equatable, Sendable {
         editingText?.color ?? selection?.color ?? nextColor
     }
 
-    /// The colour for the tool's next annotation: notes and the highlighter keep their own.
+    /// The colour for the tool's next annotation: notes and the highlighter keep their own. A transparent colour,
+    /// remembered from a shape's outline, goes back to the default for a tool whose colour row has no transparent swatch,
+    /// so the next mark never draws invisible.
     public var nextColor: RGBA {
         get {
-            switch tool {
-            case .note: style.noteColor
-            case .highlight: style.highlightColor
-            case .select, .hand, .arrow, .line, .shape, .pen, .text, .spotlight, .redact, .counter, .crop, nil: style.color
+            let defaults = EditorStyle()
+            let (color, fallback) = switch tool {
+            case .note: (style.noteColor, defaults.noteColor)
+            case .highlight: (style.highlightColor, defaults.highlightColor)
+            case .select, .hand, .arrow, .line, .shape, .pen, .text, .spotlight, .redact, .counter, .crop, nil: (style.color, defaults.color)
             }
+            guard color.a == 0, let row = tool.flatMap(StyleBarColorRow.colorRow(for:)), !row.offersTransparent else {
+                return color
+            }
+            return fallback
         }
         set {
             switch tool {
