@@ -269,6 +269,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         if let textBoxDraft {
             SelectionStyle.outline(viewRect(textBoxDraft))
         }
+        if let textField, case .text = editingText?.kind, editingText?.textWidth != nil {
+            SelectionStyle.outline(textField.frame)
+        }
 
         for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
             SelectionStyle.outline(viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
@@ -756,8 +759,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         if model.tool == .text, resizeHandle == nil, let start = dragStart {
-            let placed = textPlacement(from: start, to: imagePoint(event))
-            beginText(at: placed.origin, width: placed.width, fontSize: placed.fontSize)
+            let box = textBox(from: start, to: imagePoint(event))
+            beginText(at: box?.origin ?? start, box: box?.size)
             return
         }
         if model.tool == .note, resizeHandle == nil, let start = dragStart {
@@ -1114,10 +1117,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Text
 
-    /// Where a press at `start` released at `end` puts new text, and if the press dragged out a box, the width it wraps
-    /// to and the size its height gives.
-    private func textPlacement(from start: CGPoint, to end: CGPoint) -> (origin: CGPoint, width: CGFloat?, fontSize: CGFloat) {
-        TextLayout.placement(from: start, to: end, fontSize: model.fontSize, threshold: Self.dragThreshold / viewScale, scale: model.scale)
+    /// The box a press at `start` released at `end` drags out for new text; `nil` for a click.
+    private func textBox(from start: CGPoint, to end: CGPoint) -> CGRect? {
+        TextLayout.box(from: start, to: end, fontSize: model.fontSize, threshold: Self.dragThreshold / viewScale)
     }
 
     /// The box a drag with the Text tool is drawing out, in image pixels; `nil` until the drag passes the threshold.
@@ -1125,25 +1127,21 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard model.tool == .text, textField == nil, pressedText == nil, resizeHandle == nil, let start = dragStart, let end = lastPoint else {
             return nil
         }
-        let placed = textPlacement(from: start, to: end)
-        guard let width = placed.width else {
-            return nil
-        }
-        // As tall as one line of the size the drag gives, so the box shows the text it will hold.
-        return CGRect(x: placed.origin.x, y: placed.origin.y, width: width, height: TextLayout.lineHeight(fontSize: placed.fontSize))
+        return textBox(from: start, to: end)
     }
 
-    /// Opens a text field at `point` for new text, wrapping to `width` if it has one, in `fontSize` or else the tool's
-    /// size, or over `existing` text to edit it.
-    private func beginText(at point: CGPoint, width: CGFloat? = nil, fontSize: CGFloat? = nil, editing existing: Annotation? = nil) {
+    /// Opens a text field at `point` for new text in the tool's size, in a `box` of that size if one was dragged out, or
+    /// over `existing` text to edit it.
+    private func beginText(at point: CGPoint, box: CGSize? = nil, editing existing: Annotation? = nil) {
         if let existing {
             editingText = existing
         } else {
-            let size = fontSize ?? model.fontSize
+            let size = model.fontSize
             // Text's size is six times its width, which the style bar's size box shows.
             var text = Annotation(kind: .text("", origin: point, fontSize: size), color: model.nextColor, lineWidth: size / 6)
             text.alignment = model.alignment
-            text.textWidth = width
+            text.textWidth = box?.width
+            text.textBoxHeight = box?.height
             editingText = text
         }
         // A double-click that wobbles mustn't drag the text being edited.
@@ -1216,10 +1214,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         restyleField(field, as: text, color: text.color)
         let layout = TextLayout(string: field.text, fontSize: fontSize, color: text.color, width: text.textWidth, runs: field.sizes)
+        let size = TextLayout.boxSize(text: layout.size, minHeight: text.textBoxHeight)
         // A borderless field insets its text 2 pt on each side.
-        let box = viewRect(CGRect(origin: textOrigin, size: layout.size)).insetBy(dx: -2, dy: 0)
+        let box = viewRect(CGRect(origin: textOrigin, size: size)).insetBy(dx: -2, dy: 0)
         guard text.textWidth == nil else {
+            // A text box's field fills the box, and its outline shows round it while typing.
             field.frame = box
+            needsDisplay = true
             return
         }
         field.frame = RunsTextField.frame(unwrapping: box, isEmpty: field.text.isEmpty, alignment: text.alignment, minWidth: 240)

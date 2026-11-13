@@ -14,25 +14,51 @@ public struct TextLayout {
     /// The narrowest a text box wraps to.
     public static func minWidth(fontSize: CGFloat) -> CGFloat { fontSize * 2 }
 
-    /// Where a press at `start` released at `end` puts text, and its size. A click, a move under `threshold`, places text
-    /// in `fontSize` as wide as what's typed. A drag places a box from its top left that the text wraps in, as wide as the
-    /// drag, with its height as one line of text, so the size is the one whose line is that tall. That size is a whole
-    /// number of points, `scale` pixels each, within the text sizes the style bar offers.
-    public static func placement(
-        from start: CGPoint, to end: CGPoint, fontSize: CGFloat, threshold: CGFloat, scale: CGFloat
-    ) -> (origin: CGPoint, width: CGFloat?, fontSize: CGFloat) {
+    /// The box a press at `start` released at `end` drags out for text, from corner to corner as a slide app's text box
+    /// is, and at least `minWidth` wide; `nil` for a click, a move under `threshold`, which places text as wide as what's
+    /// typed. The drag preview shows this box too, so it follows the pointer both ways.
+    public static func box(from start: CGPoint, to end: CGPoint, fontSize: CGFloat, threshold: CGFloat) -> CGRect? {
         guard hypot(end.x - start.x, end.y - start.y) >= threshold else {
-            return (start, nil, fontSize)
+            return nil
         }
-        let rect = Geometry.normalized(from: start, to: end)
-        let sizes = EditorStyle.widths.map { EditorStyle.shownSize(width: $0, sizing: .text) }
-        let points = (rect.height / lineHeightPerPoint / scale).rounded()
-        let dragged = min(max(points, sizes[0]), sizes[sizes.count - 1]) * scale
-        return (rect.origin, max(rect.width, minWidth(fontSize: dragged)), dragged)
+        var rect = Geometry.normalized(from: start, to: end)
+        rect.size.width = max(rect.width, minWidth(fontSize: fontSize))
+        return rect
     }
 
-    /// How tall a line of text is for each point of its size.
-    public static let lineHeightPerPoint: CGFloat = CoreTextShaper.metrics(of: TextFont(size: 100, bold: true)).lineHeight / 100
+    /// A text box's size: the width its text wraps to, and as tall as `minHeight` or, when the text needs more, the text.
+    public static func boxSize(text: CGSize, minHeight: CGFloat?) -> CGSize {
+        CGSize(width: text.width, height: max(text.height, minHeight ?? 0))
+    }
+
+    /// `frame`, a text box, with `handle`'s sides moved to `point`. Left and right change its width, never below `minWidth`;
+    /// top and bottom its height, never below the height of its text at the new width, which `textHeight` gives. The other
+    /// sides stay put, so the box never flips.
+    public static func resizedBox(
+        _ frame: CGRect, handle: AnnotationHandle, to point: CGPoint, minWidth: CGFloat, textHeight: (CGFloat) -> CGFloat
+    ) -> CGRect {
+        var box = frame
+        switch handle.dx {
+        case -1:
+            box.origin.x = min(point.x, frame.maxX - minWidth)
+            box.size.width = frame.maxX - box.minX
+        case 1:
+            box.size.width = max(point.x - frame.minX, minWidth)
+        default:
+            break
+        }
+        guard handle.dy != 0 else {
+            return box
+        }
+        let text = textHeight(box.width)
+        if handle.dy < 0 {
+            box.origin.y = min(point.y, frame.maxY - text)
+            box.size.height = frame.maxY - box.minY
+        } else {
+            box.size.height = max(point.y - frame.minY, text)
+        }
+        return box
+    }
 
     /// How tall a line of text in `fontSize` is.
     public static func lineHeight(fontSize: CGFloat) -> CGFloat {

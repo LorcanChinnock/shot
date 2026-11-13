@@ -49,7 +49,7 @@ Drag on the screenshot to draw with the tool you picked. While you drag:
 
 Your marks can reach past the edges of the screenshot. The canvas grows to fit them.
 
-With the text tool, click and start typing for a label as wide as its words, in the text size the style bar shows. To fit text into a column, drag out a box instead: its height is one line of text, so a short box gives small text and a tall one large text. The text wraps to the box's width, and the box grows taller as you type. <kbd>Return</kbd> starts a new line. A label grows a line at a time, each as wide as its words. To finish, press <kbd>Esc</kbd> or <kbd>⌘Return</kbd>, click the canvas or pick another tool.
+With the text tool, click and start typing for a label as wide as its words, in the text size the style bar shows. To fit text into a column, drag out a box instead, as you would in a slide app. The box keeps the width and height you drag, and its text uses the same size from the style bar. The text wraps to the box's width and starts at the top, and the box grows taller only when the text no longer fits. An outline shows round the box while you type and while it's selected. <kbd>Return</kbd> starts a new line. A label grows a line at a time, each as wide as its words. To finish, press <kbd>Esc</kbd> or <kbd>⌘Return</kbd>, click the canvas or pick another tool.
 
 The hint at the bottom right of the canvas tells you what the tool does, or what you've selected, with the keys that change it. With an arrow selected it reads "Arrow selected · ⌫ delete · ⇧ snap 45°". It shows for a few seconds each time you pick a tool or select something, then fades so it doesn't cover the screenshot. It and the zoom control also fade while you drag. With VoiceOver on, the hint stays and is read out when it changes.
 
@@ -85,7 +85,7 @@ With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into
 What you've just drawn stays selected, so you can fix its colour, width or fill from the style bar beside it without switching tools. The change also applies to what you draw next. Point at an arrow, line, shape, spotlight or redaction you've just drawn and its handles appear, so you can drag one to resize it, bend an arrow or line, or round a shape's corners, still without switching tools. Pen and highlighter strokes show no handles, so you can write close together. They hide when the pointer moves away, and pressing anywhere else starts a new mark, even right next to the last one. To move a mark or change an older one, pick the select tool (<kbd>V</kbd>) and click it.
 
 - **Move** it by dragging, or nudge it with the arrow keys, 1 pixel at a time or 10 with <kbd>Shift</kbd>.
-- **Resize** it with its handles. A text box has a handle on each side, and its text wraps again to the new width. <kbd>Shift</kbd> keeps a box's proportions, or snaps an arrow or line end to 45°. <kbd>⌥</kbd> resizes from the centre. Hold <kbd>Space</kbd> to move the whole shape mid-drag.
+- **Resize** it with its handles. A text box has handles on its corners and sides: they change the box's width and height, and the text wraps again to fit without changing size. <kbd>Shift</kbd> keeps a box's proportions, or snaps an arrow or line end to 45°. <kbd>⌥</kbd> resizes from the centre. Hold <kbd>Space</kbd> to move the whole shape mid-drag.
 - **Bend** an arrow or line by dragging its middle handle.
 - **Round the corners** of a shape with the small round handles inside them, up to a pill on a rectangle.
 - **Edit text** in a text box or sticky note by double-clicking it.
