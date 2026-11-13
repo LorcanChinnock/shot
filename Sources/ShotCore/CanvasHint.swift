@@ -52,6 +52,15 @@ public struct CanvasHint: Equatable, Sendable {
         ([lead] + parts.map { part in part.key.map { "\($0.name): \(part.action)" } ?? part.action }).joined(separator: ". ")
     }
 
+    /// How long a hint shows after it changes before it fades, so it doesn't stay over the picture.
+    public static let showsFor: Duration = .seconds(4)
+
+    /// Whether the hint shows: for `showsFor` after it changes, and not while a drag draws or moves something. With
+    /// VoiceOver on it stays, so it can still be read.
+    public static func isShown(isFresh: Bool, isDragging: Bool, voiceOver: Bool) -> Bool {
+        voiceOver || (isFresh && !isDragging)
+    }
+
     /// The hint for the canvas as it is, or `nil` in crop mode, where the crop bar takes the foot and names its own keys.
     /// Typing comes first, since its key works only then. Then the selection: several marks, one locked mark, or one mark
     /// with what Shift does while you resize it. With nothing selected, the tool's action and what Shift or Option does
