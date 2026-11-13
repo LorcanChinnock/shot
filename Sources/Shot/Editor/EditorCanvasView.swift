@@ -252,6 +252,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             ctx.restoreGState()
         }
         drawImageEdge(around: rect)
+        if let textBoxDraft {
+            SelectionStyle.outline(viewRect(textBoxDraft))
+        }
 
         for other in model.document.annotations where model.selectedIDs.count > 1 && model.selectedIDs.contains(other.id) {
             SelectionStyle.outline(viewRect(other.bounds.insetBy(dx: -other.lineWidth, dy: -other.lineWidth).union(other.paintedBounds)))
@@ -617,13 +620,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             model.add(counter)
             land(counter.id)
         case .text:
-            // Pressing existing text selects it to move or edit instead of starting more text on top of it.
+            // Pressing existing text selects it to move or edit instead of starting more text on top of it. Elsewhere,
+            // the release places the text: a click where it was pressed, a drag a box that wraps it.
             pressedText = textOrNote(at: point)
             pressedTextWasSelected = pressedText?.id == selectedBeforePress
             if let pressedText {
                 model.selectedID = pressedText.id
-            } else {
-                beginText(at: point)
             }
         default:
             break
@@ -658,7 +660,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             dragSelection(to: point, from: last, modifiers: event.modifierFlags)
         case .crop:
             dragCrop(to: point, from: start, shift: event.modifierFlags.contains(.shift))
-        case .arrow, .line, .shape, .pen, .text, .note, .highlight, .spotlight, .redact, .counter, .hand:
+        case .text:
+            needsDisplay = true
+        case .arrow, .line, .shape, .pen, .note, .highlight, .spotlight, .redact, .counter, .hand:
             // Shift keeps shapes square and lines and highlights at 45° steps; Option draws a shape out from where it started.
             // Points closer than a view point apart add nothing a stroke's curve can show.
             guard let drawn = AnnotationDraft.annotation(
@@ -728,6 +732,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                     beginText(at: origin, editing: pressedText)
                 }
             }
+            return
+        }
+        if model.tool == .text, resizeHandle == nil, let start = dragStart {
+            let placed = textPlacement(from: start, to: imagePoint(event))
+            beginText(at: placed.origin, width: placed.width)
             return
         }
         if model.tool == .note, resizeHandle == nil, let start = dragStart {
@@ -1084,13 +1093,31 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Text
 
-    /// Opens a text field at `point` for new text, or over `existing` text to edit it.
-    private func beginText(at point: CGPoint, editing existing: Annotation? = nil) {
+    /// Where a press at `start` released at `end` puts new text, and the width it wraps to if the press dragged out a box.
+    private func textPlacement(from start: CGPoint, to end: CGPoint) -> (origin: CGPoint, width: CGFloat?) {
+        TextLayout.placement(from: start, to: end, fontSize: model.fontSize, threshold: Self.dragThreshold / viewScale)
+    }
+
+    /// The box a drag with the Text tool is drawing out, in image pixels; `nil` until the drag passes the threshold.
+    private var textBoxDraft: CGRect? {
+        guard model.tool == .text, textField == nil, pressedText == nil, resizeHandle == nil, let start = dragStart, let end = lastPoint else {
+            return nil
+        }
+        let placed = textPlacement(from: start, to: end)
+        guard let width = placed.width else {
+            return nil
+        }
+        return CGRect(x: placed.origin.x, y: placed.origin.y, width: width, height: max(abs(end.y - start.y), model.fontSize))
+    }
+
+    /// Opens a text field at `point` for new text, wrapping to `width` if it has one, or over `existing` text to edit it.
+    private func beginText(at point: CGPoint, width: CGFloat? = nil, editing existing: Annotation? = nil) {
         if let existing {
             editingText = existing
         } else {
             var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth)
             text.alignment = model.alignment
+            text.textWidth = width
             editingText = text
         }
         // A double-click that wobbles mustn't drag the text being edited.
@@ -1103,10 +1130,18 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         field.delegate = self
         field.target = self
         field.action = #selector(textFieldAction)
+        if editingText?.textWidth != nil {
+            field.usesSingleLineMode = false
+            field.cell?.wraps = true
+            field.cell?.isScrollable = false
+            field.maximumNumberOfLines = 0
+            field.lineBreakMode = .byWordWrapping
+        }
         addSubview(field)
-        window?.makeFirstResponder(field)
         textField = field
+        // Sized before it takes focus, as a note's field is, so the field editor starts at the field's real size.
         layoutTextField()
+        window?.makeFirstResponder(field)
     }
 
     /// Keeps the open text field over its text, at its size and colour, as the zoom, scroll, window or toolbar changes.
@@ -1124,6 +1159,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         field.textColor = NSColor(srgbRed: text.color.r, green: text.color.g, blue: text.color.b, alpha: 1)
         field.alignment = text.alignment.textAlignment
+        if let width = text.textWidth {
+            let layout = TextLayout(string: field.stringValue, fontSize: fontSize, color: text.color, width: width)
+            // A borderless field insets its text 2 pt on each side.
+            field.frame = viewRect(CGRect(origin: textOrigin, size: layout.size)).insetBy(dx: -2, dy: 0)
+            return
+        }
         let origin = viewRect(CGRect(origin: textOrigin, size: .zero)).origin
         let fitted: CGFloat
         if field.stringValue.isEmpty {
@@ -1145,6 +1186,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
             commitText()
+            return true
+        }
+        // Return commits; Shift-Return starts a new line in a text box.
+        if commandSelector == #selector(NSResponder.insertNewline(_:)), editingText?.textWidth != nil, NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
+            textView.insertNewlineIgnoringFieldEditor(nil)
             return true
         }
         return false

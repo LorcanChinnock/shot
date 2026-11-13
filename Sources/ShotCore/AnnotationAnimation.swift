@@ -53,6 +53,7 @@ extension Annotation {
             let size = bounds.size
             let scaledSize = CGSize(width: size.width * s, height: size.height * s)
             copy.kind = .text(string, origin: CGPoint(x: center.x - scaledSize.width / 2, y: center.y - scaledSize.height / 2), fontSize: fontSize * s)
+            copy.textWidth = textWidth.map { $0 * s }
             _ = origin
         }
         return copy

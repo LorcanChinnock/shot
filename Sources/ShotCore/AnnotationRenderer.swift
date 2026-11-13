@@ -306,7 +306,7 @@ public enum AnnotationRenderer {
         case let .image(image, rect):
             drawImage(image.cropped(annotation.imageCrop), in: pixelAligned(rect), cornerRadius: annotation.imageCornerRadius, style: annotation.style, shadowBackground: look.background, ctx: ctx)
         case let .text(string, origin, fontSize):
-            let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color)
+            let layout = TextLayout(string: string, fontSize: fontSize, color: annotation.color, width: annotation.textWidth)
             func drawLines(_ lines: [CoreTextLine], outlined: Bool = false) {
                 for (index, line) in lines.enumerated() {
                     let x = origin.x + annotation.alignment.offset(of: line, in: layout.size.width)
@@ -325,7 +325,7 @@ public enum AnnotationRenderer {
                 ctx.saveGState()
                 ctx.setLineWidth(outline.width * 2)
                 ctx.setStrokeColor(outline.paint.cgColor)
-                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint).lines, outlined: true)
+                drawLines(TextLayout(string: string, fontSize: fontSize, color: outline.paint, width: annotation.textWidth).lines, outlined: true)
                 ctx.restoreGState()
             }
             drawLines(layout.lines)
