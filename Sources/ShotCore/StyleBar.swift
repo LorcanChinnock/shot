@@ -5,7 +5,7 @@ import Foundation
 /// selected mark, or at the top of the canvas for the tool's next mark.
 public enum StyleBarContent: Equatable, Sendable {
     /// Colour swatches and three widths for arrows, lines, shapes, pens, text, notes, highlights and counters, with
-    /// More style for a shape's outline and fill or a text's alignment.
+    /// rectangle or ellipse for a shape, and More style for a shape's other outlines and fill or a text's alignment.
     case colorAndWidth
     /// Blur or pixelate, with the amount and Reset under More style.
     case redaction

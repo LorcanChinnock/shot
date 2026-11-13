@@ -78,6 +78,11 @@ private let bar = CGSize(width: 260, height: 32)
     #expect(StyleBarContent.spotlight.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
 }
 
+@Test func theBarSwitchesRectangleAndEllipseAndMoreStyleKeepsTheOtherShapes() {
+    #expect(BoxShape.styleBarShapes == [.rectangle, .ellipse])
+    #expect(BoxShape.moreStyleShapes == [.triangle, .diamond, .star])
+}
+
 @Test func theBarOffersEveryPresetColourWhiteIncluded() {
     #expect(StyleBarSwatches.colors == RGBA.presets)
     #expect(StyleBarSwatches.contains(RGBA(1, 1, 1)))
