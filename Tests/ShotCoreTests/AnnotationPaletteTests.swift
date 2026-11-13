@@ -72,25 +72,44 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     new.setLineWidth(points: 8)
     #expect(new.style.noteColor == blue)
     #expect(new.style.color == EditorStyle().color)
-    #expect(new.style.alignment == .right)
+    // A note's alignment is the next note's, not the next text's.
+    #expect(new.style.noteAlignment == .right)
+    #expect(new.style.alignment == EditorStyle().alignment)
     #expect(new.style.width == 8)
 }
 
+@Test func newNotesCentreTheirTextAndNewTextStaysLeft() {
+    #expect(palette(tool: .note).alignment == .center)
+    #expect(palette(tool: .note).verticalAlignment == .middle)
+    #expect(palette(tool: .text).alignment == .left)
+    var text = palette(tool: .text)
+    text.setAlignment(.right)
+    #expect(text.style.alignment == .right)
+    #expect(text.style.noteAlignment == .center)
+    var notes = palette(tool: .note)
+    notes.setAlignment(.left)
+    notes.setVerticalAlignment(.top)
+    #expect(notes.canReset)
+    notes.reset()
+    #expect(notes.style.noteAlignment == .center)
+    #expect(notes.style.verticalAlignment == .middle)
+}
+
 @Test func verticalAlignmentShowsForNotesAndSetsTheNoteOrTheNext() {
-    #expect(palette(tool: .note).verticalAlignment == .top)
+    #expect(palette(tool: .note).verticalAlignment == .middle)
     #expect(palette(tool: .text).verticalAlignment == nil)
     #expect(palette(tool: .arrow, selection: note).verticalAlignment == .top)
     #expect(palette(tool: .note, selection: arrow).verticalAlignment == nil)
 
     var typing = palette(tool: .note, editing: note, isNew: true)
-    typing.setVerticalAlignment(.middle)
-    #expect(typing.editingText?.verticalAlignment == .middle)
-    #expect(typing.style.verticalAlignment == .middle)
+    typing.setVerticalAlignment(.bottom)
+    #expect(typing.editingText?.verticalAlignment == .bottom)
+    #expect(typing.style.verticalAlignment == .bottom)
 
     var picked = palette(tool: .select, selection: note)
     picked.setVerticalAlignment(.bottom)
     #expect(picked.selection?.verticalAlignment == .bottom)
-    #expect(picked.style.verticalAlignment == .top)
+    #expect(picked.style.verticalAlignment == .middle)
 }
 
 @Test func eachOptionRowShowsForItsToolOrSelection() {
@@ -104,7 +123,7 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(palette(tool: .shape).redaction == nil)
     #expect(palette(tool: .spotlight).spotlight == SpotlightStyle())
     #expect(palette(tool: .arrow).spotlight == nil)
-    #expect(palette(tool: .note).alignment == .left)
+    #expect(palette(tool: .note).alignment == .center)
     #expect(palette(tool: .arrow).alignment == nil)
     #expect(palette(tool: .arrow, selection: note).alignment == .left)
     #expect(palette(tool: .text).sizesText)

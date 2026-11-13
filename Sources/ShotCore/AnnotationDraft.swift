@@ -17,11 +17,13 @@ public enum AnnotationDraft {
         public var redactionAmount: CGFloat
         public var spotlight: SpotlightStyle
         public var alignment: TextAlign
+        /// How a new note's lines line up; `alignment` is for text.
+        public var noteAlignment: TextAlign
         public var verticalAlignment: VerticalTextAlign
 
         public init(
             color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
-            redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign,
+            redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign, noteAlignment: TextAlign,
             verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil
         ) {
             self.color = color
@@ -34,6 +36,7 @@ public enum AnnotationDraft {
             self.redactionAmount = redactionAmount
             self.spotlight = spotlight
             self.alignment = alignment
+            self.noteAlignment = noteAlignment
             self.verticalAlignment = verticalAlignment
         }
     }
@@ -91,7 +94,7 @@ public enum AnnotationDraft {
     /// An empty note placed by a drag from `start` to `end`, ready for its text.
     public static func note(id: UUID, from start: CGPoint, to end: CGPoint, style: Style) -> Annotation {
         var note = Annotation(id: id, kind: .note("", rect: .zero), color: style.noteColor, lineWidth: style.lineWidth)
-        note.alignment = style.alignment
+        note.alignment = style.noteAlignment
         note.verticalAlignment = style.verticalAlignment
         note.kind = .note("", rect: NoteLayout.placementRect(from: start, to: end, fontSize: note.noteFontSize))
         note.noteTextColor = style.noteTextColor

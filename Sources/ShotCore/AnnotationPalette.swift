@@ -367,19 +367,40 @@ public struct AnnotationPalette: Equatable, Sendable {
         if let shown {
             return shown.alignsText ? shown.alignment : nil
         }
-        return tool == .text || tool == .note ? style.alignment : nil
+        switch tool {
+        case .text: return style.alignment
+        case .note: return style.noteAlignment
+        default: return nil
+        }
     }
 
     public mutating func setAlignment(_ alignment: TextAlign) {
         if editingText != nil {
             editingText?.alignment = alignment
             if editingTextIsNew {
-                style.alignment = alignment
+                setNextAlignment(alignment)
             }
             return
         }
         selection?.alignment = alignment
         if stylesNextAnnotation {
+            setNextAlignment(alignment)
+        }
+    }
+
+    /// Whether the alignment shown is a note's, which keeps its own for the next note.
+    private var alignsNote: Bool {
+        if let shown {
+            if case .note = shown.kind { return true }
+            return false
+        }
+        return tool == .note
+    }
+
+    private mutating func setNextAlignment(_ alignment: TextAlign) {
+        if alignsNote {
+            style.noteAlignment = alignment
+        } else {
             style.alignment = alignment
         }
     }
@@ -470,7 +491,7 @@ public struct AnnotationPalette: Equatable, Sendable {
             }
         }
         if alignment != nil {
-            setAlignment(defaults.alignment)
+            setAlignment(alignsNote ? defaults.noteAlignment : defaults.alignment)
         }
         if verticalAlignment != nil {
             setVerticalAlignment(defaults.verticalAlignment)

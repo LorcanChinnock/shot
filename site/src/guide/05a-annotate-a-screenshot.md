@@ -49,7 +49,7 @@ Drag on the screenshot to draw with the tool you picked. While you drag:
 
 Your marks can reach past the edges of the screenshot. The canvas grows to fit them.
 
-With the text tool, click and start typing for a label as wide as its words. To fit text into a column, drag out a box instead: the text wraps to the box's width and the box grows taller as you type. <kbd>Return</kbd> finishes the text, and <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line in a box.
+With the text tool, click and start typing for a label as wide as its words, in the text size the style bar shows. To fit text into a column, drag out a box instead: its height is one line of text, so a short box gives small text and a tall one large text. The text wraps to the box's width, and the box grows taller as you type. <kbd>Return</kbd> finishes the text, and <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line in a box.
 
 The hint at the bottom right of the canvas tells you what the tool does, or what you've selected, with the keys that change it. With an arrow selected it reads "Arrow selected · ⌫ delete · ⇧ snap 45°". It shows for a few seconds each time you pick a tool or select something, then fades so it doesn't cover the screenshot. It and the zoom control also fade while you drag. With VoiceOver on, the hint stays and is read out when it changes.
 
@@ -62,7 +62,7 @@ The colours are on the left, a row for each, named on its left. Every row has th
 - **Arrows, lines, pens and highlights:** a **Line** row, and the width.
 - **Shape:** **Line** for the outline, and **Fill** under it for the inside. Transparent leaves a shape unfilled. On the right are the width and the five outlines: a rectangle, ellipse, triangle, diamond or star. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
 - **Text:** a **Text** row, the text size, and left, centre or right alignment.
-- **Sticky note:** **Text**, and **Background** under it for the paper. Until you pick a text colour, the text is black or white, whichever reads better on the paper, and no swatch shows as chosen. Click the chosen colour again to go back to that. On the right are the text size, the alignment, and whether the text sits at the top, middle or bottom, which shows when you drag the note taller than its text.
+- **Sticky note:** **Text**, and **Background** under it for the paper. Until you pick a text colour, the text is black or white, whichever reads better on the paper, and no swatch shows as chosen. Click the chosen colour again to go back to that. On the right are the text size, the alignment, and whether the text sits at the top, middle or bottom, which shows when you drag the note taller than its text. New notes centre their text both ways.
 - **Counter:** a **Fill** row for the circle behind the number, and its size.
 - **Redact:** blur or pixelate, and how strong it is.
 - **Spotlight:** a rectangle or an ellipse, whether to darken or blur outside it, how strongly, and how soft its edge is. Every spotlight in the screenshot shares one dim, so the effect and strength apply to all of them.

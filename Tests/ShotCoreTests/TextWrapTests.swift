@@ -13,20 +13,44 @@ private func wrapped(_ string: String = sentence, width: CGFloat? = 160) -> Anno
 }
 
 @Test func aClickPlacesTextAsWideAsWhatsTyped() {
-    let placed = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 11), fontSize: 20, threshold: 4)
+    let placed = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 11), fontSize: 20, threshold: 4, scale: 2)
     #expect(placed.origin == CGPoint(x: 10, y: 10))
     #expect(placed.width == nil)
 }
 
 @Test func aDragPlacesABoxFromItsLeftEdgeAsWideAsTheDrag() {
-    let placed = TextLayout.placement(from: CGPoint(x: 200, y: 50), to: CGPoint(x: 80, y: 90), fontSize: 20, threshold: 4)
+    let placed = TextLayout.placement(from: CGPoint(x: 200, y: 50), to: CGPoint(x: 80, y: 90), fontSize: 20, threshold: 4, scale: 2)
     #expect(placed.origin == CGPoint(x: 80, y: 50))
     #expect(placed.width == 120)
 }
 
 @Test func aNarrowDragStillGivesRoomForAFewLetters() {
-    let placed = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 80), fontSize: 20, threshold: 4)
-    #expect(placed.width == TextLayout.minWidth(fontSize: 20))
+    let placed = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 80), fontSize: 20, threshold: 4, scale: 2)
+    #expect(placed.width == TextLayout.minWidth(fontSize: placed.fontSize))
+}
+
+@Test func aClickKeepsTheToolsTextSize() {
+    let placed = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 11, y: 12), fontSize: 20, threshold: 4, scale: 2)
+    #expect(placed.fontSize == 20)
+}
+
+@Test func aDraggedBoxsHeightIsOneLineOfItsText() {
+    // At 2 pixels per point, a box one line of 24 pt text tall gives 24 pt text, 48 pixels.
+    let line = TextLayout.lineHeight(fontSize: 48)
+    let placed = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 300, y: 10 + line), fontSize: 20, threshold: 4, scale: 2)
+    #expect(placed.fontSize == 48)
+    #expect(abs(TextLayout.lineHeight(fontSize: placed.fontSize) - line) < 0.01)
+    // A shorter box gives smaller text, in whole points.
+    let short = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 300, y: 10 + line / 2), fontSize: 20, threshold: 4, scale: 2)
+    #expect(short.fontSize == 24)
+    #expect((short.fontSize / 2).rounded() == short.fontSize / 2)
+}
+
+@Test func aDraggedSizeStaysWithinTheTextSizes() {
+    let flat = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 300, y: 12), fontSize: 20, threshold: 4, scale: 2)
+    #expect(flat.fontSize == 12)
+    let tall = TextLayout.placement(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 300, y: 2000), fontSize: 20, threshold: 4, scale: 2)
+    #expect(tall.fontSize == 192)
 }
 
 @Test func textInABoxWrapsToItsWidth() {

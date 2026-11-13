@@ -11,14 +11,29 @@ public struct TextLayout {
     /// The narrowest a text box wraps to.
     public static func minWidth(fontSize: CGFloat) -> CGFloat { fontSize * 2 }
 
-    /// Where a press at `start` released at `end` puts text: a click, a move under `threshold`, places text as wide as
-    /// what's typed; a drag places a box from its left edge, as wide as the drag, that the text wraps in.
-    public static func placement(from start: CGPoint, to end: CGPoint, fontSize: CGFloat, threshold: CGFloat) -> (origin: CGPoint, width: CGFloat?) {
+    /// Where a press at `start` released at `end` puts text, and its size. A click, a move under `threshold`, places text
+    /// in `fontSize` as wide as what's typed. A drag places a box from its top left that the text wraps in, as wide as the
+    /// drag, with its height as one line of text, so the size is the one whose line is that tall. That size is a whole
+    /// number of points, `scale` pixels each, within the text sizes the style bar offers.
+    public static func placement(
+        from start: CGPoint, to end: CGPoint, fontSize: CGFloat, threshold: CGFloat, scale: CGFloat
+    ) -> (origin: CGPoint, width: CGFloat?, fontSize: CGFloat) {
         guard hypot(end.x - start.x, end.y - start.y) >= threshold else {
-            return (start, nil)
+            return (start, nil, fontSize)
         }
         let rect = Geometry.normalized(from: start, to: end)
-        return (rect.origin, max(rect.width, minWidth(fontSize: fontSize)))
+        let sizes = EditorStyle.widths.map { EditorStyle.shownSize(width: $0, sizing: .text) }
+        let points = (rect.height / lineHeightPerPoint / scale).rounded()
+        let dragged = min(max(points, sizes[0]), sizes[sizes.count - 1]) * scale
+        return (rect.origin, max(rect.width, minWidth(fontSize: dragged)), dragged)
+    }
+
+    /// How tall a line of text is for each point of its size.
+    public static let lineHeightPerPoint: CGFloat = CoreTextShaper.metrics(of: TextFont(size: 100, bold: true)).lineHeight / 100
+
+    /// How tall a line of text in `fontSize` is.
+    public static func lineHeight(fontSize: CGFloat) -> CGFloat {
+        CoreTextShaper.metrics(of: TextFont(size: fontSize, bold: true)).lineHeight
     }
 
     public init(string: String, fontSize: CGFloat, color: RGBA, width: CGFloat? = nil) {

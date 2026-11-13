@@ -736,7 +736,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
         if model.tool == .text, resizeHandle == nil, let start = dragStart {
             let placed = textPlacement(from: start, to: imagePoint(event))
-            beginText(at: placed.origin, width: placed.width)
+            beginText(at: placed.origin, width: placed.width, fontSize: placed.fontSize)
             return
         }
         if model.tool == .note, resizeHandle == nil, let start = dragStart {
@@ -1093,9 +1093,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Text
 
-    /// Where a press at `start` released at `end` puts new text, and the width it wraps to if the press dragged out a box.
-    private func textPlacement(from start: CGPoint, to end: CGPoint) -> (origin: CGPoint, width: CGFloat?) {
-        TextLayout.placement(from: start, to: end, fontSize: model.fontSize, threshold: Self.dragThreshold / viewScale)
+    /// Where a press at `start` released at `end` puts new text, and if the press dragged out a box, the width it wraps
+    /// to and the size its height gives.
+    private func textPlacement(from start: CGPoint, to end: CGPoint) -> (origin: CGPoint, width: CGFloat?, fontSize: CGFloat) {
+        TextLayout.placement(from: start, to: end, fontSize: model.fontSize, threshold: Self.dragThreshold / viewScale, scale: model.scale)
     }
 
     /// The box a drag with the Text tool is drawing out, in image pixels; `nil` until the drag passes the threshold.
@@ -1107,15 +1108,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let width = placed.width else {
             return nil
         }
-        return CGRect(x: placed.origin.x, y: placed.origin.y, width: width, height: max(abs(end.y - start.y), model.fontSize))
+        // As tall as one line of the size the drag gives, so the box shows the text it will hold.
+        return CGRect(x: placed.origin.x, y: placed.origin.y, width: width, height: TextLayout.lineHeight(fontSize: placed.fontSize))
     }
 
-    /// Opens a text field at `point` for new text, wrapping to `width` if it has one, or over `existing` text to edit it.
-    private func beginText(at point: CGPoint, width: CGFloat? = nil, editing existing: Annotation? = nil) {
+    /// Opens a text field at `point` for new text, wrapping to `width` if it has one, in `fontSize` or else the tool's
+    /// size, or over `existing` text to edit it.
+    private func beginText(at point: CGPoint, width: CGFloat? = nil, fontSize: CGFloat? = nil, editing existing: Annotation? = nil) {
         if let existing {
             editingText = existing
         } else {
-            var text = Annotation(kind: .text("", origin: point, fontSize: model.fontSize), color: model.color, lineWidth: model.lineWidth)
+            let size = fontSize ?? model.fontSize
+            // Text's size is six times its width, which the style bar's size box shows.
+            var text = Annotation(kind: .text("", origin: point, fontSize: size), color: model.color, lineWidth: size / 6)
             text.alignment = model.alignment
             text.textWidth = width
             editingText = text

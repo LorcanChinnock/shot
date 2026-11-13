@@ -1074,7 +1074,7 @@ extension VideoEditorModel {
         let style = annotationStyle
         return AnnotationDraft.Style(
             color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
-            redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment,
+            redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment, noteAlignment: style.noteAlignment,
             verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor
         )
     }

@@ -302,7 +302,7 @@ func draggingTheMidpointBendsIt(kind: Annotation.Kind) {
 @Test func aNewNoteTakesTheChosenTextColour() {
     var style = AnnotationDraft.Style(
         color: red, fill: nil, noteColor: RGBA.presets[2], lineWidth: 4, shape: .rectangle, redaction: .blur, redactionAmount: 0.01,
-        spotlight: SpotlightStyle(), alignment: .left, verticalAlignment: .top
+        spotlight: SpotlightStyle(), alignment: .left, noteAlignment: .center, verticalAlignment: .middle
     )
     #expect(AnnotationDraft.note(id: UUID(), from: .zero, to: CGPoint(x: 100, y: 60), style: style).noteTextColor == nil)
     style.noteTextColor = RGBA.presets[5]

@@ -111,9 +111,13 @@ final class EditorModel {
     var spotlight: SpotlightStyle {
         didSet { rememberStyle { $0.spotlight = spotlight } }
     }
-    /// How the lines of the next text or note line up.
+    /// How the lines of the next text line up.
     var alignment: TextAlign {
         didSet { rememberStyle { $0.alignment = alignment } }
+    }
+    /// How the lines of the next note line up.
+    var noteAlignment: TextAlign {
+        didSet { rememberStyle { $0.noteAlignment = noteAlignment } }
     }
     /// Where the next note's text sits in it.
     var verticalAlignment: VerticalTextAlign {
@@ -210,6 +214,7 @@ final class EditorModel {
         redactionAmount = style.redactionAmount
         spotlight = style.spotlight
         alignment = style.alignment
+        noteAlignment = style.noteAlignment
         verticalAlignment = style.verticalAlignment
         customColors = style.customColors
         width = style.width
@@ -366,7 +371,7 @@ final class EditorModel {
         EditorStyle(
             tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, noteTextColor: noteTextColor, width: width,
             customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
-            alignment: alignment, verticalAlignment: verticalAlignment, objectStyles: objectStyles
+            alignment: alignment, noteAlignment: noteAlignment, verticalAlignment: verticalAlignment, objectStyles: objectStyles
         )
     }
 
@@ -392,6 +397,7 @@ final class EditorModel {
         if next.redactionAmount != redactionAmount { redactionAmount = next.redactionAmount }
         if next.spotlight != spotlight { spotlight = next.spotlight }
         if next.alignment != alignment { alignment = next.alignment }
+        if next.noteAlignment != noteAlignment { noteAlignment = next.noteAlignment }
         if next.verticalAlignment != verticalAlignment { verticalAlignment = next.verticalAlignment }
         for (slot, colour) in next.customColors where customColors[slot] != colour {
             customColors[slot] = colour
@@ -835,7 +841,7 @@ final class EditorModel {
     var draftStyle: AnnotationDraft.Style {
         AnnotationDraft.Style(
             color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
-            redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment,
+            redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment, noteAlignment: noteAlignment,
             verticalAlignment: verticalAlignment, noteTextColor: noteTextColor
         )
     }

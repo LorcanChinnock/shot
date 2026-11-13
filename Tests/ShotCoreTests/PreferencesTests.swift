@@ -148,7 +148,7 @@ import Testing
             noteTextColor: RGBA.presets[6], width: 6.5,
             customColors: [.stroke: custom, .note: blue, .highlight: RGBA.presets[1]],
             shape: .star, redaction: .pixelate, redactionAmount: 0.013, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
-            alignment: .center, verticalAlignment: .middle
+            alignment: .center, noteAlignment: .right, verticalAlignment: .bottom
         )
         Preferences.remember(style, in: store)
         store.set(Data(), forKey: "editorRecentColors")
@@ -239,6 +239,24 @@ import Testing
         #expect(prefs.editorStyle.width == 16)
         Preferences.resetAll(in: store)
         #expect(prefs.editorStyle.width == EditorStyle.defaultWidth)
+    }
+
+    @Test func notesStartCentredEvenWhereAnOlderVersionSavedTheTop() throws {
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        #expect(prefs.editorStyle.noteAlignment == .center)
+        #expect(prefs.editorStyle.verticalAlignment == .middle)
+        // Older versions saved every default, so the top they saved isn't a choice to keep.
+        store.set("top", forKey: "editorVerticalAlignment")
+        #expect(prefs.editorStyle.verticalAlignment == .middle)
+        Preferences.changeEditorStyle(in: store) { $0.verticalAlignment = .bottom }
+        #expect(prefs.editorStyle.verticalAlignment == .bottom)
+        Preferences.resetAll(in: store)
+        #expect(prefs.editorStyle.verticalAlignment == .middle)
+        #expect(store.object(forKey: "editorVerticalAlignment") == nil)
     }
 
     @Test func toolsFromOlderVersionsBecomeTheToolsThatReplacedThem() throws {

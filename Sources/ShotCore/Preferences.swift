@@ -57,7 +57,11 @@ public enum PreferenceKey {
     public static let editorRedactionAmount = "editorRedactionAmount"
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
-    public static let editorVerticalAlignment = "editorVerticalAlignment"
+    /// How a new note's lines line up.
+    public static let editorNoteAlignment = "editorNoteAlignment"
+    /// Where a new note's text sits. Its own key since notes started centred, so the top an older version saved for
+    /// everyone by default doesn't carry over.
+    public static let editorVerticalAlignment = "editorNoteVerticalAlignment"
     public static let editorObjectStyles = "editorObjectStyles"
     /// The shape the editor's crop was last held to.
     public static let editorCropAspect = "editorCropAspect"
@@ -161,6 +165,7 @@ public struct Preferences {
             PreferenceKey.editorRedactionAmount: Double(EditorStyle().redactionAmount),
             PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
+            PreferenceKey.editorNoteAlignment: EditorStyle().noteAlignment.rawValue,
             PreferenceKey.editorVerticalAlignment: EditorStyle().verticalAlignment.rawValue,
             PreferenceKey.editorObjectStyles: Data(),
             PreferenceKey.newCaptureStyle: Data(),
@@ -207,8 +212,9 @@ public struct Preferences {
         for key in defaults.keys {
             store.removeObject(forKey: key)
         }
-        // Older versions kept recent custom colours. The width has no registered default, so an older version's is still read.
-        for key in ["editorRecentColors", PreferenceKey.editorWidth, PreferenceKey.editorLineWidth] {
+        // Older versions kept recent custom colours and a note's place top to bottom under another key. The width has no
+        // registered default, so an older version's is still read.
+        for key in ["editorRecentColors", "editorVerticalAlignment", PreferenceKey.editorWidth, PreferenceKey.editorLineWidth] {
             store.removeObject(forKey: key)
         }
     }
@@ -331,6 +337,9 @@ public struct Preferences {
         }
         if changed(\.alignment) {
             store.set(style.alignment.rawValue, forKey: PreferenceKey.editorAlignment)
+        }
+        if changed(\.noteAlignment) {
+            store.set(style.noteAlignment.rawValue, forKey: PreferenceKey.editorNoteAlignment)
         }
         if changed(\.verticalAlignment) {
             store.set(style.verticalAlignment.rawValue, forKey: PreferenceKey.editorVerticalAlignment)
@@ -478,6 +487,7 @@ public struct Preferences {
                 .flatMap { Redaction.amounts.contains(CGFloat($0)) ? CGFloat($0) : nil } ?? defaults.redactionAmount,
             spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight,
             alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment,
+            noteAlignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorNoteAlignment) ?? "") ?? defaults.noteAlignment,
             verticalAlignment: VerticalTextAlign(rawValue: store.string(forKey: PreferenceKey.editorVerticalAlignment) ?? "") ?? defaults.verticalAlignment,
             objectStyles: decoded(PreferenceKey.editorObjectStyles) ?? defaults.objectStyles
         )
