@@ -1077,7 +1077,7 @@ extension VideoEditorModel {
         return AnnotationDraft.Style(
             color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
             redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment, noteAlignment: style.noteAlignment,
-            verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor, lineDash: style.lineDash
+            verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor, lineDash: style.lineDash, penLine: style.penLine
         )
     }
 
@@ -1158,6 +1158,15 @@ extension VideoEditorModel {
     func setShape(_ shape: BoxShape) {
         var changed = palette
         changed.setShape(shape)
+        adopt(changed)
+    }
+
+    /// Whether the next pen stroke is smoothed, shown while the pen draws. `nil` for any other tool.
+    var palettePenLine: PenLine? { palette.penLine }
+
+    func setPenLine(_ penLine: PenLine) {
+        var changed = palette
+        changed.setPenLine(penLine)
         adopt(changed)
     }
 

@@ -254,6 +254,7 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
 @Test func theControlsBesideTheColoursStackSoTheBarStaysNarrow() {
     #expect(palette(tool: .arrow).controlRows == [[.width, .lineDash]])
     #expect(palette(tool: .line).controlRows == [[.width, .lineDash]])
+    #expect(palette(tool: .pen).controlRows == [[.width, .penLine]])
     #expect(palette(tool: .counter).controlRows == [[.width]])
     #expect(palette(tool: .shape).controlRows == [[.width], [.outline]])
     #expect(palette(tool: .text).controlRows == [[.width, .alignment]])
@@ -338,6 +339,22 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(drawn.shape == .rectangle)
     #expect(drawn.style.customColors == [.stroke: blue])
     #expect(!drawn.canReset)
+}
+
+@Test func thePenOffersSmoothOrAsDrawnForItsNextStroke() {
+    #expect(palette(tool: .pen).penLine == .smooth)
+    #expect(palette(tool: .arrow).penLine == nil)
+    let stroke = Annotation(kind: .freehand([.zero, CGPoint(x: 10, y: 10)]), color: red, lineWidth: 4)
+    #expect(palette(tool: .pen, selection: stroke).penLine == .smooth)
+    #expect(palette(tool: .select, selection: stroke).penLine == nil)
+
+    var drawing = palette(tool: .pen, selection: stroke)
+    drawing.setPenLine(.asDrawn)
+    #expect(drawing.penLine == .asDrawn)
+    #expect(drawing.selection == stroke)
+    #expect(drawing.canReset)
+    drawing.reset()
+    #expect(drawing.penLine == .smooth)
 }
 
 @Test func resetKeepsEachToolsOwnDefaultColour() {

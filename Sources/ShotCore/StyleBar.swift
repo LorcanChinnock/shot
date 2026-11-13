@@ -170,6 +170,8 @@ public enum StyleBarControl: Equatable, Sendable {
     case alignment
     /// A note's text at the top, middle or bottom.
     case verticalAlignment
+    /// Whether the pen's next stroke is smoothed or kept as drawn.
+    case penLine
 }
 
 /// What's typed in the style bar's size box.

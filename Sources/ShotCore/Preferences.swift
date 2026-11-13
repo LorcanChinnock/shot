@@ -64,6 +64,7 @@ public enum PreferenceKey {
     /// Where a new note's text sits. Its own key since notes started centred, so the top an older version saved for
     /// everyone by default doesn't carry over.
     public static let editorVerticalAlignment = "editorNoteVerticalAlignment"
+    public static let editorPenLine = "editorPenLine"
     public static let editorObjectStyles = "editorObjectStyles"
     /// The shape the editor's crop was last held to.
     public static let editorCropAspect = "editorCropAspect"
@@ -170,6 +171,7 @@ public struct Preferences {
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
             PreferenceKey.editorNoteAlignment: EditorStyle().noteAlignment.rawValue,
             PreferenceKey.editorVerticalAlignment: EditorStyle().verticalAlignment.rawValue,
+            PreferenceKey.editorPenLine: EditorStyle().penLine.rawValue,
             PreferenceKey.editorObjectStyles: Data(),
             PreferenceKey.newCaptureStyle: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
@@ -350,6 +352,9 @@ public struct Preferences {
         if changed(\.verticalAlignment) {
             store.set(style.verticalAlignment.rawValue, forKey: PreferenceKey.editorVerticalAlignment)
         }
+        if changed(\.penLine) {
+            store.set(style.penLine.rawValue, forKey: PreferenceKey.editorPenLine)
+        }
         if changed(\.objectStyles) {
             store.set(try? JSONEncoder().encode(style.objectStyles), forKey: PreferenceKey.editorObjectStyles)
         }
@@ -496,6 +501,7 @@ public struct Preferences {
             alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment,
             noteAlignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorNoteAlignment) ?? "") ?? defaults.noteAlignment,
             verticalAlignment: VerticalTextAlign(rawValue: store.string(forKey: PreferenceKey.editorVerticalAlignment) ?? "") ?? defaults.verticalAlignment,
+            penLine: PenLine(rawValue: store.string(forKey: PreferenceKey.editorPenLine) ?? "") ?? defaults.penLine,
             objectStyles: decoded(PreferenceKey.editorObjectStyles) ?? defaults.objectStyles
         )
     }

@@ -22,11 +22,12 @@ public enum AnnotationDraft {
         /// How a new note's lines line up; `alignment` is for text.
         public var noteAlignment: TextAlign
         public var verticalAlignment: VerticalTextAlign
+        public var penLine: PenLine
 
         public init(
             color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
             redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign, noteAlignment: TextAlign,
-            verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil, lineDash: LineDash = .solid
+            verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil, lineDash: LineDash = .solid, penLine: PenLine = .smooth
         ) {
             self.color = color
             self.fill = fill
@@ -41,7 +42,22 @@ public enum AnnotationDraft {
             self.alignment = alignment
             self.noteAlignment = noteAlignment
             self.verticalAlignment = verticalAlignment
+            self.penLine = penLine
         }
+    }
+
+    /// How far, in screen points, a smoothed pen stroke may stray from the points drawn.
+    public static let steadyTolerance: CGFloat = 2
+
+    /// The draft as it's added when the drag ends: a pen stroke loses its wobble when `style` smooths it, with points
+    /// within `tolerance` of the line between their neighbours dropped. Anything else is unchanged.
+    public static func finished(_ draft: Annotation, style: Style, tolerance: CGFloat) -> Annotation {
+        guard style.penLine == .smooth, case let .freehand(points) = draft.kind else {
+            return draft
+        }
+        var smoothed = draft
+        smoothed.kind = .freehand(Freehand.steadied(points, tolerance: tolerance))
+        return smoothed
     }
 
     /// The draft of a drag from `start` to `point` with `tool`, or `nil` for a tool that doesn't draw by dragging.

@@ -51,6 +51,8 @@ protocol StyleBarEditing: AnyObject, Observable {
     func setLineDash(_ dash: LineDash)
     var paletteShape: BoxShape? { get }
     func setShape(_ shape: BoxShape)
+    var palettePenLine: PenLine? { get }
+    func setPenLine(_ penLine: PenLine)
     var paletteRedaction: Redaction? { get }
     func setRedaction(_ redaction: Redaction)
     var paletteRedactionAmount: CGFloat { get }
@@ -78,7 +80,7 @@ extension EditorModel: StyleBarEditing {}
 /// The bar. On the left, a row of colours for each colour the mark has, named on its left: Line, and Fill under it for a
 /// shape; Text, and Background under it for a note. Each row has the seven colours and a custom one, then transparent
 /// where the mark stays visible without that colour. On the
-/// right, the width or text size, a line's dashes, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
+/// right, the width or text size, a line's dashes, the pen's smoothing, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
 /// options in one row in place of the colours. Right-clicking it offers Reset Style, as the Edit menu does. The video
 /// editor shows it too, at the top of the video's well.
 struct StyleBar<Model: StyleBarEditing>: View {
@@ -150,6 +152,13 @@ struct StyleBar<Model: StyleBarEditing>: View {
                     LineDashGlyph(dash: dash, color: StyleBarGlyph.color(selected: selected))
                 }
                 .accessibilityLabel(Text("Line style"))
+            }
+        case .penLine:
+            if let penLine = model.palettePenLine {
+                GlyphSegmented(selection: penLine, options: PenLine.allCases.map { ($0, $0.title) }, choose: model.setPenLine) { penLine, selected in
+                    StyleBarGlyph(symbol: penLine.symbol, selected: selected)
+                }
+                .accessibilityLabel(Text("Smooth or as drawn"))
             }
         case .outline:
             if let shape = model.paletteShape {

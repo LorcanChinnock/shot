@@ -154,7 +154,7 @@ public struct AnnotationPalette: Equatable, Sendable {
     }
 
     /// The controls on the right of the colour rows, a row at a time, top to bottom: the width first, an arrow's or line's
-    /// dashes beside it, then a shape's outlines under it, and a text's alignment beside it. A note's alignments go under its size, one a row, since beside
+    /// dashes or the pen's smoothing beside it, then a shape's outlines under it, and a text's alignment beside it. A note's alignments go under its size, one a row, since beside
     /// it they'd make the bar too wide to fit a small window with its panels open.
     public var controlRows: [[StyleBarControl]] {
         guard showsStyle else {
@@ -163,6 +163,9 @@ public struct AnnotationPalette: Equatable, Sendable {
         var rows: [[StyleBarControl]] = [[.width]]
         if lineDash != nil {
             rows[0].append(.lineDash)
+        }
+        if penLine != nil {
+            rows[0].append(.penLine)
         }
         if shape != nil {
             rows.append([.outline])
@@ -424,6 +427,18 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
     }
 
+    // MARK: Pen
+
+    /// Whether the next pen stroke is smoothed, shown while the pen draws. `nil` otherwise, since a stroke already drawn
+    /// keeps only its smoothed points.
+    public var penLine: PenLine? {
+        tool == .pen && stylesNextAnnotation ? style.penLine : nil
+    }
+
+    public mutating func setPenLine(_ penLine: PenLine) {
+        style.penLine = penLine
+    }
+
     // MARK: Redaction
 
     /// How a redaction hides: the selected one's, else the next one's. `nil` when neither is one.
@@ -605,6 +620,9 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
         if shape != nil {
             setShape(defaults.shape)
+        }
+        if penLine != nil {
+            setPenLine(defaults.penLine)
         }
         if redaction != nil {
             setRedaction(defaults.redaction)

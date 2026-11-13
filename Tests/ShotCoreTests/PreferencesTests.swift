@@ -148,7 +148,7 @@ import Testing
             noteTextColor: RGBA.presets[6], width: 6.5,
             customColors: [.stroke: custom, .note: blue, .highlight: RGBA.presets[1]],
             shape: .star, redaction: .pixelate, redactionAmount: 0.013, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
-            alignment: .center, noteAlignment: .right, verticalAlignment: .bottom
+            alignment: .center, noteAlignment: .right, verticalAlignment: .bottom, penLine: .asDrawn
         )
         Preferences.remember(style, in: store)
         store.set(Data(), forKey: "editorRecentColors")

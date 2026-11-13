@@ -184,6 +184,7 @@ public struct EditorStyle: Equatable, Sendable {
     public var noteAlignment: TextAlign
     /// Where the next note's text sits in it: in the middle until the user picks another.
     public var verticalAlignment: VerticalTextAlign
+    public var penLine: PenLine
     /// The last shadow and border given to each kind but the capture, in points, which new ones of that kind start
     /// with. A kind with none starts plain.
     public var objectStyles: [StyleKind: ObjectStyle]
@@ -194,7 +195,8 @@ public struct EditorStyle: Equatable, Sendable {
         width: CGFloat = EditorStyle.defaultWidth, lineDash: LineDash = .solid, customColors: [ColorSlot: RGBA] = [:],
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
         spotlight: SpotlightStyle = SpotlightStyle(),
-        alignment: TextAlign = .left, noteAlignment: TextAlign = .center, verticalAlignment: VerticalTextAlign = .middle, objectStyles: [StyleKind: ObjectStyle] = [:]
+        alignment: TextAlign = .left, noteAlignment: TextAlign = .center, verticalAlignment: VerticalTextAlign = .middle, penLine: PenLine = .smooth,
+        objectStyles: [StyleKind: ObjectStyle] = [:]
     ) {
         self.tool = tool
         self.color = color
@@ -212,6 +214,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.alignment = alignment
         self.noteAlignment = noteAlignment
         self.verticalAlignment = verticalAlignment
+        self.penLine = penLine
         self.objectStyles = objectStyles
     }
 

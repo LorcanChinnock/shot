@@ -179,6 +179,19 @@ public enum Redaction: String, CaseIterable, Codable, Sendable {
     }
 }
 
+/// Whether a pen stroke is evened out when the drag ends, or kept as drawn.
+public enum PenLine: String, CaseIterable, Codable, Sendable {
+    case smooth, asDrawn
+
+    /// The SF Symbol the style bar shows for it.
+    public var symbol: String {
+        switch self {
+        case .smooth: "point.topleft.down.to.point.bottomright.curvepath"
+        case .asDrawn: "scribble"
+        }
+    }
+}
+
 /// How the lines of a text annotation or note line up within it.
 public enum TextAlign: String, CaseIterable, Codable, Sendable {
     case left, center, right
@@ -299,6 +312,15 @@ extension Redaction {
         switch self {
         case .blur: String(localized: "Blur")
         case .pixelate: String(localized: "Pixelate")
+        }
+    }
+}
+
+extension PenLine {
+    public var title: String {
+        switch self {
+        case .smooth: String(localized: "Smooth")
+        case .asDrawn: String(localized: "As drawn")
         }
     }
 }

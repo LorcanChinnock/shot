@@ -60,7 +60,8 @@ A small style bar floats over the screenshot with the options for the tool you p
 The colours are on the left, a row for each, named on its left. Every row has seven colours, white included, and a rainbow swatch that picks any colour. A shape's rows and a note's Background row end with a grey and white check for transparent, which draws nothing there. Other rows leave it out, since a transparent arrow, line or text would vanish. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself.
 
 - **Arrows and lines:** a **Line** row, the width, and whether the line is solid, dashed or dotted. The dashes and dots grow with the width, and an arrow's head stays solid.
-- **Pens and highlights:** a **Line** row, and the width.
+- **Pen:** a **Line** row, the width, and **Smooth** or **As drawn**. Smooth evens out the wobble in a line when you let go, and As drawn keeps it exactly as you drew it. Smooth is on at first, and the choice applies to the lines you draw next.
+- **Highlight:** a **Line** row, and the width.
 - **Shape:** **Line** for the outline, and **Fill** under it for the inside. Transparent leaves a shape unfilled. On the right are the width and the five outlines: a rectangle, ellipse, triangle, diamond or star. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
 - **Text:** a **Text** row, the text size, and left, centre or right alignment.
 - **Sticky note:** **Text**, and **Background** under it for the paper. Until you pick a text colour, the text is black or white, whichever reads better on the paper, and no swatch shows as chosen. Click the chosen colour again to go back to that. On the right are the text size, the alignment, and whether the text sits at the top, middle or bottom, which shows when you drag the note taller than its text. New notes centre their text both ways.
