@@ -598,8 +598,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 model.selectedID = nil
             }
         case .crop:
-            // A press outside the canvas puts the crop down.
-            guard imageRect.contains(convert(event.locationInWindow, from: nil)) else {
+            guard !CropGeometry.pressApplies(at: point, canvas: canvasRect, crop: model.cropDraft, tolerance: handleTolerance) else {
                 dragStart = nil
                 model.applyCrop()
                 return
