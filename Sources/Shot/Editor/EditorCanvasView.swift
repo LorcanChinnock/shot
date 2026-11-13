@@ -1228,7 +1228,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             needsDisplay = true
             return
         }
-        field.frame = RunsTextField.frame(unwrapping: box, isEmpty: field.text.isEmpty, alignment: text.alignment, minWidth: 240)
+        field.frame = TextLayout.fieldFrame(unwrapping: box, isEmpty: field.text.isEmpty, alignment: text.alignment, minWidth: 240)
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {

@@ -145,14 +145,6 @@ final class RunsTextField: NSTextField {
         }
     }
 
-    /// The frame for text placed with a click, whose lines fill `box`, each as wide as its words. It's wider than the text
-    /// by room to type into, and at least `minWidth`, so it reaches back past the anchor by the spare width the alignment
-    /// puts before the text.
-    static func frame(unwrapping box: CGRect, isEmpty: Bool, alignment: TextAlign, minWidth: CGFloat) -> CGRect {
-        let fitted = isEmpty ? 0 : box.width
-        let width = max(minWidth, fitted + 20)
-        return CGRect(x: box.minX - (width - fitted) * alignment.fraction, y: box.minY, width: width, height: box.height)
-    }
 
     /// Finishes the typing in `window` on ⌘Return. It's a key equivalent, which the window takes before the field editor
     /// sees the key, so the editors' windows offer it here first.

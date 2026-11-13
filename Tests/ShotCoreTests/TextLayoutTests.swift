@@ -166,3 +166,10 @@ func noteTextThatFillsTheNoteDoesntMove(alignment: VerticalTextAlign) {
     #expect(thin.width == NoteLayout.minWidth(fontSize: font))
     #expect(thin.height == 60)
 }
+
+@Test func clickTextFieldLeavesRoomToTypeAndFollowsAlignment() {
+    let box = CGRect(x: 100, y: 50, width: 80, height: 30)
+    #expect(TextLayout.fieldFrame(unwrapping: box, isEmpty: false, alignment: .left, minWidth: 40) == CGRect(x: 100, y: 50, width: 100, height: 30))
+    #expect(TextLayout.fieldFrame(unwrapping: box, isEmpty: false, alignment: .right, minWidth: 40) == CGRect(x: 80, y: 50, width: 100, height: 30))
+    #expect(TextLayout.fieldFrame(unwrapping: box, isEmpty: true, alignment: .center, minWidth: 240) == CGRect(x: -20, y: 50, width: 240, height: 30))
+}

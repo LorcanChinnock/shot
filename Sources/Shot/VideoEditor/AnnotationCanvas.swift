@@ -345,7 +345,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             let layout = TextLayout(string: field.text, fontSize: fontSize, color: annotation.color, runs: field.sizes)
             // A borderless field insets its text 2 pt on each side.
             let box = viewRect(CGRect(origin: origin, size: layout.size)).insetBy(dx: -2, dy: 0)
-            field.frame = RunsTextField.frame(unwrapping: box, isEmpty: field.text.isEmpty, alignment: annotation.alignment, minWidth: 200)
+            field.frame = TextLayout.fieldFrame(unwrapping: box, isEmpty: field.text.isEmpty, alignment: annotation.alignment, minWidth: 200)
         default:
             break
         }

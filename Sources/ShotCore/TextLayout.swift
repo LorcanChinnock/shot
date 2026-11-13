@@ -255,3 +255,14 @@ public struct NoteLayout {
         frame = CGRect(x: rect.minX, y: rect.minY, width: width, height: max(rect.height, textHeight + padding * 2))
     }
 }
+
+extension TextLayout {
+    /// The typing field's frame for text placed with a click, whose lines fill `box`, each as wide as its words. It's
+    /// wider than the text by room to type into, and at least `minWidth`, so it reaches back past the anchor by the spare
+    /// width the alignment puts before the text.
+    public static func fieldFrame(unwrapping box: CGRect, isEmpty: Bool, alignment: TextAlign, minWidth: CGFloat) -> CGRect {
+        let fitted = isEmpty ? 0 : box.width
+        let width = max(minWidth, fitted + 20)
+        return CGRect(x: box.minX - (width - fitted) * alignment.fraction, y: box.minY, width: width, height: box.height)
+    }
+}
