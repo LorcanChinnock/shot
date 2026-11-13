@@ -30,7 +30,7 @@ extension EditorTool {
         case .line: String(localized: "Drag to draw a straight line.")
         case .shape: String(localized: "Drag to draw a box, circle, star or other shape, outlined or filled.")
         case .pen: String(localized: "Drag to draw freehand.")
-        case .text: String(localized: "Click to type a label.")
+        case .text: String(localized: "Click to type a label, or drag out a box for text that wraps.")
         case .note: String(localized: "Drag to add a sticky note.")
         case .highlight: String(localized: "Drag over text to highlight it. Hold Shift for a straight line.")
         case .spotlight: String(localized: "Drag to dim or blur everything outside an area.")

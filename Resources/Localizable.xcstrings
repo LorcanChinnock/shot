@@ -10615,54 +10615,54 @@
         }
       }
     },
-    "Click to type a label." : {
+    "Click to type a label, or drag out a box for text that wraps." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Klicke, um eine Beschriftung zu tippen."
+            "value" : "Klicke, um eine Beschriftung zu tippen, oder zieh einen Rahmen auf, in dem der Text umbricht."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Haz clic para escribir una etiqueta."
+            "value" : "Haz clic para escribir una etiqueta, o arrastra un recuadro para que el texto se ajuste a él."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cliquez pour saisir un libellé."
+            "value" : "Cliquez pour saisir un libellé, ou faites glisser un cadre dans lequel le texte revient à la ligne."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fai clic per scrivere un'etichetta."
+            "value" : "Fai clic per scrivere un'etichetta, o trascina un riquadro in cui il testo va a capo."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "クリックしてラベルを入力します。"
+            "value" : "クリックしてラベルを入力するか、ドラッグして折り返すテキストの枠を作ります。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "클릭하여 레이블을 입력합니다."
+            "value" : "클릭하여 레이블을 입력하거나, 드래그하여 텍스트가 줄 바꿈되는 상자를 만듭니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clique para digitar um rótulo."
+            "value" : "Clique para digitar um rótulo, ou arraste uma caixa para o texto quebrar dentro dela."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "点按以输入标签。"
+            "value" : "点按以输入标签，或拖出一个文本框让文字自动换行。"
           }
         }
       }
@@ -53639,6 +53639,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完成"
+          }
+        }
+      }
+    },
+    "drag for a text box" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ziehen für ein Textfeld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "arrastra para un cuadro de texto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "glisser pour un cadre de texte"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "trascina per una casella di testo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドラッグでテキストボックス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "드래그해 텍스트 상자"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "arraste para uma caixa de texto"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拖移以添加文本框"
           }
         }
       }
