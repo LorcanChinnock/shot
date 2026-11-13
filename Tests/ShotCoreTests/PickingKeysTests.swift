@@ -9,7 +9,7 @@ import Testing
 @Test func pickingKeysTakeTheirChoicesFromTheOverlay() {
     let labels = Dictionary(uniqueKeysWithValues: PickingKey.all.map { ($0.key, $0.label) })
     #expect(labels["Tab"] == "Area · Window · Full Screen")
-    #expect(labels["B"] == "Browser")
+    #expect(labels["B"] == "Browser page only")
     #expect(labels["D"] == "Delay 3, 5, 10 s")
     #expect(labels["R"] == "Ratio 1:1, 4:3, 3:2, 16:9")
 }

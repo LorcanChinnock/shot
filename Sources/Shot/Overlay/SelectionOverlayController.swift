@@ -40,12 +40,11 @@ final class SelectionOverlayController {
     private(set) var target: CaptureTarget
     /// Windows are highlighted for picking, whole or, for a browser, as just their page.
     var windowMode: Bool { target == .window }
-    /// Whether a browser window is picked as just its page. It starts as Settings has it and B switches it for this overlay only.
+    /// Whether a browser window is picked as just its page. It starts as Settings has it, and B or the bar's Page toggle
+    /// switches it for this overlay only. It stays as set while another mode is picked.
     private(set) var pageOnly = Preferences().browserPageOnly
     var browserMode: Bool { windowMode && pageOnly && Permissions.hasAccessibility }
     var screenMode: Bool { target == .screen }
-    /// The mode the capture bar shows as picked.
-    var barMode: CaptureBarMode { CaptureBarMode(target: target, browserPage: browserMode) }
     /// Whether the pick is for a recording rather than a screenshot, which the bar names.
     let recording: Bool
     /// Seconds to wait after the pick before capturing; 0 is off. `offersDelay` is false where waiting makes no sense.
@@ -247,14 +246,14 @@ final class SelectionOverlayController {
         }
     }
 
-    /// Space: between area and window, as in macOS. It lands on Window, not Browser, as Window's keycap says.
+    /// Space: between area and window, as in macOS.
     func toggleWindowMode() {
-        setMode(windowMode ? .area : .window)
+        setTarget(windowMode ? .area : .window)
     }
 
-    /// Tab: area, window, then full screen, with page-only off so it reaches Window. Browser is reached with B.
+    /// Tab: area, window, then full screen.
     func cycleTarget(backward: Bool) {
-        setMode(CaptureBarMode(target: target.next(backward: backward), browserPage: false))
+        setTarget(target.next(backward: backward))
     }
 
     func setTarget(_ newTarget: CaptureTarget) {
@@ -269,26 +268,31 @@ final class SelectionOverlayController {
         updateHover(redraw: true)
     }
 
-    /// B: switches to Browser, which picks a browser window's page alone, or from Browser back to Window.
+    /// B: in Window, switches between a browser window's page alone and the whole window. From another mode it picks
+    /// Window with the page alone.
     func togglePageOnly() {
-        setMode(barMode == .browser ? .window : .browser)
+        if setPageOnly(!browserMode) {
+            setTarget(.window)
+        }
     }
 
-    /// A click on one of the bar's modes. Browser needs Accessibility to find the page: without it the permission card
-    /// says why and offers Use Window or Grant Access, and the overlay stays in the mode it was in.
-    func setMode(_ mode: CaptureBarMode) {
-        if mode.picksPage, !Permissions.hasAccessibility {
+    /// The bar's Page toggle. The page needs Accessibility to find: without it the permission card says why and offers
+    /// Use Window or Grant Access, and the toggle stays off and this returns false.
+    @discardableResult
+    func setPageOnly(_ on: Bool) -> Bool {
+        if on, !Permissions.hasAccessibility {
             showPermissionCard()
-            return
+            return false
         }
-        if mode.target == .window, pageOnly != mode.picksPage {
-            pageOnly = mode.picksPage
-            isWindowPinned = false
-            if target == .window {
-                updateHover(redraw: true)
-            }
+        guard pageOnly != on else {
+            return true
         }
-        setTarget(mode.target)
+        pageOnly = on
+        isWindowPinned = false
+        if windowMode {
+            updateHover(redraw: true)
+        }
+        return true
     }
 
     /// Shows the browser permission card next to the bar on the screen with the pointer. Grant Access closes the overlay
@@ -306,7 +310,8 @@ final class SelectionOverlayController {
         let card = BrowserPermissionCard(bar: view.barScreenFrame, screen: screen, actions: .init(
             useWindow: { [weak self] in
                 self?.closePermissionCard()
-                self?.setMode(.window)
+                self?.setPageOnly(false)
+                self?.setTarget(.window)
             },
             grant: { [weak self] in
                 self?.finish(nil)

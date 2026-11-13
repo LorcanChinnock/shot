@@ -57,7 +57,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | D | Step the delay through Off, 3, 5 and 10 seconds. |
 | R | Step the area's ratio. |
 | X | Turn the area's ratio between landscape and portrait. |
-| B | Switch to Browser, which captures just the page of a browser window, or back to Window, for this capture. |
+| B | Turn **Browser page only** on or off, which captures just the page of a browser window, for this capture. From Area or Full Screen it switches to Window with it on. |
 | M | Turn the magnifier on or off for this capture. |
 | C | Turn the crosshair guide lines on or off for this capture. |
 | I | Turn the size label (the area's width and height in pixels) on or off for this capture. |

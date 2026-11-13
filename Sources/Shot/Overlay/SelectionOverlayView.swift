@@ -25,7 +25,8 @@ final class SelectionOverlayView: NSView {
     private var isKeyboardSelection = false
     /// What a click on a button of the bar does, with where each was last drawn.
     private enum BarAction: Equatable {
-        case mode(CaptureBarMode)
+        case mode(CaptureTarget)
+        case pageOnly
         case scrolling
         case delay
         case magnifier
@@ -197,7 +198,8 @@ final class SelectionOverlayView: NSView {
 
     private func perform(_ action: BarAction) {
         switch action {
-        case let .mode(mode): controller.setMode(mode)
+        case let .mode(target): controller.setTarget(target)
+        case .pageOnly: controller.setPageOnly(!controller.browserMode)
         case .scrolling: controller.toggleScrolling()
         case .delay: controller.cycleDelay()
         case .magnifier: controller.toggleMagnifier()
@@ -869,13 +871,13 @@ final class SelectionOverlayView: NSView {
         let action: BarAction
     }
 
-    /// The bar's buttons in their three groups: the modes, then Delay and Scroll, then the toggles.
+    /// The bar's buttons in their three groups: the modes, then Delay, Scroll and the mode's own option, then the toggles.
     private var barGroups: [[BarButton]] {
-        let picked = controller.barMode
-        let modes = CaptureBarMode.allCases.map { mode in
+        let picked = controller.target
+        let modes = CaptureTarget.allCases.map { mode in
             BarButton(
                 symbol: Self.symbol(of: mode), label: mode == picked ? mode.title : nil, on: mode == picked,
-                look: mode == picked ? .picked : .plain, name: mode.title, key: mode.key, action: .mode(mode)
+                look: mode == picked ? .picked : .plain, name: mode.title, key: "Tab", action: .mode(mode)
             )
         }
         var options: [BarButton] = []
@@ -889,6 +891,10 @@ final class SelectionOverlayView: NSView {
         if controller.offersScrolling {
             let scroll = String(localized: "Scroll")
             options.append(BarButton(symbol: "arrow.down.to.line", label: scroll, on: controller.scrolling, look: .plain, name: scroll, key: "S", action: .scrolling))
+        }
+        if controller.windowMode {
+            let page = String(localized: "Browser page only")
+            options.append(BarButton(symbol: "globe", label: nil, on: controller.browserMode, look: .plain, name: page, key: "B", action: .pageOnly))
         }
         if controller.target == .area {
             let shape = controller.areaShape
@@ -908,18 +914,18 @@ final class SelectionOverlayView: NSView {
         return [modes, options, aids]
     }
 
-    private static func symbol(of mode: CaptureBarMode) -> String {
+    private static func symbol(of mode: CaptureTarget) -> String {
         switch mode {
         case .area: "viewfinder"
         case .window: "macwindow"
         case .screen: "display"
-        case .browser: "globe"
         }
     }
 
-    /// The capture bar (Foundations › Capture bar): whether this is a screenshot or a recording, the four modes, then Delay
-    /// and Scroll, then the magnifier, crosshair and size toggles. A click does what Tab, B, D, S, M, C and I do. It shows on
-    /// the screen with the pointer only, at the bottom unless what's being picked reaches it, and hides while an area is dragged out.
+    /// The capture bar (Foundations › Capture bar): whether this is a screenshot or a recording, the three modes, then Delay,
+    /// Scroll and the mode's own option (Browser page only for Window, Ratio for Area), then the magnifier, crosshair and
+    /// size toggles. A click does what Tab, B, D, S, R, M, C and I do. It shows on the screen with the pointer only, at the
+    /// bottom unless what's being picked reaches it, and hides while an area is dragged out.
     private func drawBar(avoiding hole: CGRect?) {
         let previous = barHits.map(\.rect)
         barHits = []
@@ -954,8 +960,8 @@ final class SelectionOverlayView: NSView {
         }
         func width(_ button: BarButton) -> CGFloat {
             guard let label = button.label else {
-                // Icon only: a mode is a little wider than tall, and a toggle or Delay is square.
-                return button.look == .toggle || button.action == .delay || button.action == .ratio ? height : textSize.points(38).rounded()
+                // Icon only: a mode is a little wider than tall, and a toggle, Delay, Ratio or Page is square.
+                return button.look == .toggle || [.delay, .ratio, .pageOnly].contains(button.action) ? height : textSize.points(38).rounded()
             }
             let iconWidth = icon(button, .white)?.size.width.rounded(.up) ?? 0
             let labelWidth = (label as NSString).size(withAttributes: [.font: font(button)]).width.rounded(.up)
@@ -1170,7 +1176,7 @@ final class SelectionOverlayView: NSView {
                 element.setAccessibilityValue(button.on ? 1 : 0)
             } else if action == .ratio {
                 element.setAccessibilityRole(.popUpButton)
-            } else if button.look == .toggle || action == .scrolling {
+            } else if button.look == .toggle || action == .scrolling || action == .pageOnly {
                 element.setAccessibilityRole(.checkBox)
                 element.setAccessibilitySubrole(.toggle)
                 element.setAccessibilityValue(button.on ? 1 : 0)
