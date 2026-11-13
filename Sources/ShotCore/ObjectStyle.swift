@@ -95,7 +95,7 @@ public enum StyleKind: String, CaseIterable, Codable, CodingKeyRepresentable, Se
     /// on a placed image, from Edit › Image editor · crop and combine, and `defaultStyle` on anything else. The video
     /// editor's clips are images too, and keep the plain `defaultStyle`.
     public var editorDefaultStyle: ObjectStyle {
-        self == .image ? ObjectStyle(shadow: ShadowPreset.soft.shadow(scale: 1)) : defaultStyle
+        self == .image ? ObjectStyle(shadow: ShadowPreset.standard.shadow(scale: 1)) : defaultStyle
     }
 
     /// Whether `style`, in pixels of a document of `scale` pixels per point, and `cornerRadius` are what the image editor
@@ -179,6 +179,9 @@ public struct Shadow: Equatable, Hashable, Sendable, Codable {
 /// The named shadows the style sections offer.
 public enum ShadowPreset: String, CaseIterable, Sendable {
     case soft, float, contact, glow
+
+    /// The shadow a placed image starts with, which the Elevation and Opacity sliders mark as their default.
+    public static let standard = ShadowPreset.soft
 
     /// The preset's shadow on a document of `scale` pixels per point.
     public func shadow(scale: CGFloat) -> Shadow {

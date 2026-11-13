@@ -22,7 +22,8 @@ struct StyleSection<Model: StyleEditing>: View {
 
     private var corners: some View {
         PanelSliderRow(
-            name: "Corners", value: Double(model.targetCornerRadius), range: 0...48, shown: "\(Int(model.targetCornerRadius.rounded())) pt",
+            name: "Corners", value: Double(model.targetCornerRadius), range: 0...48,
+            defaultValue: Double(model.targetStyleKind?.defaultCornerRadius ?? 0), shown: "\(Int(model.targetCornerRadius.rounded())) pt",
             width: sliderWidth, set: { model.setTargetCornerRadius(CGFloat($0)) }, editing: model.setDraggingStyle
         )
     }
@@ -46,12 +47,14 @@ struct StyleSection<Model: StyleEditing>: View {
                 PanelSliderRow(
                     name: "Elevation", value: Double(shadow.elevation / model.scale),
                     range: Double(Shadow.elevations.lowerBound)...Double(Shadow.elevations.upperBound),
+                    defaultValue: Double(ShadowPreset.standard.shadow(scale: 1).elevation),
                     shown: "\(Int((shadow.elevation / model.scale).rounded())) pt", width: sliderWidth,
                     set: { model.setShadowElevation(CGFloat($0)) }, editing: model.setDraggingStyle
                 )
                 PanelSliderRow(
                     name: "Opacity", value: Double(shadow.opacity),
                     range: Double(Shadow.opacities.lowerBound)...Double(Shadow.opacities.upperBound),
+                    defaultValue: Double(ShadowPreset.standard.shadow(scale: 1).opacity),
                     shown: "\(Int((shadow.opacity * 100).rounded()))%", width: sliderWidth,
                     set: { model.setShadowOpacity(CGFloat($0)) }, editing: model.setDraggingStyle
                 )

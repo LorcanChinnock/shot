@@ -159,6 +159,7 @@ struct StylePanel: View {
             PanelSliderRow(
                 name: "Padding", value: Double(model.canvasPadding),
                 range: Double(CanvasFrame.paddings.lowerBound)...Double(CanvasFrame.paddings.upperBound),
+                defaultValue: Double(CanvasFrame.none.padding),
                 shown: "\(Int(model.canvasPadding.rounded())) pt", width: Self.inner,
                 set: { model.setCanvasPadding(CGFloat($0)) }, editing: model.setDraggingStyle
             )

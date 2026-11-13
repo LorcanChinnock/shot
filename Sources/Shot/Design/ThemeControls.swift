@@ -277,8 +277,12 @@ private struct SaturationBrightnessField: View {
 /// `track` gradient instead, drawn 8 pt tall so the colours show. Once focused, the arrow keys step it by 1% of its range,
 /// ⇧ by 10%. `onEditingChanged` reports a drag, or an arrow key held down, starting and ending, so a caller can make each
 /// one undo step. A `floating` slider is for the dark floating panels: a 3 pt white track at 25% filled in white up to a
-/// 12 pt knob.
+/// 12 pt knob. A slider with a `defaultValue` inside its range marks it with a notch under the track, and holds on to
+/// it: a drag within `snapDistance` of it lands on it exactly, and a step that would pass over it stops on it.
 struct ThemeSlider: View {
+    /// How near the default, in points of knob travel, a drag snaps to it: far enough to catch with a trackpad, near
+    /// enough that a 60 pt slider still reaches all but a few percent of its range around the default by dragging.
+    static let snapDistance: CGFloat = 4
 
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...1
@@ -286,8 +290,17 @@ struct ThemeSlider: View {
     var checkerboard = false
     var width: CGFloat = 200
     var floating = false
+    /// What a new install or Reset gives, marked on the track; `nil` for a slider with no default, such as a colour's.
+    var defaultValue: Double?
+    /// The default the slider marks and snaps to. One at either end of the track gets neither: dragging past the end
+    /// already lands on it, and a snap there would only stop the values beside it being reached.
+    private var markedDefault: Double? {
+        defaultValue.flatMap { $0 > range.lowerBound && $0 < range.upperBound ? $0 : nil }
+    }
     var onEditingChanged: (Bool) -> Void = { _ in }
     @State private var isDragging = false
+    /// Whether the drag sits on the default, so the trackpad taps once as it snaps there, not on every move.
+    @State private var isOnDefault = false
     /// Whether an arrow key is down, so its repeats join one edit.
     @State private var isStepping = false
     /// The value the arrow key held down set last. Its repeats reach the handler its press began with, whose `value` may
@@ -300,11 +313,20 @@ struct ThemeSlider: View {
     private var increased: Bool { contrast == .increased }
     private var knob: CGFloat { floating ? 12 : 18 }
 
-    private var fraction: Double { (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound) }
+    private var fraction: Double { fraction(of: value) }
+
+    private func fraction(of value: Double) -> Double {
+        (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound)
+    }
+
+    private var trackHeight: CGFloat { track != nil ? 8 : floating ? 3 : 4 }
 
     var body: some View {
         ZStack(alignment: .leading) {
             trackView
+            if let markedDefault {
+                notch(at: markedDefault)
+            }
             Circle().fill(.white)
                 .inkBorder(Circle(), width: 1, color: floating ? .clear : Color(hex: 0x16161A).opacity(increased ? 0.6 : 0.2))
                 .shadow(color: .black.opacity(0.2), radius: 1.5, y: 1)
@@ -323,10 +345,20 @@ struct ThemeSlider: View {
             .onChanged { drag in
                 if !isDragging {
                     isDragging = true
+                    isOnDefault = value == markedDefault
                     onEditingChanged(true)
                 }
                 let dragged = min(max((drag.location.x - knob / 2) / (width - knob), 0), 1)
-                value = range.lowerBound + dragged * (range.upperBound - range.lowerBound)
+                let snapped = SliderSnap.value(
+                    range.lowerBound + dragged * (range.upperBound - range.lowerBound),
+                    default: markedDefault, in: range, threshold: Self.snapDistance / (width - knob)
+                )
+                let onDefault = snapped == markedDefault
+                if onDefault, !isOnDefault {
+                    NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+                }
+                isOnDefault = onDefault
+                value = snapped
             }
             .onEnded { _ in
                 isDragging = false
@@ -346,7 +378,10 @@ struct ThemeSlider: View {
             }
             let up = press.key == .rightArrow || press.key == .upArrow
             let from = press.phase == .repeat ? steppedValue ?? value : value
-            let stepped = SliderStep.value(from, up: up, fraction: press.modifiers.contains(.shift) ? 0.1 : 0.01, in: range)
+            let stepped = SliderSnap.stepping(
+                from: from, to: SliderStep.value(from, up: up, fraction: press.modifiers.contains(.shift) ? 0.1 : 0.01, in: range),
+                default: markedDefault
+            )
             steppedValue = stepped
             value = stepped
             return .handled
@@ -356,11 +391,38 @@ struct ThemeSlider: View {
                 endStepping()
             }
         }
-        // A real slider to assistive tech, stepping by 10% of the range. A caller's label after this applies to it.
+        // A real slider to assistive tech, stepping by 10% of the range, and stopping on the default on the way past.
+        // A caller's label after this applies to it.
         .accessibilityRepresentation {
-            Slider(value: $value, in: range, step: (range.upperBound - range.lowerBound) / 10)
+            Slider(value: accessibleValue, in: range, step: accessibleStep)
                 .accessibilityValue(Text("\(Int((fraction * 100).rounded())) percent"))
         }
+    }
+
+    private var accessibleStep: Double { (range.upperBound - range.lowerBound) / 10 }
+
+    /// `value`, where one step that passes over the default stops on it. A bigger jump, such as a value set outright,
+    /// goes where it was sent.
+    private var accessibleValue: Binding<Double> {
+        Binding {
+            value
+        } set: { new in
+            value = abs(new - value) <= accessibleStep * 1.001 ? SliderSnap.stepping(from: value, to: new, default: markedDefault) : new
+        }
+    }
+
+    /// A tick under the track at `defaultValue`, under the knob's centre when the slider is set to it. It's in the
+    /// track's quiet colour, or the floating track's white, and Increase Contrast takes it to full ink.
+    private func notch(at defaultValue: Double) -> some View {
+        // On whole points, so it's crisp at 1x.
+        let top = (knob / 2 + trackHeight / 2 + 1.5).rounded()
+        let height = min(4, knob - top)
+        let color: Color = floating ? .white.opacity(increased ? 1 : 0.5) : increased ? Theme.ink : Theme.tertiaryText
+        return RoundedRectangle(cornerRadius: 1, style: .circular)
+            .fill(color)
+            .frame(width: 2, height: height)
+            .offset(x: (knob / 2 + fraction(of: defaultValue) * (width - knob)).rounded() - 1, y: top + height / 2 - knob / 2)
+            .accessibilityHidden(true)
     }
 
     /// The plain track, filled in ink up to the knob, or a colour slider's gradient over an optional checkerboard.

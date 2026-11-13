@@ -62,6 +62,8 @@ struct PanelSliderRow<Accessory: View>: View {
     let name: LocalizedStringResource
     let value: Double
     let range: ClosedRange<Double>
+    /// What a new install or Reset gives, which the slider marks and snaps to.
+    let defaultValue: Double?
     /// The value as the row writes it, such as "72 pt".
     let shown: String
     let width: CGFloat
@@ -84,7 +86,7 @@ struct PanelSliderRow<Accessory: View>: View {
                     .accessibilityHidden(true)
                 accessory
             }
-            ThemeSlider(value: Binding(get: { value }, set: { set($0) }), range: range, width: width, onEditingChanged: editing)
+            ThemeSlider(value: Binding(get: { value }, set: { set($0) }), range: range, width: width, defaultValue: defaultValue, onEditingChanged: editing)
                 .frame(height: 18)
                 .accessibilityLabel(Text(name))
                 .accessibilityValue(Text(verbatim: shown))
@@ -94,9 +96,11 @@ struct PanelSliderRow<Accessory: View>: View {
 
 extension PanelSliderRow where Accessory == EmptyView {
     init(
-        name: LocalizedStringResource, value: Double, range: ClosedRange<Double>, shown: String, width: CGFloat,
-        set: @escaping (Double) -> Void, editing: @escaping (Bool) -> Void
+        name: LocalizedStringResource, value: Double, range: ClosedRange<Double>, defaultValue: Double?, shown: String,
+        width: CGFloat, set: @escaping (Double) -> Void, editing: @escaping (Bool) -> Void
     ) {
-        self.init(name: name, value: value, range: range, shown: shown, width: width, set: set, editing: editing) { EmptyView() }
+        self.init(
+            name: name, value: value, range: range, defaultValue: defaultValue, shown: shown, width: width, set: set, editing: editing
+        ) { EmptyView() }
     }
 }

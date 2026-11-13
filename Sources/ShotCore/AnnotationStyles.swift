@@ -241,6 +241,8 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
 
     /// The strengths the slider offers. Each is also the darken effect's alpha.
     public static let strengths: ClosedRange<Double> = 0.1...0.9
+    public static let defaultStrength = 0.5
+    public static let defaultSoftEdge = 0.0
 
     public var shape: BoxShape
     public var effect: Effect
@@ -248,7 +250,7 @@ public struct SpotlightStyle: Equatable, Hashable, Codable, Sendable {
     /// How far the lit shape fades into the dim, from 0 (a hard edge) to 1 (the softest).
     public var softEdge: Double
 
-    public init(shape: BoxShape = .rectangle, effect: Effect = .darken, strength: Double = 0.5, softEdge: Double = 0) {
+    public init(shape: BoxShape = .rectangle, effect: Effect = .darken, strength: Double = defaultStrength, softEdge: Double = defaultSoftEdge) {
         self.shape = shape
         self.effect = effect
         self.strength = strength

@@ -176,6 +176,7 @@ struct InspectorPanel: View {
         if let range = VideoInspectorPanel.sliderRange(property) {
             PanelSliderRow(
                 name: Self.name(property), value: VideoInspectorPanel.sliderValue(property, of: values), range: range,
+                defaultValue: VideoInspectorPanel.sliderDefault(property),
                 shown: VideoInspectorPanel.label(property, of: values), width: Self.inner,
                 set: { slider in
                     // Read afresh, since a drag changes the values under the closure the slider holds.

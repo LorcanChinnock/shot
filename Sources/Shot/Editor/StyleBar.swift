@@ -175,7 +175,10 @@ struct StyleBar<Model: StyleBarEditing>: View {
             }
             .accessibilityLabel(Text("Blur or pixelate"))
             StyleBarDivider()
-            slider("Amount", value: model.paletteRedactionAmount, range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound) {
+            slider(
+                "Amount", value: model.paletteRedactionAmount, range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound,
+                default: Redaction.defaultAmount
+            ) {
                 model.setRedactionAmount($0)
             }
             .themeTip("Amount")
@@ -200,12 +203,12 @@ struct StyleBar<Model: StyleBarEditing>: View {
             }
             .accessibilityLabel(Text("Outside the spotlight"))
             StyleBarDivider()
-            slider("Strength", value: spotlight.strength, range: SpotlightStyle.strengths) {
+            slider("Strength", value: spotlight.strength, range: SpotlightStyle.strengths, default: SpotlightStyle.defaultStrength) {
                 model.setSpotlightLook(effect: spotlight.effect, strength: $0)
             }
             .themeTip("Strength", detail: "Applies to every spotlight in the image.")
             StyleBarDivider()
-            slider("Soft edge", value: spotlight.softEdge, range: 0...1, set: model.setSpotlightSoftEdge)
+            slider("Soft edge", value: spotlight.softEdge, range: 0...1, default: SpotlightStyle.defaultSoftEdge, set: model.setSpotlightSoftEdge)
                 .themeTip("Soft edge", detail: "Fades the spotlight into the dim.")
         }
     }
@@ -303,10 +306,12 @@ struct StyleBar<Model: StyleBarEditing>: View {
     }
 
     /// A short slider with its name ahead of it, as tall as the bar's segmented controls.
-    private func slider(_ title: LocalizedStringResource, value: Double, range: ClosedRange<Double>, set: @escaping (Double) -> Void) -> some View {
+    private func slider(
+        _ title: LocalizedStringResource, value: Double, range: ClosedRange<Double>, default defaultValue: Double, set: @escaping (Double) -> Void
+    ) -> some View {
         HStack(spacing: 6) {
             Text(title).font(Theme.small).foregroundStyle(labelColor).accessibilityHidden(true)
-            ThemeSlider(value: Binding(get: { value }, set: set), range: range, width: 72, onEditingChanged: model.setDraggingStyle)
+            ThemeSlider(value: Binding(get: { value }, set: set), range: range, width: 72, defaultValue: defaultValue, onEditingChanged: model.setDraggingStyle)
                 .frame(height: 24)
                 .accessibilityLabel(Text(title))
         }

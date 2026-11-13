@@ -53,6 +53,14 @@ import Testing
     }
 }
 
+@Test func videoInspectorSlidersMarkWhatANewClipStartsWith() {
+    #expect(VideoInspectorPanel.sliderDefault(.scale) == 0)
+    #expect(VideoInspectorPanel.sliderDefault(.rotation) == 0)
+    #expect(VideoInspectorPanel.sliderDefault(.opacity) == 1)
+    #expect(VideoInspectorPanel.sliderDefault(.volume) == 1)
+    #expect(VideoInspectorPanel.sliderDefault(.reveal) == 1)
+}
+
 @Test func videoInspectorPositionHasNoSlider() {
     #expect(VideoInspectorPanel.sliderRange(.position) == nil)
     let values = PropertyValues(position: CGSize(width: 3, height: 4))

@@ -281,7 +281,8 @@ private struct PinBar: View {
                     value: Binding(get: { state.opacity }, set: { state.setOpacity($0) }),
                     range: PinOpacity.range,
                     width: 60,
-                    floating: true
+                    floating: true,
+                    defaultValue: PinOpacity.full
                 )
                 .accessibilityLabel(Text("Opacity"))
                 .padding(.horizontal, 4)

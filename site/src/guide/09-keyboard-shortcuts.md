@@ -92,7 +92,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | Esc | Deselect, cancel what you're drawing, or finish typing |
 | Shift-Return in a sticky note or a text box you dragged out | Start a new line |
 | Arrow keys | Nudge the selection 1 pixel (10 with Shift) |
-| Arrow keys on a focused slider or colour field | Step it by 1% (10% with Shift). A held key is one undo step. Tab reaches sliders when Keyboard navigation is on in System Settings › Keyboard. |
+| Arrow keys on a focused slider or colour field | Step it by 1% (10% with Shift), stopping at the slider's notch on the way past. A held key is one undo step. Tab reaches sliders when Keyboard navigation is on in System Settings › Keyboard. |
 | ⌘C | Copy the selected annotation, or the whole image |
 | ⌘V | Paste an annotation or an image |
 | ⌘D | Duplicate the selection |
