@@ -1188,8 +1188,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             commitText()
             return true
         }
-        // Return commits; Shift-Return starts a new line in a text box.
-        if commandSelector == #selector(NSResponder.insertNewline(_:)), editingText?.textWidth != nil, NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
+        // Return commits; Shift-Return starts a new line in a note or a text box.
+        if commandSelector == #selector(NSResponder.insertNewline(_:)), editingTakesLineBreaks, NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
             textView.insertNewlineIgnoringFieldEditor(nil)
             return true
         }
@@ -1202,6 +1202,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     var isEditingText: Bool { textField != nil }
+
+    /// Notes and text boxes wrap, so they take line breaks; text placed with a click stays on one line.
+    private var editingTakesLineBreaks: Bool {
+        if case .note = editingText?.kind {
+            return true
+        }
+        return editingText?.textWidth != nil
+    }
 
     private func commitText() {
         guard let edited = editedText else {

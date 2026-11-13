@@ -90,6 +90,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | Shift / Option / Space while dragging a handle | Keep proportions or 45° (free on an image) / resize from the centre / move the shape |
 | Delete | Delete the selection |
 | Esc | Deselect, cancel what you're drawing, or finish typing |
+| Shift-Return in a sticky note or a text box you dragged out | Start a new line |
 | Arrow keys | Nudge the selection 1 pixel (10 with Shift) |
 | Arrow keys on a focused slider or colour field | Step it by 1% (10% with Shift). A held key is one undo step. Tab reaches sliders when Keyboard navigation is on in System Settings › Keyboard. |
 | ⌘C | Copy the selected annotation, or the whole image |
