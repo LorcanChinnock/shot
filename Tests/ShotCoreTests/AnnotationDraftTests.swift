@@ -108,3 +108,32 @@ private func isClose(_ a: CGPoint, _ b: CGPoint) -> Bool { hypot(a.x - b.x, a.y 
         #expect(draft(tool, to: CGPoint(x: 40, y: 30)) == nil)
     }
 }
+
+// MARK: Finishing a pen stroke
+
+private let wobbly = (0...20).map { i in CGPoint(x: CGFloat(i) * 5, y: 50 + (i.isMultiple(of: 2) ? 1 : -1)) }
+
+@Test func aSmoothPenStrokeLosesItsWobbleWhenTheDragEnds() throws {
+    let stroke = Annotation(kind: .freehand(wobbly), color: RGBA(1, 0, 0), lineWidth: 4)
+    let finished = AnnotationDraft.finished(stroke, style: style, tolerance: 2)
+    guard case let .freehand(points) = finished.kind else {
+        Issue.record("Expected a pen stroke")
+        return
+    }
+    #expect(points.count < wobbly.count)
+    #expect(points.first == wobbly.first)
+    #expect(points.last == wobbly.last)
+    #expect(finished.id == stroke.id)
+}
+
+@Test func aPenStrokeKeptAsDrawnIsUnchanged() {
+    var asDrawn = style
+    asDrawn.penLine = .asDrawn
+    let stroke = Annotation(kind: .freehand(wobbly), color: RGBA(1, 0, 0), lineWidth: 4)
+    #expect(AnnotationDraft.finished(stroke, style: asDrawn, tolerance: 2) == stroke)
+}
+
+@Test func finishingLeavesEverythingButAPenStrokeAlone() {
+    let highlight = Annotation(kind: .marker(wobbly), color: RGBA(1, 1, 0), lineWidth: 4)
+    #expect(AnnotationDraft.finished(highlight, style: style, tolerance: 2) == highlight)
+}

@@ -49,6 +49,8 @@ protocol StyleBarEditing: AnyObject, Observable {
     var lineWidthIndex: Int { get set }
     var paletteShape: BoxShape? { get }
     func setShape(_ shape: BoxShape)
+    var palettePenLine: PenLine? { get }
+    func setPenLine(_ penLine: PenLine)
     var paletteRedaction: Redaction? { get }
     func setRedaction(_ redaction: Redaction)
     var paletteRedactionAmount: CGFloat { get }
@@ -71,7 +73,8 @@ protocol StyleBarEditing: AnyObject, Observable {
 
 extension EditorModel: StyleBarEditing {}
 
-/// The bar: the seven colours and a custom one, a divider and the three widths, rectangle or ellipse for a shape, then
+/// The bar: the seven colours and a custom one, a divider and the three widths, rectangle or ellipse for a shape, smooth
+/// or as drawn for the pen, then
 /// More style for a mark's other options.
 /// Right-clicking it offers Reset Style, as the Edit menu does. A redaction and a
 /// spotlight show their own main choices in its place. The video editor shows it too, at the top of the video's well.
@@ -97,6 +100,15 @@ struct StyleBar<Model: StyleBarEditing>: View {
                         StyleBarGlyph(symbol: shape.symbol, selected: selected)
                     }
                     .accessibilityLabel(Text("Shape"))
+                }
+                if let penLine = model.palettePenLine {
+                    StyleBarDivider()
+                    GlyphSegmented(
+                        selection: penLine, options: PenLine.allCases.map { ($0, $0.title) }, choose: model.setPenLine
+                    ) { penLine, selected in
+                        StyleBarGlyph(symbol: penLine.symbol, selected: selected)
+                    }
+                    .accessibilityLabel(Text("Smooth or as drawn"))
                 }
             case .redaction:
                 if let redaction = model.paletteRedaction {

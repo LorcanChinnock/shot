@@ -59,6 +59,7 @@ A small style bar floats over the screenshot with the options for the tool you p
 
 - **Colour and width:** seven colours, white included, a rainbow swatch that picks any colour, and three widths, thin, medium and thick. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
 - **Shape:** a rectangle or an ellipse, after the colours and widths. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
+- **Pen:** **Smooth**, which evens out the wobble in a line when you let go, or **As drawn**, which keeps it exactly as you drew it. Smooth is on at first, and the choice applies to the lines you draw next.
 - **Redact:** blur or pixelate.
 - **Spotlight:** a rectangle or an ellipse, and whether to darken or blur outside it. Every spotlight in the screenshot shares one dim, so the effect applies to all of them.
 

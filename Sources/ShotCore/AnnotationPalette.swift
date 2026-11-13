@@ -190,6 +190,18 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
     }
 
+    // MARK: Pen
+
+    /// Whether the next pen stroke is smoothed, shown while the pen draws. `nil` otherwise, since a stroke already drawn
+    /// keeps only its smoothed points.
+    public var penLine: PenLine? {
+        tool == .pen && stylesNextAnnotation ? style.penLine : nil
+    }
+
+    public mutating func setPenLine(_ penLine: PenLine) {
+        style.penLine = penLine
+    }
+
     // MARK: Redaction
 
     /// How a redaction hides: the selected one's, else the next one's. `nil` when neither is one.
@@ -343,6 +355,9 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
         if shape != nil {
             setShape(defaults.shape)
+        }
+        if penLine != nil {
+            setPenLine(defaults.penLine)
         }
         if redaction != nil {
             setRedaction(defaults.redaction)

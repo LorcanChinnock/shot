@@ -16,11 +16,12 @@ public enum AnnotationDraft {
         public var spotlight: SpotlightStyle
         public var alignment: TextAlign
         public var verticalAlignment: VerticalTextAlign
+        public var penLine: PenLine
 
         public init(
             color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
             redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign,
-            verticalAlignment: VerticalTextAlign
+            verticalAlignment: VerticalTextAlign, penLine: PenLine = .smooth
         ) {
             self.color = color
             self.fill = fill
@@ -32,7 +33,22 @@ public enum AnnotationDraft {
             self.spotlight = spotlight
             self.alignment = alignment
             self.verticalAlignment = verticalAlignment
+            self.penLine = penLine
         }
+    }
+
+    /// How far, in screen points, a smoothed pen stroke may stray from the points drawn.
+    public static let steadyTolerance: CGFloat = 2
+
+    /// The draft as it's added when the drag ends: a pen stroke loses its wobble when `style` smooths it, with points
+    /// within `tolerance` of the line between their neighbours dropped. Anything else is unchanged.
+    public static func finished(_ draft: Annotation, style: Style, tolerance: CGFloat) -> Annotation {
+        guard style.penLine == .smooth, case let .freehand(points) = draft.kind else {
+            return draft
+        }
+        var smoothed = draft
+        smoothed.kind = .freehand(Freehand.steadied(points, tolerance: tolerance))
+        return smoothed
     }
 
     /// The draft of a drag from `start` to `point` with `tool`, or `nil` for a tool that doesn't draw by dragging.

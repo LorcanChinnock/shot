@@ -52,6 +52,7 @@ public enum PreferenceKey {
     public static let editorSpotlight = "editorSpotlight"
     public static let editorAlignment = "editorAlignment"
     public static let editorVerticalAlignment = "editorVerticalAlignment"
+    public static let editorPenLine = "editorPenLine"
     public static let editorObjectStyles = "editorObjectStyles"
     /// The shape the editor's crop was last held to.
     public static let editorCropAspect = "editorCropAspect"
@@ -156,6 +157,7 @@ public struct Preferences {
             PreferenceKey.editorSpotlight: Data(),
             PreferenceKey.editorAlignment: EditorStyle().alignment.rawValue,
             PreferenceKey.editorVerticalAlignment: EditorStyle().verticalAlignment.rawValue,
+            PreferenceKey.editorPenLine: EditorStyle().penLine.rawValue,
             PreferenceKey.editorObjectStyles: Data(),
             PreferenceKey.newCaptureStyle: Data(),
             PreferenceKey.galleryTileSize: Gallery.defaultTileSize,
@@ -324,6 +326,9 @@ public struct Preferences {
         if changed(\.verticalAlignment) {
             store.set(style.verticalAlignment.rawValue, forKey: PreferenceKey.editorVerticalAlignment)
         }
+        if changed(\.penLine) {
+            store.set(style.penLine.rawValue, forKey: PreferenceKey.editorPenLine)
+        }
         if changed(\.objectStyles) {
             store.set(try? JSONEncoder().encode(style.objectStyles), forKey: PreferenceKey.editorObjectStyles)
         }
@@ -458,6 +463,7 @@ public struct Preferences {
             spotlight: decoded(PreferenceKey.editorSpotlight) ?? defaults.spotlight,
             alignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorAlignment) ?? "") ?? defaults.alignment,
             verticalAlignment: VerticalTextAlign(rawValue: store.string(forKey: PreferenceKey.editorVerticalAlignment) ?? "") ?? defaults.verticalAlignment,
+            penLine: PenLine(rawValue: store.string(forKey: PreferenceKey.editorPenLine) ?? "") ?? defaults.penLine,
             objectStyles: decoded(PreferenceKey.editorObjectStyles) ?? defaults.objectStyles
         )
     }

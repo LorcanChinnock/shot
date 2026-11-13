@@ -12,6 +12,37 @@ public enum Freehand {
         return points + [point]
     }
 
+    /// `points` without the ones that only wobble: each point left is more than `tolerance` from the straight line
+    /// between its neighbours, so the ends and real corners stay and the curve through them is even. Ramer–Douglas–Peucker.
+    public static func steadied(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
+        guard points.count > 2 else {
+            return points
+        }
+        var keep = [Bool](repeating: false, count: points.count)
+        keep[0] = true
+        keep[points.count - 1] = true
+        var spans = [(points.startIndex, points.endIndex - 1)]
+        while let (first, last) = spans.popLast() {
+            guard last - first > 1 else {
+                continue
+            }
+            var farthest = first, distance: CGFloat = 0
+            for i in first + 1..<last {
+                let d = Annotation.distance(from: points[i], toSegment: points[first], points[last])
+                if d > distance {
+                    farthest = i
+                    distance = d
+                }
+            }
+            if distance > tolerance {
+                keep[farthest] = true
+                spans.append((first, farthest))
+                spans.append((farthest, last))
+            }
+        }
+        return points.indices.filter { keep[$0] }.map { points[$0] }
+    }
+
     /// A smooth curve through every point: a Catmull-Rom spline drawn as cubic Béziers.
     /// One point is a zero-length line, which a round cap draws as a dot.
     public static func path(through points: [CGPoint]) -> CGPath {

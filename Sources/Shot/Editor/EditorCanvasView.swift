@@ -748,7 +748,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         if let draft, draft.bounds.width + draft.bounds.height >= 4 {
-            model.add(draft)
+            model.add(AnnotationDraft.finished(draft, style: model.draftStyle, tolerance: AnnotationDraft.steadyTolerance / viewScale))
         }
         // Each step of the move or resize already grew the canvas to fit, so ending it only records it.
         if movedSinceMouseDown {
