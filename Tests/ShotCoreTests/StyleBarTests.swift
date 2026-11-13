@@ -82,13 +82,16 @@ private let bar = CGSize(width: 260, height: 32)
     for preset in EditorStyle.presetWidths {
         #expect(widths.contains(preset))
     }
-    #expect(widths[EditorStyle.defaultWidthIndex] == 4)
+    #expect(widths.contains(EditorStyle.defaultWidth))
     for (thinner, thicker) in zip(widths, widths.dropFirst()) {
         let ratio = thicker / thinner
         #expect(ratio >= 1.2 && ratio <= 1.5, "\(thinner) to \(thicker)")
     }
-    #expect(EditorStyle.nearestWidthIndex(to: 7.2) == widths.firstIndex(of: 8))
-    #expect(EditorStyle.nearestWidthIndex(to: 100) == widths.count - 1)
+    #expect(EditorStyle.step(from: 7.2, up: true) == 8)
+    #expect(EditorStyle.step(from: 7.2, up: false) == 6)
+    #expect(EditorStyle.step(from: 16, up: true) == nil)
+    #expect(EditorStyle.step(from: 1, up: false) == nil)
+    #expect(EditorStyle.clampedWidth(100) == 16)
 }
 
 @Test func theTextSizesAreTheOldPresetsAndStepEvenly() {
@@ -147,4 +150,16 @@ private let bar = CGSize(width: 260, height: 32)
     let wide = CGSize(width: 507, height: 66)
     let mark = CGRect(x: 200, y: 200, width: 100, height: 80)
     #expect(StyleBarPlacement.origin(bar: wide, mark: mark, in: CGSize(width: 516, height: 500)) == CGPoint(x: 4.5, y: 124))
+}
+
+@Test func theSizeBoxReadsANumberTypedEitherWay() {
+    #expect(SizeInput.parse("12") == 12)
+    #expect(SizeInput.parse(" 12,5 ") == 12.5)
+    #expect(SizeInput.parse("10.5pt") == 10.5)
+    #expect(SizeInput.parse("18 PT") == 18)
+    #expect(SizeInput.parse("") == nil)
+    #expect(SizeInput.parse("big") == nil)
+    #expect(SizeInput.parse("-3") == nil)
+    #expect(SizeInput.parse("0") == nil)
+    #expect(SizeInput.parse("inf") == nil)
 }

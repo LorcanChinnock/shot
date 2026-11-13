@@ -44,7 +44,6 @@ extension EditorTool {
 @MainActor
 @Observable
 final class EditorModel {
-    static let baseWidths = EditorStyle.widths
 
     let fileURL: URL
     let scale: CGFloat
@@ -122,8 +121,9 @@ final class EditorModel {
     }
     /// The last custom colour picked in each palette.
     private(set) var customColors: [ColorSlot: RGBA]
-    var widthIndex: Int {
-        didSet { rememberStyle { $0.widthIndex = widthIndex } }
+    /// The next annotation's line width, in points.
+    var width: CGFloat {
+        didSet { rememberStyle { $0.width = width } }
     }
     /// The last shadow and border given to each kind, in points, which new ones of that kind start with.
     private var objectStyles: [StyleKind: ObjectStyle]
@@ -212,7 +212,7 @@ final class EditorModel {
         alignment = style.alignment
         verticalAlignment = style.verticalAlignment
         customColors = style.customColors
-        widthIndex = style.widthIndex
+        width = style.width
         objectStyles = style.objectStyles
         if let newCaptureStyle {
             self.document.applyNewCaptureStyle(newCaptureStyle, scale: scale, margin: canvasMargin)
@@ -364,7 +364,7 @@ final class EditorModel {
     /// The style the tool's next annotation gets.
     private var nextStyle: EditorStyle {
         EditorStyle(
-            tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, noteTextColor: noteTextColor, widthIndex: widthIndex,
+            tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, noteTextColor: noteTextColor, width: width,
             customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
             alignment: alignment, verticalAlignment: verticalAlignment, objectStyles: objectStyles
         )
@@ -386,7 +386,7 @@ final class EditorModel {
         if next.highlightColor != highlightColor { highlightColor = next.highlightColor }
         if next.fill != fill { fill = next.fill }
         if next.noteTextColor != noteTextColor { noteTextColor = next.noteTextColor }
-        if next.widthIndex != widthIndex { widthIndex = next.widthIndex }
+        if next.width != width { width = next.width }
         if next.shape != shape { shape = next.shape }
         if next.redaction != redaction { redaction = next.redaction }
         if next.redactionAmount != redactionAmount { redactionAmount = next.redactionAmount }
@@ -805,8 +805,18 @@ final class EditorModel {
         palette.style.customColors[.noteText]
     }
 
-    /// The size the style bar's stepper shows: the line width in points, or the text size.
+    /// The size the style bar's size box shows: the line width in points, or the text size.
     var paletteShownSize: CGFloat { palette.shownSize }
+
+    /// The sizes the size box's menu lists.
+    var paletteSizeChoices: [CGFloat] { palette.sizeChoices }
+
+    /// Sets the size typed in the size box or picked from its menu, as one undo step.
+    func setShownSize(_ size: CGFloat) {
+        var changed = palette
+        changed.setShownSize(size)
+        adopt(changed)
+    }
 
     func canStepLineWidth(by steps: Int) -> Bool {
         palette.canStepLineWidth(by: steps)
@@ -819,7 +829,7 @@ final class EditorModel {
         adopt(changed)
     }
 
-    var lineWidth: CGFloat { Self.baseWidths[widthIndex] * scale }
+    var lineWidth: CGFloat { width * scale }
     var fontSize: CGFloat { lineWidth * 6 }
     /// What the toolbar gives the annotation the canvas draws next.
     var draftStyle: AnnotationDraft.Style {

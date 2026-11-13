@@ -314,8 +314,8 @@ public struct Preferences {
         if changed(\.noteTextColor) {
             store.set(style.noteTextColor.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: PreferenceKey.editorNoteTextColor)
         }
-        if changed(\.widthIndex) {
-            store.set(Double(EditorStyle.widths[style.widthIndex]), forKey: PreferenceKey.editorLineWidth)
+        if changed(\.width) {
+            store.set(Double(style.width), forKey: PreferenceKey.editorLineWidth)
         }
         if changed(\.shape) {
             store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
@@ -455,12 +455,12 @@ public struct Preferences {
         let tool = EditorTool(rawValue: toolName) ?? legacyTools[toolName]
         // Older versions saved Thin, Medium or Thick as an index into the three widths they offered.
         let legacyWidth = index(PreferenceKey.editorWidth, in: EditorStyle.presetWidths.indices, default: -1)
-        let widthIndex = if let points = store.object(forKey: PreferenceKey.editorLineWidth) as? Double {
-            EditorStyle.nearestWidthIndex(to: CGFloat(points))
+        let width = if let points = store.object(forKey: PreferenceKey.editorLineWidth) as? Double, points.isFinite {
+            EditorStyle.clampedWidth(CGFloat(points))
         } else if legacyWidth >= 0 {
-            EditorStyle.nearestWidthIndex(to: EditorStyle.presetWidths[legacyWidth])
+            EditorStyle.presetWidths[legacyWidth]
         } else {
-            defaults.widthIndex
+            defaults.width
         }
         return EditorStyle(
             tool: tool.flatMap { $0.isDrawing ? $0 : nil } ?? defaults.tool,
@@ -469,7 +469,7 @@ public struct Preferences {
             highlightColor: decoded(PreferenceKey.editorHighlightColor) ?? defaults.highlightColor,
             fill: decoded(PreferenceKey.editorFill),
             noteTextColor: decoded(PreferenceKey.editorNoteTextColor),
-            widthIndex: widthIndex,
+            width: width,
             customColors: decoded(PreferenceKey.editorCustomColors) ?? defaults.customColors,
             // `rounded` was a shape of its own before every shape could be rounded.
             shape: store.string(forKey: PreferenceKey.editorShape).flatMap { BoxShape(rawValue: $0 == "rounded" ? "rectangle" : $0) } ?? defaults.shape,

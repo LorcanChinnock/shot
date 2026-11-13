@@ -148,3 +148,19 @@ public enum StyleBarControl: Equatable, Sendable {
     /// A note's text at the top, middle or bottom.
     case verticalAlignment
 }
+
+/// What's typed in the style bar's size box.
+public enum SizeInput {
+    /// The size typed, with a comma or a point before any decimals and an optional "pt" after; `nil` for anything that
+    /// isn't a positive number.
+    public static func parse(_ text: String) -> CGFloat? {
+        var trimmed = text.trimmingCharacters(in: .whitespaces).lowercased()
+        if trimmed.hasSuffix("pt") {
+            trimmed = String(trimmed.dropLast(2)).trimmingCharacters(in: .whitespaces)
+        }
+        guard let number = Double(trimmed.replacingOccurrences(of: ",", with: ".")), number.isFinite, number > 0 else {
+            return nil
+        }
+        return CGFloat(number)
+    }
+}

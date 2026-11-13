@@ -67,7 +67,7 @@ The colours are on the left, a row for each, named on its left. Every row has th
 - **Redact:** blur or pixelate, and how strong it is.
 - **Spotlight:** a rectangle or an ellipse, whether to darken or blur outside it, how strongly, and how soft its edge is. Every spotlight in the screenshot shares one dim, so the effect and strength apply to all of them.
 
-The width and text size have down and up arrows, with the size in points between them. Changing the size or colour while you type updates the text as you go.
+The width and text size work like the font size box in a word processor. The down and up arrows step through the usual sizes, and the arrows between them list those sizes to pick from. You can also click the number, type any size and press <kbd>Return</kbd>. It's kept within the smallest and largest sizes, and <kbd>Esc</kbd> puts the old one back. Changing the size or colour while you type updates the text as you go.
 
 The bar doesn't show while you crop, since the crop has a bar of its own, or when the select tool has nothing, an image or several marks selected. Use **Style** in the title bar for those.
 
@@ -75,7 +75,7 @@ Each palette remembers the last colour you picked. The highlight and sticky note
 
 To go back to the plain look, choose **Edit › Reset Style**, or right-click the style bar and choose **Reset Style**. It puts that tool's colour, width and other options back to how Shot starts, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset Style** also sets the effect and strength of every spotlight in the screenshot, since they share them.
 
-With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into the style bar, and with the width's or text size's arrows chosen, the arrow keys change it.
+With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into the style bar, and in the width or text size box, the up and down arrow keys change it.
 
 ## Change what you've drawn
 

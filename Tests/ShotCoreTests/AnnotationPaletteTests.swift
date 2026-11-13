@@ -45,7 +45,7 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     // One picked with the select tool restyles alone.
     var picked = palette(tool: .select, selection: arrow)
     picked.setColor(blue)
-    picked.setLineWidthIndex(EditorStyle.widths.firstIndex(of: 2)!)
+    picked.setLineWidth(points: 2)
     #expect(picked.selection?.color == blue)
     #expect(picked.selection?.lineWidth == 4)
     #expect(picked.style == EditorStyle(tool: .select))
@@ -69,11 +69,11 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     var new = palette(tool: .note, editing: note, isNew: true)
     new.setColor(blue)
     new.setAlignment(.right)
-    new.setLineWidthIndex(2)
+    new.setLineWidth(points: 8)
     #expect(new.style.noteColor == blue)
     #expect(new.style.color == EditorStyle().color)
     #expect(new.style.alignment == .right)
-    #expect(new.style.widthIndex == 2)
+    #expect(new.style.width == 8)
 }
 
 @Test func verticalAlignmentShowsForNotesAndSetsTheNoteOrTheNext() {
@@ -114,42 +114,68 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     #expect(!palette(tool: nil).showsStyle)
 }
 
-@Test func theWidthShownIsTheNearestToTheSelections() {
+@Test func theWidthShownIsTheSelectionsInPoints() {
     // At 2 pixels per point, the arrow's 8 pixels are 4 points.
-    #expect(EditorStyle.widths[palette(selection: arrow).lineWidthIndex] == 4)
+    #expect(palette(selection: arrow).shownWidth == 4)
     var odd = arrow
     odd.lineWidth = 13
-    #expect(EditorStyle.widths[palette(selection: odd).lineWidthIndex] == 6)
-    odd.lineWidth = 100
-    #expect(palette(selection: odd).lineWidthIndex == EditorStyle.widths.count - 1)
-    #expect(palette().lineWidthIndex == EditorStyle().widthIndex)
+    #expect(palette(selection: odd).shownWidth == 6.5)
+    #expect(palette().shownWidth == EditorStyle().width)
 }
 
 @Test func theStepperStepsTheWidthOneStepAtATime() {
     var drawn = palette(tool: .arrow, selection: arrow)
     drawn.stepLineWidth(by: 1)
     #expect(drawn.selection?.lineWidth == 10)
-    #expect(drawn.style.widthIndex == EditorStyle.widths.firstIndex(of: 5))
-    drawn.stepLineWidth(by: -2)
+    #expect(drawn.style.width == 5)
+    drawn.stepLineWidth(by: -1)
+    drawn.stepLineWidth(by: -1)
     #expect(drawn.selection?.lineWidth == 6)
-    // From an odd width, a step goes to the step past the nearest.
+    // From between two steps, a step goes to the next one along.
     var odd = arrow
-    odd.lineWidth = 7.6
+    odd.lineWidth = 7
     var fromOdd = palette(tool: .select, selection: odd)
     fromOdd.stepLineWidth(by: 1)
-    #expect(fromOdd.selection?.lineWidth == 10)
+    #expect(fromOdd.selection?.lineWidth == 8)
+    fromOdd.selection = odd
+    fromOdd.stepLineWidth(by: -1)
+    #expect(fromOdd.selection?.lineWidth == 6)
 }
 
 @Test func theStepperStopsAtTheThinnestAndThickest() {
     var thinnest = palette(tool: .pen)
-    thinnest.style.widthIndex = 0
+    thinnest.style.width = 1
     #expect(!thinnest.canStepLineWidth(by: -1))
     #expect(thinnest.canStepLineWidth(by: 1))
     thinnest.stepLineWidth(by: -1)
-    #expect(thinnest.style.widthIndex == 0)
+    #expect(thinnest.style.width == 1)
     var thickest = palette(tool: .pen)
-    thickest.style.widthIndex = EditorStyle.widths.count - 1
+    thickest.style.width = 16
     #expect(!thickest.canStepLineWidth(by: 1))
+}
+
+@Test func aTypedSizeIsKeptWithinTheScaleAndRoundedToAHalfPoint() {
+    var text = palette(tool: .text)
+    text.setShownSize(13)
+    #expect(text.shownSize == 13)
+    #expect(abs(text.style.width - 13.0 / 6) < 0.0001)
+    text.setShownSize(200)
+    #expect(text.shownSize == 96)
+    text.setShownSize(2)
+    #expect(text.shownSize == 6)
+    var line = palette(tool: .arrow)
+    line.setShownSize(2.3)
+    #expect(line.style.width == 2.5)
+    line.setShownSize(0.2)
+    #expect(line.style.width == 1)
+    var note = palette(tool: .note)
+    note.setShownSize(17)
+    #expect(note.shownSize == 17)
+}
+
+@Test func theSizeMenuListsEachStepInTheShownUnits() {
+    #expect(palette(tool: .arrow).sizeChoices == EditorStyle.widths)
+    #expect(palette(tool: .text).sizeChoices == [6, 9, 12, 18, 24, 30, 36, 48, 60, 72, 96])
 }
 
 @Test func theStepperShowsTheWidthOrTheTextSize() {
@@ -244,7 +270,7 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
 @Test func resetPutsDrawingOptionsAndTheSelectionBackToTheirDefaults() {
     var drawn = palette(tool: .shape, selection: box)
     drawn.setColor(blue)
-    drawn.setLineWidthIndex(EditorStyle.widths.count - 1)
+    drawn.setLineWidth(points: 16)
     drawn.setFill(blue)
     drawn.setShape(.ellipse)
     drawn.style.customColors[.stroke] = blue
@@ -252,11 +278,11 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     drawn.reset()
     let defaults = EditorStyle()
     #expect(drawn.style.color == defaults.color)
-    #expect(drawn.style.widthIndex == defaults.widthIndex)
+    #expect(drawn.style.width == defaults.width)
     #expect(drawn.style.fill == nil)
     #expect(drawn.style.shape == defaults.shape)
     #expect(drawn.selection?.color == defaults.color)
-    #expect(drawn.selection?.lineWidth == EditorStyle.widths[defaults.widthIndex] * 2)
+    #expect(drawn.selection?.lineWidth == defaults.width * 2)
     #expect(drawn.selection?.fill == nil)
     #expect(drawn.shape == .rectangle)
     #expect(drawn.style.customColors == [.stroke: blue])

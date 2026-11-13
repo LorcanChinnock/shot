@@ -42,6 +42,8 @@ protocol StyleBarEditing: AnyObject, Observable {
     var paletteNoteTextColor: RGBA? { get }
     func setNoteTextColor(_ color: RGBA?)
     var paletteShownSize: CGFloat { get }
+    var paletteSizeChoices: [CGFloat] { get }
+    func setShownSize(_ size: CGFloat)
     func canStepLineWidth(by steps: Int) -> Bool
     func stepLineWidth(by steps: Int)
     var paletteShape: BoxShape? { get }
@@ -285,16 +287,18 @@ struct StyleBar<Model: StyleBarEditing>: View {
         .frame(height: 24)
     }
 
-    /// Thinner and thicker, or smaller and larger for text, with the width or text size between them.
+    /// Thinner and thicker, or smaller and larger for text, around a box to type or pick the width or text size.
     private var stepper: some View {
         let sizesText = model.sizesText
-        return StyleBarStepper(
+        return StyleBarSizeBox(
             value: model.paletteShownSize,
+            choices: model.paletteSizeChoices,
             label: sizesText ? String(localized: "Text size") : String(localized: "Line width"),
             down: sizesText ? String(localized: "Smaller") : String(localized: "Thinner"),
             up: sizesText ? String(localized: "Larger") : String(localized: "Thicker"),
             canStep: model.canStepLineWidth(by:),
-            step: model.stepLineWidth(by:)
+            step: model.stepLineWidth(by:),
+            set: model.setShownSize
         )
     }
 
@@ -324,29 +328,33 @@ extension StyleBarColorRow {
     }
 }
 
-/// Down and up arrows on the segmented control's track with the value between them, from the thinnest width or smallest
-/// size to the largest. With either arrow focused, the arrow keys step it too. VoiceOver reads it as one adjustable
-/// control.
-private struct StyleBarStepper: View {
+/// A size box like a word processor's font size: smaller and larger arrows either side of the size, which can be typed
+/// over, and a menu of the scale's sizes. Return or clicking away sets a typed size, kept within the scale and rounded to
+/// a half point, and Esc puts the shown one back. The up and down arrow keys step it, and left and right too from an
+/// arrow button. VoiceOver reads the field as an adjustable control, with the menu beside it.
+private struct StyleBarSizeBox: View {
     let value: CGFloat
+    let choices: [CGFloat]
     let label: String
     let down: String
     let up: String
     let canStep: (Int) -> Bool
     let step: (Int) -> Void
+    let set: (CGFloat) -> Void
+    @State private var typed = ""
+    @FocusState private var editing: Bool
     @Environment(\.colorSchemeContrast) private var contrast
 
-    private var shown: String { Double(value).formatted(.number.precision(.fractionLength(0...1))) }
+    private static func format(_ size: CGFloat) -> String {
+        Double(size).formatted(.number.precision(.fractionLength(0...1)).grouping(.never))
+    }
 
     var body: some View {
         let track = RoundedRectangle(cornerRadius: 8, style: .circular)
         HStack(spacing: 0) {
             arrow("chevron.down", help: down, by: -1)
-            Text(verbatim: shown)
-                .font(.scaled(11, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(StyleBarGlyph.color(selected: true))
-                .frame(minWidth: 26)
+            field
+            menu
             arrow("chevron.up", help: up, by: 1)
         }
         .padding(2)
@@ -356,34 +364,100 @@ private struct StyleBarStepper: View {
                 Color.clear.inkBorder(track, width: 1, color: Theme.ink.opacity(0.6))
             }
         }
-        .onKeyPress(keys: [.upArrow, .rightArrow, .downArrow, .leftArrow], phases: [.down, .repeat]) { press in
-            step(press.key == .upArrow || press.key == .rightArrow ? 1 : -1)
+        .onKeyPress(keys: [.upArrow, .downArrow], phases: [.down, .repeat]) { press in
+            stepAndShow(press.key == .upArrow ? 1 : -1)
             return .handled
         }
-        .accessibilityElement(children: .ignore)
+        .onAppear { typed = Self.format(value) }
+        .onChange(of: value) { typed = Self.format(value) }
+        .onChange(of: editing) {
+            if !editing {
+                commit()
+            }
+        }
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(label))
-        .accessibilityValue(Text(verbatim: shown))
+    }
+
+    private var field: some View {
+        TextField(text: $typed) {
+            Text(label)
+        }
+        .textFieldStyle(.plain)
+        .font(.scaled(11, weight: .semibold))
+        .monospacedDigit()
+        .multilineTextAlignment(.center)
+        .foregroundStyle(StyleBarGlyph.color(selected: true))
+        .frame(width: 30, height: 20)
+        .focused($editing)
+        .onSubmit {
+            commit()
+            editing = false
+        }
+        .onExitCommand {
+            typed = Self.format(value)
+            editing = false
+        }
+        .themeTip(label)
+        .accessibilityLabel(Text(label))
+        .accessibilityValue(Text(verbatim: Self.format(value)))
         .accessibilityAdjustableAction { direction in
             switch direction {
-            case .increment: step(1)
-            case .decrement: step(-1)
+            case .increment: stepAndShow(1)
+            case .decrement: stepAndShow(-1)
             @unknown default: break
             }
         }
     }
 
+    private var menu: some View {
+        ThemeDropdown(
+            title: "Sizes",
+            entries: choices.map { size in
+                .item(Self.format(size), selected: abs(size - value) < 0.01) { set(size) }
+            }
+        ) {
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.scaled(8, weight: .bold))
+                .foregroundStyle(StyleBarGlyph.color(selected: false))
+                .frame(width: 12, height: 20)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.halo(radius: 6))
+        .themeTip("Sizes")
+    }
+
     private func arrow(_ symbol: String, help: String, by steps: Int) -> some View {
         Button {
-            step(steps)
+            stepAndShow(steps)
         } label: {
             StyleBarGlyph(symbol: symbol, selected: false)
-                .frame(width: 22, height: 20)
+                .frame(width: 18, height: 20)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.halo(radius: 6))
         .disabled(!canStep(steps))
         .opacity(canStep(steps) ? 1 : 0.35)
+        .onKeyPress(keys: [.leftArrow, .rightArrow], phases: [.down, .repeat]) { press in
+            stepAndShow(press.key == .rightArrow ? 1 : -1)
+            return .handled
+        }
+        .accessibilityHidden(true)
         .themeTip(help)
+    }
+
+    /// Steps from the size shown, dropping anything half typed.
+    private func stepAndShow(_ steps: Int) {
+        typed = Self.format(value)
+        step(steps)
+    }
+
+    /// Sets the typed size if it's a number and differs from the one shown, then shows what was set.
+    private func commit() {
+        if let size = SizeInput.parse(typed), size != value, Self.format(size) != Self.format(value) {
+            set(size)
+        }
+        typed = Self.format(value)
     }
 }
 

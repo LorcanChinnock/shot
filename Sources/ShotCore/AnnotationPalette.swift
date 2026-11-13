@@ -203,62 +203,75 @@ public struct AnnotationPalette: Equatable, Sendable {
     // MARK: Width
 
     /// The width of the next annotation, in pixels.
-    public var lineWidth: CGFloat { EditorStyle.widths[style.widthIndex] * scale }
+    public var lineWidth: CGFloat { style.width * scale }
 
-    /// The width shown, as an index into `EditorStyle.widths`: the text being typed's, else the selection's, the nearest
-    /// one to it, else the next annotation's.
-    public var lineWidthIndex: Int {
-        guard let shown else {
-            return style.widthIndex
-        }
-        return EditorStyle.widths.indices.min { abs(EditorStyle.widths[$0] * scale - shown.lineWidth) < abs(EditorStyle.widths[$1] * scale - shown.lineWidth) } ?? style.widthIndex
+    /// The width shown, in points: the text being typed's, else the selection's, else the next annotation's.
+    public var shownWidth: CGFloat {
+        shown.map { $0.lineWidth / scale } ?? style.width
     }
 
-    /// The size the style bar's stepper shows: the line width in points, or for text, a note or a counter, its text size.
-    public var shownSize: CGFloat {
-        let kind: EditorStyle.SizeKind
+    /// What the width shown sets the size of, which the style bar's size box shows.
+    public var sizeKind: EditorStyle.SizeKind {
         switch shown?.kind {
-        case .text: kind = .text
-        case .note: kind = .note
-        case .counter: kind = .counter
+        case .text: return .text
+        case .note: return .note
+        case .counter: return .counter
         case nil:
             switch tool {
-            case .text: kind = .text
-            case .note: kind = .note
-            case .counter: kind = .counter
-            default: kind = .line
+            case .text: return .text
+            case .note: return .note
+            case .counter: return .counter
+            default: return .line
             }
-        default: kind = .line
+        default: return .line
         }
-        return EditorStyle.shownSize(width: EditorStyle.widths[lineWidthIndex], sizing: kind)
     }
 
-    /// Whether the width can step `by` steps along `EditorStyle.widths`: not past its thinnest or thickest.
+    /// The size the style bar's size box shows: the line width in points, or for text, a note or a counter, its text size.
+    public var shownSize: CGFloat {
+        EditorStyle.shownSize(width: shownWidth, sizing: sizeKind)
+    }
+
+    /// The sizes the size box's menu lists: one for each step of `EditorStyle.widths`.
+    public var sizeChoices: [CGFloat] {
+        EditorStyle.widths.map { EditorStyle.shownSize(width: $0, sizing: sizeKind) }
+    }
+
+    /// Whether the width can step thicker (`by` above 0) or thinner: not past the thickest or thinnest step. Only the sign
+    /// of `steps` counts, as each click steps once.
     public func canStepLineWidth(by steps: Int) -> Bool {
-        EditorStyle.widths.indices.contains(lineWidthIndex + steps)
+        EditorStyle.step(from: shownWidth, up: steps > 0) != nil
     }
 
-    /// Steps the width shown `by` steps along `EditorStyle.widths`, from the step nearest it.
+    /// Steps the width shown one step thicker (`by` above 0) or thinner along `EditorStyle.widths`. From between two steps
+    /// it goes to the next one along.
     public mutating func stepLineWidth(by steps: Int) {
-        guard canStepLineWidth(by: steps) else {
+        guard let next = EditorStyle.step(from: shownWidth, up: steps > 0) else {
             return
         }
-        setLineWidthIndex(lineWidthIndex + steps)
+        setLineWidth(points: next)
     }
 
-    public mutating func setLineWidthIndex(_ index: Int) {
-        let width = EditorStyle.widths[index] * scale
+    /// Sets the size the size box shows, as typed or picked from its menu: kept within the scale's smallest and largest,
+    /// and rounded to a half point.
+    public mutating func setShownSize(_ size: CGFloat) {
+        setLineWidth(points: EditorStyle.width(forShownSize: size, sizing: sizeKind))
+    }
+
+    /// Sets the width, in points, of the text being typed or the selection, and of the next annotation as the toolbar does.
+    public mutating func setLineWidth(points: CGFloat) {
+        let width = points * scale
         if editingText != nil {
             // Text resizes as it's typed; new text also sets the width for the next annotation.
             editingText?.setLineWidth(width)
             if editingTextIsNew {
-                style.widthIndex = index
+                style.width = points
             }
             return
         }
         selection?.setLineWidth(width)
         if stylesNextAnnotation {
-            style.widthIndex = index
+            style.width = points
         }
     }
 
@@ -433,7 +446,7 @@ public struct AnnotationPalette: Equatable, Sendable {
             if colorRows.contains(.noteText) {
                 setNoteTextColor(defaults.noteTextColor)
             }
-            setLineWidthIndex(defaults.widthIndex)
+            setLineWidth(points: defaults.width)
             if showsFill {
                 setFill(defaults.fill)
             }

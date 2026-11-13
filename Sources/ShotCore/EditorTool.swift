@@ -71,11 +71,33 @@ public struct EditorStyle: Equatable, Sendable {
     /// The three widths older versions offered, Thin, Medium and Thick, which the Style panel's border sizes still use.
     public static let presetWidths: [CGFloat] = [2, 4, 8]
     /// Medium, 4 pt.
-    public static let defaultWidthIndex = 4
+    public static let defaultWidth: CGFloat = 4
 
-    /// The index into `widths` of the step nearest `points`.
-    public static func nearestWidthIndex(to points: CGFloat) -> Int {
-        widths.indices.min { abs(widths[$0] - points) < abs(widths[$1] - points) } ?? defaultWidthIndex
+    /// `points` within the thinnest and thickest of `widths`. A width between two steps stays as it is, as one typed in
+    /// the style bar's size box does.
+    public static func clampedWidth(_ points: CGFloat) -> CGFloat {
+        min(max(points, widths[0]), widths[widths.count - 1])
+    }
+
+    /// The step after `points`, thicker with `up`, else thinner; `nil` past the thickest or thinnest. A width between two
+    /// steps goes to the next one along.
+    public static func step(from points: CGFloat, up: Bool) -> CGFloat? {
+        let tolerance: CGFloat = 0.01
+        return up ? widths.first { $0 > points + tolerance } : widths.last { $0 < points - tolerance }
+    }
+
+    /// The width that shows as `size` for `kind`, the inverse of `shownSize`, within the scale and rounded so the size
+    /// shown is a whole or half point.
+    public static func width(forShownSize size: CGFloat, sizing kind: SizeKind) -> CGFloat {
+        let lowest = shownSize(width: widths[0], sizing: kind), highest = shownSize(width: widths[widths.count - 1], sizing: kind)
+        let rounded = (min(max(size, lowest), highest) * 2).rounded() / 2
+        let width = switch kind {
+        case .line: rounded
+        case .text: rounded / 6
+        case .note: (rounded - 8) / 3
+        case .counter: (rounded / 1.1 - 10) / 3
+        }
+        return clampedWidth(width)
     }
 
     /// The size the style bar shows for a width of `points`: the width itself for a line, or the text's size in points
@@ -104,8 +126,8 @@ public struct EditorStyle: Equatable, Sendable {
     public var fill: RGBA?
     /// The colour of a new note's text; `nil` picks black or white, whichever reads better on the paper.
     public var noteTextColor: RGBA?
-    /// Index into `widths`.
-    public var widthIndex: Int
+    /// The line width in points, usually one of `widths`; the image's scale multiplies it.
+    public var width: CGFloat
     /// The last custom colour picked in each palette, which its rainbow swatch offers again.
     public var customColors: [ColorSlot: RGBA]
     public var shape: BoxShape
@@ -122,7 +144,7 @@ public struct EditorStyle: Equatable, Sendable {
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
         highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, noteTextColor: RGBA? = nil,
-        widthIndex: Int = EditorStyle.defaultWidthIndex, customColors: [ColorSlot: RGBA] = [:],
+        width: CGFloat = EditorStyle.defaultWidth, customColors: [ColorSlot: RGBA] = [:],
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
         spotlight: SpotlightStyle = SpotlightStyle(),
         alignment: TextAlign = .left, verticalAlignment: VerticalTextAlign = .top, objectStyles: [StyleKind: ObjectStyle] = [:]
@@ -133,7 +155,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.highlightColor = highlightColor
         self.fill = fill
         self.noteTextColor = noteTextColor
-        self.widthIndex = widthIndex
+        self.width = width
         self.customColors = customColors
         self.shape = shape
         self.redaction = redaction

@@ -1067,7 +1067,7 @@ extension VideoEditorModel {
 
     /// Canvas pixels per point of a new annotation's strokes and corners, so they look the same on a 4K recording as on a small one.
     var styleScale: CGFloat { max(1, project.canvasSize.width / 960) }
-    var lineWidth: CGFloat { EditorStyle.widths[annotationStyle.widthIndex] * styleScale }
+    var lineWidth: CGFloat { annotationStyle.width * styleScale }
     var fontSize: CGFloat { lineWidth * 6 }
     /// What the palette gives the annotation the canvas draws next.
     var draftStyle: AnnotationDraft.Style {
@@ -1254,8 +1254,18 @@ extension VideoEditorModel {
         palette.style.customColors[.noteText]
     }
 
-    /// The size the style bar's stepper shows: the line width in points, or the text size.
+    /// The size the style bar's size box shows: the line width in points, or the text size.
     var paletteShownSize: CGFloat { palette.shownSize }
+
+    /// The sizes the size box's menu lists.
+    var paletteSizeChoices: [CGFloat] { palette.sizeChoices }
+
+    /// Sets the size typed in the size box or picked from its menu, as one undo step.
+    func setShownSize(_ size: CGFloat) {
+        var changed = palette
+        changed.setShownSize(size)
+        adopt(changed)
+    }
 
     func canStepLineWidth(by steps: Int) -> Bool {
         palette.canStepLineWidth(by: steps)

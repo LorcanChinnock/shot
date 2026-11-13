@@ -131,7 +131,7 @@ import Testing
         #expect(style.highlightColor == RGBA.presets[2])
         #expect(style.fill == nil)
         #expect(style.noteTextColor == nil)
-        #expect(EditorStyle.widths[style.widthIndex] == 4)
+        #expect(style.width == 4)
     }
 
     @Test func editorStyleRemembersToolColoursAndWidth() throws {
@@ -142,11 +142,10 @@ import Testing
         let prefs = Preferences(store: store)
         // The Done-when case: the star shape, blue and the thick width carry over to the next editor.
         let blue = RGBA(0, 0.48, 1)
-        let thick = try #require(EditorStyle.widths.indices.last)
         let custom = RGBA(0.2, 0.4, 0.6, 0.5)
         let style = EditorStyle(
             tool: .shape, color: blue, noteColor: RGBA.presets[3], highlightColor: RGBA.presets[4], fill: custom,
-            noteTextColor: RGBA.presets[6], widthIndex: thick,
+            noteTextColor: RGBA.presets[6], width: 6.5,
             customColors: [.stroke: custom, .note: blue, .highlight: RGBA.presets[1]],
             shape: .star, redaction: .pixelate, redactionAmount: 0.013, spotlight: SpotlightStyle(shape: .ellipse, effect: .blur, strength: 0.7),
             alignment: .center, verticalAlignment: .middle
@@ -211,7 +210,7 @@ import Testing
         store.set(1.0, forKey: PreferenceKey.editorRedactionAmount)
         #expect(prefs.editorStyle == EditorStyle())
         store.set("thick", forKey: PreferenceKey.editorWidth)
-        #expect(prefs.editorStyle.widthIndex == EditorStyle().widthIndex)
+        #expect(prefs.editorStyle.width == EditorStyle().width)
         // Each value falls back on its own, so one bad value keeps the rest.
         store.set(EditorTool.text.rawValue, forKey: PreferenceKey.editorTool)
         store.set(5, forKey: PreferenceKey.editorColor)
@@ -227,16 +226,19 @@ import Testing
         // Thin, Medium and Thick were saved as 0, 1 and 2, for 2, 4 and 8 points.
         for (index, points) in [(0, CGFloat(2)), (1, 4), (2, 8)] {
             store.set(index, forKey: PreferenceKey.editorWidth)
-            #expect(EditorStyle.widths[prefs.editorStyle.widthIndex] == points)
+            #expect(prefs.editorStyle.width == points)
         }
         // A width saved by this version wins over the old index, and is saved in points.
-        Preferences.changeEditorStyle(in: store) { $0.widthIndex = EditorStyle.widths.firstIndex(of: 12)! }
+        Preferences.changeEditorStyle(in: store) { $0.width = 12 }
         #expect(store.double(forKey: PreferenceKey.editorLineWidth) == 12)
-        #expect(EditorStyle.widths[prefs.editorStyle.widthIndex] == 12)
+        #expect(prefs.editorStyle.width == 12)
+        // A width between steps, as typed in the size box, stays; one past the scale comes back within it.
         store.set(7.2, forKey: PreferenceKey.editorLineWidth)
-        #expect(EditorStyle.widths[prefs.editorStyle.widthIndex] == 8)
+        #expect(prefs.editorStyle.width == 7.2)
+        store.set(40.0, forKey: PreferenceKey.editorLineWidth)
+        #expect(prefs.editorStyle.width == 16)
         Preferences.resetAll(in: store)
-        #expect(prefs.editorStyle.widthIndex == EditorStyle.defaultWidthIndex)
+        #expect(prefs.editorStyle.width == EditorStyle.defaultWidth)
     }
 
     @Test func toolsFromOlderVersionsBecomeTheToolsThatReplacedThem() throws {
