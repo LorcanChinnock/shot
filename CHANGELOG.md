@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.7.0-beta.89](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.88...v0.7.0-beta.89) (2026-11-13)
+
+
+### Features
+
+* **editor:** choose rectangle or ellipse from the style bar ([#1300](https://github.com/LorcanChinnock/shot/issues/1300)) ([4424c9b](https://github.com/LorcanChinnock/shot/commit/4424c9b3e85d7056a02b4dca1f6bdea5052babda))
+* **editor:** drag out a text box that wraps, and type at once ([#1301](https://github.com/LorcanChinnock/shot/issues/1301)) ([f59f354](https://github.com/LorcanChinnock/shot/commit/f59f354c1fd605451f2388b5d2e5d3e25e473231))
+* **editor:** every style option in the bar, slide-app text boxes and ⌘Z that always undoes ([#1315](https://github.com/LorcanChinnock/shot/issues/1315)) ([5a4fb81](https://github.com/LorcanChinnock/shot/commit/5a4fb816b437aa9f56e4a833b5c500ae3948f582))
+* **editor:** smooth the pen's strokes when you let go ([#1310](https://github.com/LorcanChinnock/shot/issues/1310)) ([f181ddf](https://github.com/LorcanChinnock/shot/commit/f181ddf0e7c7b7505943b169a91a021735c445fd))
+
+
+### Bug Fixes
+
+* **app:** a Dock click brings back the open window instead of Settings ([#1317](https://github.com/LorcanChinnock/shot/issues/1317)) ([7128cc9](https://github.com/LorcanChinnock/shot/commit/7128cc9aea1cc668842c98c6f2b79e2f9a4b498e))
+* **editor:** drag a crop handle on the canvas edge instead of applying the crop ([#1296](https://github.com/LorcanChinnock/shot/issues/1296)) ([b48c225](https://github.com/LorcanChinnock/shot/commit/b48c22543cd144803becb41513ada386cd769a2b))
+* **editor:** draw a new mark next to the one just drawn instead of resizing it ([#1297](https://github.com/LorcanChinnock/shot/issues/1297)) ([3a9a023](https://github.com/LorcanChinnock/shot/commit/3a9a02311076f2b8f41b7eddcd439a56e5826af3))
+* **editor:** fade the canvas hint and zoom control off the picture ([#1299](https://github.com/LorcanChinnock/shot/issues/1299)) ([fefbbc3](https://github.com/LorcanChinnock/shot/commit/fefbbc3c47847e072696c38cfe817a8a2dd351b7))
+* **editor:** start a new line in a note with Shift+Return ([#1298](https://github.com/LorcanChinnock/shot/issues/1298)) ([9ebe959](https://github.com/LorcanChinnock/shot/commit/9ebe9591ed7621d77e631412fb6da165225bae0d))
+
 ## [0.7.0-beta.88](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.87...v0.7.0-beta.88) (2026-11-13)
 
 
