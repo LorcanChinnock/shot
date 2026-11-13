@@ -978,10 +978,10 @@ final class SelectionOverlayView: NSView {
         let dragging = dragStart != nil && pressedChip == nil && !isKeyboardSelection && selection != nil
         let visible = window.screen.map { $0.visibleFrame.offsetBy(dx: -$0.frame.minX, dy: -$0.frame.minY) } ?? bounds
         barPlacement = OverlayBarPlacement.placement(
-            for: size, in: bounds, visible: visible, avoiding: aim(hole), dragging: dragging, current: barPlacement,
+            for: size, visible: visible, avoiding: aim(hole), dragging: dragging, current: barPlacement,
             pointerOnBar: dragStart == nil && pointer.map { point in previous.contains { $0.contains(point) } } ?? false
         )
-        guard let frame = barPlacement.frame(of: size, in: bounds, visible: visible) else {
+        guard let frame = barPlacement.frame(of: size, visible: visible) else {
             hoveredChip = nil
             return
         }
