@@ -55,6 +55,20 @@ enum GlassWindow {
         }
     }
 
+    /// Brings the open glass window used last to the front, restoring it if it's minimised. False when none is open.
+    static func showMostRecent() -> Bool {
+        let open = windows.allObjects.filter { $0.isVisible || $0.isMiniaturized }
+        let byRecency = NSApp.orderedWindows.filter { window in open.contains { $0 === window } }
+        guard let window = byRecency.first ?? open.first else {
+            return false
+        }
+        if window.isMiniaturized {
+            window.deminiaturize(nil)
+        }
+        present(window)
+        return true
+    }
+
     private static func track(_ window: NSWindow) {
         windows.add(window)
         guard closeObserver == nil else {
