@@ -78,6 +78,15 @@ public enum CropGeometry {
         return nil
     }
 
+    /// Whether a press at `point` puts the crop down: it lands outside `canvas` and clear of `crop`'s handles, whose
+    /// outer half sits past the canvas while the crop reaches its edge.
+    public static func pressApplies(at point: CGPoint, canvas: CGRect, crop: CGRect?, tolerance: CGFloat) -> Bool {
+        guard !canvas.contains(point) else {
+            return false
+        }
+        return crop.flatMap { handle(at: point, in: $0, tolerance: tolerance) } == nil
+    }
+
     /// `crop` with `handle` dragged to `point`, kept within `bounds` and at least `minimumSize` across. A `ratio`
     /// (width over height) keeps the shape: a corner grows from the opposite corner, a side about the crop's centre.
     /// Edges snap only while the shape is free.

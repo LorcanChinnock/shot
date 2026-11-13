@@ -35,6 +35,16 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     /// False for select, hand and crop, which an editor never starts with.
     public var isDrawing: Bool { self != .select && self != .hand && self != .crop }
 
+    /// True for the tools that show the selection's outline and handles and resize from them: select, and text and
+    /// note, whose press picks existing text or a note to move. The others keep the mark just drawn selected for the
+    /// style bar, but show nothing round it, so a press beside it always draws.
+    public var editsSelection: Bool {
+        switch self {
+        case .select, .text, .note: true
+        case .hand, .arrow, .line, .shape, .pen, .highlight, .spotlight, .redact, .counter, .crop: false
+        }
+    }
+
     /// True for the tools that draw in the chosen colour and width.
     public var takesColorAndWidth: Bool {
         switch self {

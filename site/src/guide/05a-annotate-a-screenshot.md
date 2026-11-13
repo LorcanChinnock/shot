@@ -27,7 +27,7 @@ Press a tool's key, or click it in the group of tools in the middle of the title
 | <kbd>L</kbd> | **Line** |
 | <kbd>R</kbd> | **Shape:** rectangle, ellipse, triangle, diamond or star. |
 | <kbd>D</kbd> | **Pen:** draw freehand. |
-| <kbd>T</kbd> | **Text** |
+| <kbd>T</kbd> | **Text:** click and type, or drag out a box for text that wraps. |
 | <kbd>S</kbd> | **Sticky note** |
 | <kbd>M</kbd> | **Highlight:** a freehand marker. |
 | <kbd>F</kbd> | **Spotlight:** dims or blurs everything outside an area. |
@@ -49,6 +49,8 @@ Drag on the screenshot to draw with the tool you picked. While you drag:
 
 Your marks can reach past the edges of the screenshot. The canvas grows to fit them.
 
+With the text tool, click and start typing for a label as wide as its words. To fit text into a column, drag out a box instead: the text wraps to the box's width and the box grows taller as you type. <kbd>Return</kbd> finishes the text, and <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line in a box.
+
 The hint at the bottom right of the canvas tells you what the tool does, or what you've selected, with the keys that change it. With an arrow selected it reads "Arrow selected · ⌫ delete · ⇧ snap 45°". It shows for a few seconds each time you pick a tool or select something, then fades so it doesn't cover the screenshot. It and the zoom control also fade while you drag. With VoiceOver on, the hint stays and is read out when it changes.
 
 ## Choose colours and options
@@ -56,6 +58,7 @@ The hint at the bottom right of the canvas tells you what the tool does, or what
 A small style bar floats over the screenshot with the options for the tool you picked. It sits at the top of the screenshot until you draw, then moves next to the mark you selected, above it where there's room, and otherwise below or beside it, so it never covers the mark. It steps out of the way while you drag.
 
 - **Colour and width:** seven colours, white included, a rainbow swatch that picks any colour, and three widths, thin, medium and thick. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
+- **Shape:** a rectangle or an ellipse, after the colours and widths. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
 - **Redact:** blur or pixelate.
 - **Spotlight:** a rectangle or an ellipse, and whether to darken or blur outside it. Every spotlight in the screenshot shares one dim, so the effect applies to all of them.
 
@@ -63,7 +66,7 @@ The bar doesn't show while you crop, since the crop has a bar of its own, or whe
 
 When a tool has more options, **…** at the end of the bar opens **More style**:
 
-- **Shape:** which shape, and a fill.
+- **Shape:** a triangle, diamond or star, and a fill.
 - **Text and sticky notes:** left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
 - **Redact:** how strong the blur or pixelation is.
 - **Spotlight:** a soft edge, and how much to darken or blur outside it, which applies to every spotlight.
@@ -76,10 +79,10 @@ With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into
 
 ## Change what you've drawn
 
-What you've just drawn stays selected, so you can fix its colour, width or fill from the style bar beside it, or drag its handles, without switching tools. The change also applies to what you draw next. Otherwise, pick the select tool (<kbd>V</kbd>) and click a mark.
+What you've just drawn stays selected, so you can fix its colour, width or fill from the style bar beside it without switching tools. The change also applies to what you draw next. It shows no outline or handles, so your next stroke starts a new mark however close to it you press. To move, resize or bend a mark, pick the select tool (<kbd>V</kbd>) and click it.
 
 - **Move** it by dragging, or nudge it with the arrow keys, 1 pixel at a time or 10 with <kbd>Shift</kbd>.
-- **Resize** it with its handles. <kbd>Shift</kbd> keeps a box's proportions, or snaps an arrow or line end to 45°. <kbd>⌥</kbd> resizes from the centre. Hold <kbd>Space</kbd> to move the whole shape mid-drag.
+- **Resize** it with its handles. A text box has a handle on each side, and its text wraps again to the new width. <kbd>Shift</kbd> keeps a box's proportions, or snaps an arrow or line end to 45°. <kbd>⌥</kbd> resizes from the centre. Hold <kbd>Space</kbd> to move the whole shape mid-drag.
 - **Bend** an arrow or line by dragging its middle handle.
 - **Round the corners** of a shape with the small round handles inside them, up to a pill on a rectangle.
 - **Edit text** in a text box or sticky note by double-clicking it.
@@ -89,7 +92,7 @@ What you've just drawn stays selected, so you can fix its colour, width or fill 
 <kbd>⌘Z</kbd> or the Undo button in the title bar undoes, and <kbd>⇧⌘Z</kbd> redoes.
 
 > [!NOTE]
-> Text and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Esc</kbd> finishes it, and <kbd>⌘Z</kbd> removes it again. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first.
+> Text you clicked to place and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Esc</kbd> finishes it, and <kbd>⌘Z</kbd> removes it again. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first.
 
 > [!TIP]
 > With VoiceOver, the canvas lists your marks, frontmost first, by their [layer names](#layers), with the full words of a text or note. Press one (VO-Space) to select it.
