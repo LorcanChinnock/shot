@@ -387,7 +387,8 @@ private struct StyleBarSizeBox: View {
     }
 
     private var field: some View {
-        TextField(text: $typed) {
+        // The prompt stands in for the label, which would otherwise show squashed in the empty field of mixed sizes.
+        TextField(text: $typed, prompt: Text(verbatim: "–")) {
             Text(label)
         }
         .textFieldStyle(.plain)
@@ -396,14 +397,6 @@ private struct StyleBarSizeBox: View {
         .multilineTextAlignment(.center)
         .foregroundStyle(StyleBarGlyph.color(selected: true))
         .frame(width: 30, height: 20)
-        .background {
-            if value == nil, typed.isEmpty {
-                Text(verbatim: "–")
-                    .font(.scaled(11, weight: .semibold))
-                    .foregroundStyle(StyleBarGlyph.color(selected: false))
-                    .accessibilityHidden(true)
-            }
-        }
         .focused($editing)
         .onSubmit {
             commit()
