@@ -69,8 +69,6 @@ final class VideoEditorModel {
     }
     /// The time of the keyframe being worked on, in seconds from the start of the selected clip.
     private(set) var selectedKeyframe: Double?
-    /// Whether More style, the style bar's popover of the drawing options that don't fit in it, is open.
-    var showsMoreStyle = false
     private(set) var waveforms: [URL: Waveform] = [:]
     /// The tool drawing annotations over the video, or nil when none is picked. Never crop.
     private(set) var annotationTool: EditorTool?
@@ -1260,10 +1258,10 @@ extension VideoEditorModel {
         palette.lastCustom(forFill: forFill)
     }
 
-    /// True when the drawing options aren't the defaults, so More style's Reset has something to do.
+    /// True when the drawing options aren't the defaults, so Reset Style has something to do.
     var canResetToolOptions: Bool { palette.canReset }
 
-    /// More style's Reset: puts the drawing options back to how a new install starts, for the selected annotation, the
+    /// Reset Style: puts the drawing options back to how a new install starts, for the selected annotation, the
     /// text being typed and the next annotation. A spotlight's dim goes back for every spotlight, since they share it.
     func resetToolOptions() {
         let before = palette

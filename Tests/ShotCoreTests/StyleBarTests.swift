@@ -69,18 +69,20 @@ private let bar = CGSize(width: 260, height: 32)
     #expect(StyleBarContent.content(showsStyle: true, tool: .crop, showsRedaction: true, showsSpotlight: true) == nil)
 }
 
-@Test func moreStyleShowsOnlyWhenItHoldsMoreThanReset() {
-    let bar = StyleBarContent.colorAndWidth
-    #expect(!bar.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
-    #expect(bar.offersMoreStyle(hasShape: true, hasFill: true, hasAlignment: false))
-    #expect(bar.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: true))
-    #expect(StyleBarContent.redaction.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
-    #expect(StyleBarContent.spotlight.offersMoreStyle(hasShape: false, hasFill: false, hasAlignment: false))
+@Test func arrowsLinesPensHighlightsAndCountersKeepAOneRowBar() {
+    #expect(!StyleBarContent.colorAndWidth.hasSecondRow(hasShape: false, hasFill: false, hasAlignment: false))
 }
 
-@Test func theBarSwitchesRectangleAndEllipseAndMoreStyleKeepsTheOtherShapes() {
-    #expect(BoxShape.styleBarShapes == [.rectangle, .ellipse])
-    #expect(BoxShape.moreStyleShapes == [.triangle, .diamond, .star])
+@Test func aShapeOrATextGetsASecondRow() {
+    let bar = StyleBarContent.colorAndWidth
+    #expect(bar.hasSecondRow(hasShape: true, hasFill: true, hasAlignment: false))
+    #expect(bar.hasSecondRow(hasShape: false, hasFill: false, hasAlignment: true))
+    #expect(bar.hasSecondRow(hasShape: false, hasFill: true, hasAlignment: true))
+}
+
+@Test func aRedactionAndASpotlightFitTheirOptionsInOneRow() {
+    #expect(!StyleBarContent.redaction.hasSecondRow(hasShape: false, hasFill: false, hasAlignment: false))
+    #expect(!StyleBarContent.spotlight.hasSecondRow(hasShape: true, hasFill: false, hasAlignment: false))
 }
 
 @Test func theBarOffersEveryPresetColourWhiteIncluded() {
@@ -100,4 +102,17 @@ private let bar = CGSize(width: 260, height: 32)
     let mark = CGRect(x: 100, y: 40, width: 200, height: 860)
     #expect(StyleBarPlacement.origin(bar: bar, mark: mark, in: canvas) == CGPoint(x: 310, y: 454))
     #expect(StyleBarPlacement.origin(bar: bar, mark: mark, in: canvas, bottom: 60) == CGPoint(x: 310, y: 408))
+}
+
+@Test func aTwoRowBarKeepsClearOfTheMarkAndTheFoot() {
+    let tall = CGSize(width: 433, height: 66)
+    let marks = [
+        CGRect(x: 300, y: 200, width: 120, height: 80), CGRect(x: 300, y: 20, width: 120, height: 80),
+        CGRect(x: 100, y: 10, width: 200, height: 480),
+    ]
+    for mark in marks {
+        let frame = CGRect(origin: StyleBarPlacement.origin(bar: tall, mark: mark, in: canvas, bottom: 60), size: tall)
+        #expect(!frame.intersects(mark), "\(mark)")
+        #expect(CGRect(x: 12, y: 12, width: canvas.width - 24, height: canvas.height - 12 - 60).contains(frame), "\(mark)")
+    }
 }

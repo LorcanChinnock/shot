@@ -8,12 +8,6 @@ public enum BoxShape: String, CaseIterable, Codable, Sendable {
     /// The shapes a spotlight can light.
     public static let spotlightShapes: [BoxShape] = [.rectangle, .ellipse]
 
-    /// The shapes the style bar switches between, one click away. The rest are under More style.
-    public static let styleBarShapes: [BoxShape] = [.rectangle, .ellipse]
-
-    /// The shapes More style offers, the ones the style bar has no room for.
-    public static let moreStyleShapes: [BoxShape] = allCases.filter { !styleBarShapes.contains($0) }
-
     /// Reads `rounded`, which an older version saved for a rounded rectangle, as a rectangle; `Annotation` gives it the
     /// radius it had.
     public init(from decoder: Decoder) throws {

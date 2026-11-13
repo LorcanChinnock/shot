@@ -4,7 +4,7 @@ summary: "Add arrows, text, highlights and blur to a screenshot, then copy or sa
 group: Edit and share
 ---
 
-![The editor's title bar with the arrow tool picked and Copy at the right, and the style bar floating below it with six colours, three line widths and the More style button](../../../docs/media/editor-toolbar.png)
+![The editor's title bar with the arrow tool picked and Copy at the right, and the style bar floating below it with six colours, three line widths](../../../docs/media/editor-toolbar.png)
 
 ## Open the editor
 
@@ -58,22 +58,18 @@ The hint at the bottom right of the canvas tells you what the tool does, or what
 A small style bar floats over the screenshot with the options for the tool you picked. It sits at the top of the screenshot until you draw, then moves next to the mark you selected, above it where there's room, and otherwise below or beside it, so it never covers the mark. It steps out of the way while you drag.
 
 - **Colour and width:** seven colours, white included, a rainbow swatch that picks any colour, and three widths, thin, medium and thick. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
-- **Shape:** a rectangle or an ellipse, after the colours and widths. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
-- **Redact:** blur or pixelate.
-- **Spotlight:** a rectangle or an ellipse, and whether to darken or blur outside it. Every spotlight in the screenshot shares one dim, so the effect applies to all of them.
+- **Shape:** a second row with a rectangle, ellipse, triangle, diamond or star, then **Fill**: none, the seven colours or any other. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
+- **Text and sticky notes:** a second row with left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
+- **Redact:** blur or pixelate, and how strong it is.
+- **Spotlight:** a rectangle or an ellipse, whether to darken or blur outside it, how strongly, and how soft its edge is. Every spotlight in the screenshot shares one dim, so the effect and strength apply to all of them.
+
+Arrows, lines, pens, highlights and counters have only the colours and widths.
 
 The bar doesn't show while you crop, since the crop has a bar of its own, or when the select tool has nothing, an image or several marks selected. Use **Style** in the title bar for those.
 
-When a tool has more options, **…** at the end of the bar opens **More style**:
-
-- **Shape:** a triangle, diamond or star, and a fill.
-- **Text and sticky notes:** left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
-- **Redact:** how strong the blur or pixelation is.
-- **Spotlight:** a soft edge, and how much to darken or blur outside it, which applies to every spotlight.
-
 Each palette remembers the last colour you picked. The highlight and sticky notes keep their own colours, yellow at first, so they don't take the colour of your arrows. The editor remembers the options you last used.
 
-To go back to the plain look, choose **Edit › Reset Style**, or right-click the style bar and choose **Reset Style**. **Reset** at the bottom of More style does the same. It puts that tool's colour, width and other options back to how Shot starts, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset** also sets the effect and strength of every spotlight in the screenshot, since they share them.
+To go back to the plain look, choose **Edit › Reset Style**, or right-click the style bar and choose **Reset Style**. It puts that tool's colour, width and other options back to how Shot starts, for the selected mark too, and for the next one you draw, as one undo step. Your saved custom colours stay, and it's greyed out when the options are already the defaults. For a spotlight, **Reset Style** also sets the effect and strength of every spotlight in the screenshot, since they share them.
 
 With keyboard navigation turned on in System Settings, <kbd>Tab</kbd> moves into the style bar, and the arrow keys change the width.
 

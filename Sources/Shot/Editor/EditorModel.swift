@@ -171,8 +171,6 @@ final class EditorModel {
     var canvasFootLeading: CGSize = .zero
     /// How much of the canvas's bottom the crop bar covers in crop mode, which the fitted image keeps clear of; 0 otherwise.
     var cropBarClearance: CGFloat = 0
-    /// Whether More style, the style bar's popover of the options that don't fit in it, is open.
-    var showsMoreStyle = false
     private(set) var history: EditHistory
     private var isDraggingStyle = false
     @ObservationIgnored private var isLoadingDesktopPicture = false

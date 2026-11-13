@@ -4,12 +4,12 @@ import Foundation
 /// What the image editor's style bar holds, from Edit › Image editor · annotate: the small floating bar beside the
 /// selected mark, or at the top of the canvas for the tool's next mark.
 public enum StyleBarContent: Equatable, Sendable {
-    /// Colour swatches and three widths for arrows, lines, shapes, pens, text, notes, highlights and counters, with
-    /// rectangle or ellipse for a shape, and More style for a shape's other outlines and fill or a text's alignment.
+    /// Colour swatches and three widths for arrows, lines, shapes, pens, text, notes, highlights and counters, with a
+    /// second row for a shape's outlines and fill, or a text's or note's alignment.
     case colorAndWidth
-    /// Blur or pixelate, with the amount and Reset under More style.
+    /// Blur or pixelate and the amount, in one row.
     case redaction
-    /// The spotlight's shape and its dim or blur, with the strength, soft edge and Reset under More style.
+    /// The spotlight's shape, its dim or blur, its strength and its soft edge, in one row.
     case spotlight
 
     /// What the bar shows, in the same order the options row used: colour and width first, then a redaction and a
@@ -31,12 +31,12 @@ public enum StyleBarContent: Equatable, Sendable {
         return nil
     }
 
-    /// Whether the bar ends in More style: only when it has an option the bar doesn't, so it never opens on Reset alone.
-    /// Reset is in the Edit menu and the bar's context menu too.
-    public func offersMoreStyle(hasShape: Bool, hasFill: Bool, hasAlignment: Bool) -> Bool {
+    /// Whether the bar has a second row under its colours and widths: only for a mark with a shape, a fill or an
+    /// alignment. A redaction and a spotlight have no colours, so their options fit in one row.
+    public func hasSecondRow(hasShape: Bool, hasFill: Bool, hasAlignment: Bool) -> Bool {
         switch self {
         case .colorAndWidth: hasShape || hasFill || hasAlignment
-        case .redaction, .spotlight: true
+        case .redaction, .spotlight: false
         }
     }
 }

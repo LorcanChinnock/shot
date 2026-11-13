@@ -27,11 +27,6 @@ struct StyleBarOverlay: View {
         }
         // Arriving is the panel moment; following the mark as it moves stays instant, as every edit is.
         .animation(Motion.animation(.panelArrive, reduceMotion: reduceMotion), value: content)
-        .onChange(of: content) {
-            if content == nil {
-                model.showsMoreStyle = false
-            }
-        }
     }
 }
 
@@ -39,8 +34,6 @@ struct StyleBarOverlay: View {
 /// ShotCore's `AnnotationPalette`.
 @MainActor
 protocol StyleBarEditing: AnyObject, Observable {
-    /// Whether More style, the bar's popover of the options that don't fit in it, is open.
-    var showsMoreStyle: Bool { get set }
     var showsStyle: Bool { get }
     var sizesText: Bool { get }
     var showsFill: Bool { get }
@@ -71,10 +64,10 @@ protocol StyleBarEditing: AnyObject, Observable {
 
 extension EditorModel: StyleBarEditing {}
 
-/// The bar: the seven colours and a custom one, a divider and the three widths, rectangle or ellipse for a shape, then
-/// More style for a mark's other options.
-/// Right-clicking it offers Reset Style, as the Edit menu does. A redaction and a
-/// spotlight show their own main choices in its place. The video editor shows it too, at the top of the video's well.
+/// The bar: the seven colours and a custom one, a divider and the three widths. A shape adds a second row of its five
+/// outlines and its fill, and a text or a note one of its alignment. A redaction and a spotlight show all their options
+/// in one row in place of the colours. Right-clicking it offers Reset Style, as the Edit menu does. The video editor
+/// shows it too, at the top of the video's well.
 struct StyleBar<Model: StyleBarEditing>: View {
     @Bindable var model: Model
     let content: StyleBarContent
@@ -83,51 +76,14 @@ struct StyleBar<Model: StyleBarEditing>: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
-        HStack(spacing: 8) {
-            switch content {
-            case .colorAndWidth:
-                swatches
-                StyleBarDivider()
-                widths
-                if let shape = model.paletteShape {
-                    StyleBarDivider()
-                    GlyphSegmented(
-                        selection: shape, options: BoxShape.styleBarShapes.map { ($0, $0.title) }, choose: model.setShape
-                    ) { shape, selected in
-                        StyleBarGlyph(symbol: shape.symbol, selected: selected)
-                    }
-                    .accessibilityLabel(Text("Shape"))
-                }
-            case .redaction:
-                if let redaction = model.paletteRedaction {
-                    GlyphSegmented(
-                        selection: redaction, options: Redaction.allCases.map { ($0, $0.title) }, choose: model.setRedaction
-                    ) { redaction, selected in
-                        StyleBarGlyph(symbol: redaction == .blur ? "drop.halffull" : "square.grid.3x3", selected: selected)
-                    }
-                    .accessibilityLabel(Text("Blur or pixelate"))
-                }
-            case .spotlight:
-                if let spotlight = model.paletteSpotlight {
-                    GlyphSegmented(
-                        selection: spotlight.shape, options: BoxShape.spotlightShapes.map { ($0, $0.title) }, choose: model.setSpotlightShape
-                    ) { shape, selected in
-                        StyleBarGlyph(symbol: shape.symbol, selected: selected)
-                    }
-                    .accessibilityLabel(Text("Spotlight shape"))
-                    StyleBarDivider()
-                    GlyphSegmented(
-                        selection: spotlight.effect,
-                        options: SpotlightStyle.Effect.allCases.map { ($0, String(localized: "\($0.title) outside")) },
-                        choose: { model.setSpotlightLook(effect: $0, strength: spotlight.strength) }
-                    ) { effect, selected in
-                        StyleBarGlyph(symbol: effect == .darken ? "moon.fill" : "drop.halffull", selected: selected)
-                    }
-                    .accessibilityLabel(Text("Outside the spotlight"))
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                firstRow
             }
-            if content.offersMoreStyle(hasShape: model.paletteShape != nil, hasFill: model.showsFill, hasAlignment: model.paletteAlignment != nil) {
-                MoreStyleButton(model: model)
+            if content.hasSecondRow(hasShape: model.paletteShape != nil, hasFill: model.showsFill, hasAlignment: model.paletteAlignment != nil) {
+                HStack(spacing: 8) {
+                    secondRow
+                }
             }
         }
         .padding(.vertical, 5)
@@ -149,20 +105,125 @@ struct StyleBar<Model: StyleBarEditing>: View {
 
     private var solid: Bool { contrast == .increased || reduceTransparency }
 
-    private var swatches: some View {
-        HStack(spacing: 8) {
-            ForEach(StyleBarSwatches.colors.indices, id: \.self) { index in
-                let color = StyleBarSwatches.colors[index]
-                StyleBarSwatch(color: color, name: PresetColorNames.all[index], selected: model.paletteColor == color) {
+    @ViewBuilder private var firstRow: some View {
+        switch content {
+        case .colorAndWidth:
+            swatches(selected: model.paletteColor, forFill: false, help: String(localized: "Custom colour")) { color in
+                if let color {
                     model.paletteColor = color
                 }
             }
+            StyleBarDivider()
+            widths
+        case .redaction:
+            if let redaction = model.paletteRedaction {
+                GlyphSegmented(
+                    selection: redaction, options: Redaction.allCases.map { ($0, $0.title) }, choose: model.setRedaction
+                ) { redaction, selected in
+                    StyleBarGlyph(symbol: redaction == .blur ? "drop.halffull" : "square.grid.3x3", selected: selected)
+                }
+                .accessibilityLabel(Text("Blur or pixelate"))
+                StyleBarDivider()
+                slider("Amount", value: model.paletteRedactionAmount, range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound) {
+                    model.setRedactionAmount($0)
+                }
+                .themeTip("Amount")
+            }
+        case .spotlight:
+            if let spotlight = model.paletteSpotlight {
+                GlyphSegmented(
+                    selection: spotlight.shape, options: BoxShape.spotlightShapes.map { ($0, $0.title) }, choose: model.setSpotlightShape
+                ) { shape, selected in
+                    StyleBarGlyph(symbol: shape.symbol, selected: selected)
+                }
+                .accessibilityLabel(Text("Spotlight shape"))
+                StyleBarDivider()
+                GlyphSegmented(
+                    selection: spotlight.effect,
+                    options: SpotlightStyle.Effect.allCases.map { ($0, String(localized: "\($0.title) outside")) },
+                    choose: { model.setSpotlightLook(effect: $0, strength: spotlight.strength) }
+                ) { effect, selected in
+                    StyleBarGlyph(symbol: effect == .darken ? "moon.fill" : "drop.halffull", selected: selected)
+                }
+                .accessibilityLabel(Text("Outside the spotlight"))
+                StyleBarDivider()
+                slider("Strength", value: spotlight.strength, range: SpotlightStyle.strengths) {
+                    model.setSpotlightLook(effect: spotlight.effect, strength: $0)
+                }
+                .themeTip("Strength", detail: "Applies to every spotlight in the image.")
+                StyleBarDivider()
+                slider("Soft edge", value: spotlight.softEdge, range: 0...1, set: model.setSpotlightSoftEdge)
+                    .themeTip("Soft edge", detail: "Fades the spotlight into the dim.")
+            }
+        }
+    }
+
+    /// A shape's outlines and fill, or a text's alignment and a note's place top to bottom.
+    @ViewBuilder private var secondRow: some View {
+        if let shape = model.paletteShape {
+            GlyphSegmented(selection: shape, options: BoxShape.allCases.map { ($0, $0.title) }, choose: model.setShape) { shape, selected in
+                StyleBarGlyph(symbol: shape.symbol, selected: selected)
+            }
+            .accessibilityLabel(Text("Shape"))
+        }
+        if model.showsFill {
+            if model.paletteShape != nil {
+                StyleBarDivider()
+            }
+            fill
+        }
+        if let alignment = model.paletteAlignment {
+            if model.paletteShape != nil || model.showsFill {
+                StyleBarDivider()
+            }
+            GlyphSegmented(selection: alignment, options: TextAlign.allCases.map { ($0, $0.title) }, choose: model.setAlignment) { alignment, selected in
+                StyleBarGlyph(symbol: alignment.symbol, selected: selected)
+            }
+            .accessibilityLabel(Text("Alignment"))
+            if let vertical = model.paletteVerticalAlignment {
+                StyleBarDivider()
+                GlyphSegmented(
+                    selection: vertical, options: VerticalTextAlign.allCases.map { ($0, $0.title) }, choose: model.setVerticalAlignment
+                ) { vertical, selected in
+                    StyleBarGlyph(symbol: vertical.symbol, selected: selected)
+                }
+                .accessibilityLabel(Text("Vertical alignment"))
+            }
+        }
+    }
+
+    /// "Fill" ahead of its swatches, so they can't be taken for the colours above them.
+    private var fill: some View {
+        HStack(spacing: 8) {
+            Text("Fill").font(Theme.small).foregroundStyle(labelColor).accessibilityHidden(true)
+            swatches(selected: model.paletteFill, allowsNone: true, forFill: true, help: String(localized: "Custom fill colour")) {
+                model.paletteFill = $0
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Fill"))
+    }
+
+    private var labelColor: ContrastAware { ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink) }
+
+    /// The preset colours, then the rainbow swatch for a custom one. With `allowsNone`, a first swatch clears the colour.
+    private func swatches(selected: RGBA?, allowsNone: Bool = false, forFill: Bool, help: String, choose: @escaping (RGBA?) -> Void) -> some View {
+        HStack(spacing: 8) {
+            if allowsNone {
+                StyleBarSwatch(color: nil, name: String(localized: "Transparent"), selected: selected == nil) { choose(nil) }
+            }
+            ForEach(StyleBarSwatches.colors.indices, id: \.self) { index in
+                let color = StyleBarSwatches.colors[index]
+                StyleBarSwatch(color: color, name: PresetColorNames.all[index], selected: selected == color) {
+                    choose(color)
+                }
+            }
             CustomColorButton(
-                custom: StyleBarSwatches.contains(model.paletteColor) ? nil : model.paletteColor,
-                lastCustom: model.lastCustom(forFill: false),
-                fallback: model.paletteColor,
-                help: String(localized: "Custom colour"),
-                pick: { model.pickCustom($0, forFill: false) },
+                custom: selected.flatMap { StyleBarSwatches.contains($0) ? nil : $0 },
+                lastCustom: model.lastCustom(forFill: forFill),
+                fallback: selected ?? RGBA(1, 1, 1),
+                help: help,
+                pick: { model.pickCustom($0, forFill: forFill) },
                 beginPicking: model.beginColorPick,
                 editorShown: { _ in },
                 compact: true
@@ -187,6 +248,16 @@ struct StyleBar<Model: StyleBarEditing>: View {
             }
         }
         .accessibilityLabel(sizesText ? Text("Text size") : Text("Line width"))
+    }
+
+    /// A short slider with its name ahead of it, as tall as the bar's segmented controls.
+    private func slider(_ title: LocalizedStringResource, value: Double, range: ClosedRange<Double>, set: @escaping (Double) -> Void) -> some View {
+        HStack(spacing: 6) {
+            Text(title).font(Theme.small).foregroundStyle(labelColor).accessibilityHidden(true)
+            ThemeSlider(value: Binding(get: { value }, set: set), range: range, width: 72, onEditingChanged: model.setDraggingStyle)
+                .frame(height: 24)
+                .accessibilityLabel(Text(title))
+        }
     }
 }
 
@@ -234,9 +305,9 @@ private struct StyleBarDivider: View {
 }
 
 /// A 20 pt colour. The chosen one has an ink ring outside a gap of the bar's colour; the others a faint edge, so white
-/// marks and black on dark still show their shape.
+/// marks and black on dark still show their shape. A `nil` colour is none, drawn as paper struck through in red.
 private struct StyleBarSwatch: View {
-    let color: RGBA
+    let color: RGBA?
     let name: String
     let selected: Bool
     let action: () -> Void
@@ -247,7 +318,12 @@ private struct StyleBarSwatch: View {
     var body: some View {
         Button(action: action) {
             Circle()
-                .fill(color.swiftUIColor)
+                .fill(color?.swiftUIColor ?? Theme.paper)
+                .overlay {
+                    if color == nil {
+                        Rectangle().fill(Theme.red).frame(width: 1.5, height: 20).rotationEffect(.degrees(45)).clipShape(Circle())
+                    }
+                }
                 .overlay {
                     if !selected {
                         Circle().strokeBorder(Self.edge, lineWidth: 1)
@@ -272,121 +348,5 @@ private struct StyleBarSwatch: View {
         .themeTip(name)
         .accessibilityLabel(Text(name))
         .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
-/// "…": opens the options that don't fit in the bar, with Reset.
-private struct MoreStyleButton<Model: StyleBarEditing>: View {
-    @Bindable var model: Model
-
-    var body: some View {
-        Button {
-            model.showsMoreStyle.toggle()
-        } label: {
-            Image(systemName: "ellipsis").font(Theme.toolIcon)
-        }
-        .buttonStyle(ThemeButtonStyle(.toolbar, isOn: model.showsMoreStyle))
-        .accessibilityLabel(Text("More style"))
-        .themeTip("More style", detail: "Shows the rest of this mark's options, such as its fill, and Reset.")
-        .popover(isPresented: $model.showsMoreStyle, arrowEdge: .bottom) {
-            MoreStyle(model: model)
-        }
-    }
-}
-
-/// What the bar has no room for: for a shape, its other outlines and its fill; for a mark, its fill and the text's alignment; for a redaction its amount; for a spotlight its strength and soft edge. Reset is last.
-private struct MoreStyle<Model: StyleBarEditing>: View {
-    @Bindable var model: Model
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if model.showsStyle {
-                if let shape = model.paletteShape {
-                    row("More shapes") {
-                        HStack(spacing: 4) {
-                            ForEach(BoxShape.moreStyleShapes, id: \.self) { option in
-                                Tile(selected: shape == option, help: option.title) {
-                                    model.setShape(option)
-                                } label: {
-                                    Image(systemName: option.symbol).font(Theme.toolIcon)
-                                }
-                            }
-                        }
-                    }
-                }
-                if model.showsFill {
-                    row("Fill") {
-                        HStack(spacing: 0) {
-                            ColorSwatches(
-                                selected: model.paletteFill,
-                                lastCustom: model.lastCustom(forFill: true),
-                                allowsNone: true,
-                                customHelp: "Custom fill colour",
-                                choose: { model.paletteFill = $0 },
-                                pickCustom: { model.pickCustom($0, forFill: true) },
-                                beginPicking: model.beginColorPick
-                            )
-                        }
-                    }
-                }
-                if let alignment = model.paletteAlignment {
-                    row("Alignment") {
-                        HStack(spacing: 4) {
-                            ForEach(TextAlign.allCases, id: \.self) { option in
-                                Tile(selected: alignment == option, help: option.title) {
-                                    model.setAlignment(option)
-                                } label: {
-                                    Image(systemName: option.symbol).font(Theme.toolIcon)
-                                }
-                            }
-                            if let vertical = model.paletteVerticalAlignment {
-                                StyleBarDivider().padding(.horizontal, 2)
-                                ForEach(VerticalTextAlign.allCases, id: \.self) { option in
-                                    Tile(selected: vertical == option, help: option.title) {
-                                        model.setVerticalAlignment(option)
-                                    } label: {
-                                        Image(systemName: option.symbol).font(Theme.toolIcon)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if model.paletteRedaction != nil {
-                row("Amount") {
-                    slider(value: model.paletteRedactionAmount, range: Redaction.amounts.lowerBound...Redaction.amounts.upperBound) { model.setRedactionAmount($0) }
-                        .accessibilityLabel(Text("Amount"))
-                }
-            } else if let spotlight = model.paletteSpotlight {
-                row("Strength") {
-                    slider(value: spotlight.strength, range: SpotlightStyle.strengths) { model.setSpotlightLook(effect: spotlight.effect, strength: $0) }
-                        .accessibilityLabel(Text("Strength"))
-                        .themeTip("Strength", detail: "Applies to every spotlight in the image.")
-                }
-                row("Soft edge") {
-                    slider(value: spotlight.softEdge, range: 0...1, set: model.setSpotlightSoftEdge)
-                        .accessibilityLabel(Text("Soft edge"))
-                        .themeTip("Soft edge", detail: "Fades the spotlight into the dim.")
-                }
-            }
-            Button("Reset", action: model.resetToolOptions)
-                .buttonStyle(ThemeButtonStyle(.plain))
-                .disabled(!model.canResetToolOptions)
-                .themeTip("Reset", detail: "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay.")
-        }
-        .padding(14)
-        .frame(minWidth: 240, alignment: .leading)
-    }
-
-    private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(Theme.small).foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
-            content()
-        }
-    }
-
-    private func slider(value: Double, range: ClosedRange<Double>, set: @escaping (Double) -> Void) -> some View {
-        ThemeSlider(value: Binding(get: { value }, set: set), range: range, width: 200, onEditingChanged: model.setDraggingStyle)
-            .frame(height: 24)
     }
 }

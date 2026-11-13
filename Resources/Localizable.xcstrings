@@ -27134,110 +27134,6 @@
         }
       }
     },
-    "More shapes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Weitere Formen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Más formas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Autres formes"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Altre forme"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "その他の図形"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "기타 도형"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mais formas"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更多形状"
-          }
-        }
-      }
-    },
-    "More style" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Weitere Stile"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Más estilo"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plus de style"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Altro stile"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "その他のスタイル"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "추가 스타일"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mais estilo"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更多样式"
-          }
-        }
-      }
-    },
     "Move the pointer or press the arrow keys to choose a pixel. Click or press Return to pick its colour. Esc cancels." : {
       "localizations" : {
         "de" : {
@@ -34192,58 +34088,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "恢复音量并清除其关键帧。"
-          }
-        }
-      }
-    },
-    "Puts this tool's colour, size and other options back to how a new install starts. Your saved custom colours stay." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Setzt Farbe, Größe und andere Optionen dieses Werkzeugs auf den Stand einer Neuinstallation zurück. Deine gesicherten eigenen Farben bleiben."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Devuelve el color, el tamaño y las demás opciones de esta herramienta a como vienen en una instalación nueva. Tus colores personalizados guardados se conservan."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remet la couleur, la taille et les autres options de cet outil comme après une nouvelle installation. Vos couleurs personnalisées enregistrées restent."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Riporta colore, dimensioni e altre opzioni di questo strumento a come sono in una nuova installazione. I colori personalizzati salvati restano."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このツールのカラー、サイズ、その他のオプションをインストール直後の状態に戻します。保存したカスタムカラーは残ります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이 도구의 색상, 크기 및 기타 옵션을 처음 설치했을 때의 상태로 되돌립니다. 저장한 사용자 지정 색상은 그대로 유지됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volta a cor, o tamanho e outras opções desta ferramenta ao estado de uma instalação nova. Suas cores personalizadas salvas ficam."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将此工具的颜色、尺寸和其他选项恢复为全新安装时的状态。你存储的自定颜色会保留。"
           }
         }
       }
@@ -44480,58 +44324,6 @@
         }
       }
     },
-    "Shows the rest of this mark's options, such as its fill, and Reset." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeigt die übrigen Optionen dieser Markierung, etwa die Füllung, und Zurücksetzen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muestra el resto de opciones de esta marca, como el relleno, y Restablecer."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Affiche les autres options de cette marque, comme le remplissage, et Réinitialiser."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra le altre opzioni di questo segno, come il riempimento, e Ripristina."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "塗りつぶしやリセットなど、このマークのほかのオプションを表示します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "채우기, 재설정 등 이 표시의 나머지 옵션을 보여줍니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra as demais opções desta marcação, como o preenchimento, e Redefinir."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示此标记的其余选项，如填充和还原。"
-          }
-        }
-      }
-    },
     "Shows the whole frame again, so nothing is cropped off." : {
       "localizations" : {
         "de" : {
@@ -51713,6 +51505,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "版本"
+          }
+        }
+      }
+    },
+    "Vertical alignment" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vertikale Ausrichtung"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alineación vertical"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alignement vertical"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allineamento verticale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "縦方向の配置"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세로 정렬"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alinhamento vertical"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "垂直对齐"
           }
         }
       }
