@@ -122,6 +122,10 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(EditorTool(key: "") == nil)
 }
 
+@Test func onlySelectTextAndNoteEditTheSelection() {
+    #expect(EditorTool.allCases.filter(\.editsSelection) == [.select, .text, .note])
+}
+
 @Test func onlyDrawnMarksTakeAColourAndWidth() {
     #expect(EditorTool.allCases.filter { !$0.takesColorAndWidth } == [.select, .hand, .spotlight, .redact, .crop])
     #expect(annotation(.freehand([.zero, CGPoint(x: 9, y: 9)])).takesColorAndWidth)
