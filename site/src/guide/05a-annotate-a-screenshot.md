@@ -49,7 +49,7 @@ Drag on the screenshot to draw with the tool you picked. While you drag:
 
 Your marks can reach past the edges of the screenshot. The canvas grows to fit them.
 
-With the text tool, click and start typing for a label as wide as its words, in the text size the style bar shows. To fit text into a column, drag out a box instead: its height is one line of text, so a short box gives small text and a tall one large text. The text wraps to the box's width, and the box grows taller as you type. <kbd>Return</kbd> finishes the text, and <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line in a box.
+With the text tool, click and start typing for a label as wide as its words, in the text size the style bar shows. To fit text into a column, drag out a box instead: its height is one line of text, so a short box gives small text and a tall one large text. The text wraps to the box's width, and the box grows taller as you type. <kbd>Return</kbd> starts a new line. A label grows a line at a time, each as wide as its words. To finish, press <kbd>Esc</kbd> or <kbd>⌘Return</kbd>, click the canvas or pick another tool.
 
 The hint at the bottom right of the canvas tells you what the tool does, or what you've selected, with the keys that change it. With an arrow selected it reads "Arrow selected · ⌫ delete · ⇧ snap 45°". It shows for a few seconds each time you pick a tool or select something, then fades so it doesn't cover the screenshot. It and the zoom control also fade while you drag. With VoiceOver on, the hint stays and is read out when it changes.
 
@@ -95,7 +95,7 @@ What you've just drawn stays selected, so you can fix its colour, width or fill 
 <kbd>⌘Z</kbd> or the Undo button in the title bar undoes, and <kbd>⇧⌘Z</kbd> redoes, wherever you clicked last. While you're typing in a text box, a note or a field in the style bar, <kbd>⌘Z</kbd> first undoes your typing. Once there's none left, the next <kbd>⌘Z</kbd> finishes the typing and undoes your last change, as the Undo button does.
 
 > [!NOTE]
-> Text you clicked to place and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in a text box or note, <kbd>Return</kbd> or <kbd>Esc</kbd> finishes it, and then <kbd>⌘Z</kbd> removes it again. In a note or a text box you dragged out, <kbd>Shift</kbd>-<kbd>Return</kbd> starts a new line. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first.
+> Text you clicked to place and counters have no handles, and a placed image only has them at its corners. A triangle or diamond rounds each corner, a star only its points, and an ellipse has none. New shapes start with square corners. While you type in text or a note, <kbd>Return</kbd> starts a new line, <kbd>Esc</kbd> or <kbd>⌘Return</kbd> finishes it, and then <kbd>⌘Z</kbd> removes it again. With the text or note tool, clicking existing text or a note selects it, dragging moves it, and clicking it again or double-clicking edits it, so you don't need to switch tools first.
 
 > [!TIP]
 > With VoiceOver, the canvas lists your marks, frontmost first, by their [layer names](#layers), with the full words of a text or note. Press one (VO-Space) to select it.

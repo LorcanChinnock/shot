@@ -169,8 +169,13 @@ private struct CanvasHintPill: View {
         var result = run(hint.lead, font: textFont, color: text)
         for part in hint.parts {
             result += run(" · ", font: textFont, color: text)
-            if let symbol = part.key?.symbol {
-                result += run(symbol, font: keyFont, color: key)
+            for (index, partKey) in part.keys.enumerated() {
+                if index > 0 {
+                    result += run(" \(CanvasHint.either) ", font: textFont, color: text)
+                }
+                result += run(partKey.symbol, font: keyFont, color: key)
+            }
+            if !part.keys.isEmpty {
                 result += run(" ", font: textFont, color: text)
             }
             result += run(part.action, font: textFont, color: text)

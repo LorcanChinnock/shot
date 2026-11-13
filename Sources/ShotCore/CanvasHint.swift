@@ -4,20 +4,27 @@ import Foundation
 /// The hint at the image editor canvas's bottom right, from Edit › Image editor · annotate: what's selected or what the
 /// tool does, then a key or two that change it, as in "Arrow selected · ⌫ delete · ⇧ snap 45°".
 public struct CanvasHint: Equatable, Sendable {
-    /// A key the hint offers and what it does.
+    /// A key, or either of two, that the hint offers and what it does.
     public struct Part: Equatable, Sendable {
-        public let key: Key?
+        public let keys: [Key]
         public let action: String
 
         public init(_ key: Key?, _ action: String) {
-            self.key = key
+            self.init(key.map { [$0] } ?? [], action)
+        }
+
+        public init(_ keys: [Key], _ action: String) {
+            self.keys = keys
             self.action = action
         }
     }
 
+    /// What goes between keys that do the same thing, as in "esc or ⌘↩ done".
+    public static var either: String { String(localized: "or") }
+
     /// The keys a hint can name, each shown as its symbol and read to VoiceOver by its name.
     public enum Key: Sendable {
-        case delete, shift, option, escape
+        case delete, shift, option, escape, commandReturn
 
         public var symbol: String {
             switch self {
@@ -25,6 +32,7 @@ public struct CanvasHint: Equatable, Sendable {
             case .shift: "⇧"
             case .option: "⌥"
             case .escape: "esc"
+            case .commandReturn: "⌘↩"
             }
         }
 
@@ -34,6 +42,7 @@ public struct CanvasHint: Equatable, Sendable {
             case .shift: String(localized: "Shift")
             case .option: String(localized: "Option")
             case .escape: String(localized: "Escape")
+            case .commandReturn: String(localized: "Command-Return")
             }
         }
     }
@@ -49,7 +58,9 @@ public struct CanvasHint: Equatable, Sendable {
 
     /// The hint as VoiceOver reads it, with each key by its name: "Arrow selected. Delete: delete. Shift: snap 45°".
     public var spoken: String {
-        ([lead] + parts.map { part in part.key.map { "\($0.name): \(part.action)" } ?? part.action }).joined(separator: ". ")
+        ([lead] + parts.map { part in
+            part.keys.isEmpty ? part.action : "\(part.keys.map(\.name).joined(separator: " \(Self.either) ")): \(part.action)"
+        }).joined(separator: ". ")
     }
 
     /// How long a hint shows after it changes before it fades, so it doesn't stay over the picture.
@@ -62,12 +73,12 @@ public struct CanvasHint: Equatable, Sendable {
     }
 
     /// The hint for the canvas as it is, or `nil` in crop mode, where the crop bar takes the foot and names its own keys.
-    /// Typing comes first, since its key works only then. Then the selection: several marks, one locked mark, or one mark
+    /// Typing comes first, since its keys work only then. Then the selection: several marks, one locked mark, or one mark
     /// with what Shift does while you resize it. With nothing selected, the tool's action and what Shift or Option does
     /// while you draw.
     public static func hint(tool: EditorTool, selection: [Annotation], isTyping: Bool) -> CanvasHint? {
         if isTyping {
-            return CanvasHint(String(localized: "Typing"), [Part(.escape, String(localized: "done"))])
+            return CanvasHint(String(localized: "Typing"), [Part([.escape, .commandReturn], String(localized: "done"))])
         }
         if tool == .crop {
             return nil

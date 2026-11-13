@@ -1170,13 +1170,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         syncEditing()
     }
 
-    /// A text field over `annotation`, which commits on Return and keeps the model told what's typed and selected.
+    /// A text field over `annotation`, which commits on Esc or ⌘Return and keeps the model told what's typed and selected.
     private func makeField(for annotation: Annotation) -> RunsTextField {
         let field = RunsTextField(annotation: annotation)
         field.focusRingType = .none
         field.delegate = self
-        field.target = self
-        field.action = #selector(textFieldAction)
+        field.onFinish = { [weak self] in self?.commitText() }
         field.onSelectionChange = { [weak self] in self?.syncEditing() }
         field.onSizesChange = { [weak self] in
             self?.syncEditing()
@@ -1215,44 +1214,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard let field = textField, let text = editingText, case let .text(_, textOrigin, fontSize) = text.kind else {
             return
         }
-        let size = fontSize * viewScale
         restyleField(field, as: text, color: text.color)
-        if let width = text.textWidth {
-            let layout = TextLayout(string: field.text, fontSize: fontSize, color: text.color, width: width, runs: field.sizes)
-            // A borderless field insets its text 2 pt on each side.
-            field.frame = viewRect(CGRect(origin: textOrigin, size: layout.size)).insetBy(dx: -2, dy: 0)
+        let layout = TextLayout(string: field.text, fontSize: fontSize, color: text.color, width: text.textWidth, runs: field.sizes)
+        // A borderless field insets its text 2 pt on each side.
+        let box = viewRect(CGRect(origin: textOrigin, size: layout.size)).insetBy(dx: -2, dy: 0)
+        guard text.textWidth == nil else {
+            field.frame = box
             return
         }
-        let origin = viewRect(CGRect(origin: textOrigin, size: .zero)).origin
-        let fitted: CGFloat
-        if field.text.isEmpty {
-            field.frame = CGRect(x: origin.x, y: origin.y, width: 240, height: size * 1.4)
-            fitted = 0
-        } else {
-            field.validateEditing()
-            field.sizeToFit()
-            fitted = field.frame.width
-            field.frame = CGRect(x: origin.x, y: origin.y, width: max(240, fitted + 20), height: field.frame.height)
-        }
-        // The field is wider than its text, so it reaches back past the anchor by the spare width the alignment puts before the text.
-        field.frame.origin.x -= (field.frame.width - fitted) * text.alignment.fraction
-    }
-
-    @objc private func textFieldAction() {
-        commitText()
+        field.frame = RunsTextField.frame(unwrapping: box, isEmpty: field.text.isEmpty, alignment: text.alignment, minWidth: 240)
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-            commitText()
-            return true
-        }
-        // Return commits; Shift-Return starts a new line in a note or a text box.
-        if commandSelector == #selector(NSResponder.insertNewline(_:)), editingTakesLineBreaks, NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
-            textView.insertNewlineIgnoringFieldEditor(nil)
-            return true
-        }
-        return false
+        (control as? RunsTextField)?.perform(commandSelector, in: textView) ?? false
     }
 
     func controlTextDidChange(_ notification: Notification) {
@@ -1262,14 +1236,6 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     var isEditingText: Bool { textField != nil }
-
-    /// Notes and text boxes wrap, so they take line breaks; text placed with a click stays on one line.
-    private var editingTakesLineBreaks: Bool {
-        if case .note = editingText?.kind {
-            return true
-        }
-        return editingText?.textWidth != nil
-    }
 
     private func commitText() {
         guard let edited = editedText else {

@@ -259,8 +259,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         field.isBordered = false
         field.focusRingType = .none
         field.delegate = self
-        field.target = self
-        field.action = #selector(fieldAction)
+        field.onFinish = { [weak self] in self?.commitField() }
         field.onSelectionChange = { [weak self] in self?.syncField() }
         field.onSizesChange = { [weak self] in
             self?.syncField()
@@ -335,25 +334,17 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             // A borderless field insets its text 2 pt on each side.
             field.frame = viewRect(layout.alignedTextRect).insetBy(dx: -2, dy: 0)
         case let .text(_, origin, fontSize):
-            let size = fontSize * fit
             field.restyle(
                 emptySize: fontSize, color: NSColor(srgbRed: annotation.color.r, green: annotation.color.g, blue: annotation.color.b, alpha: 1),
                 alignment: annotation.alignment.textAlignment, viewScale: fit
             )
-            field.validateEditing()
-            field.sizeToFit()
-            let fitted = field.text.isEmpty ? 0 : field.frame.width
-            let topLeft = viewRect(CGRect(origin: origin, size: .zero)).origin
-            field.frame = CGRect(x: topLeft.x, y: topLeft.y, width: max(200, field.frame.width + 20), height: size * 1.4)
-            // The field is wider than its text, so it reaches back past the anchor by the spare width the alignment puts before the text.
-            field.frame.origin.x -= (field.frame.width - fitted) * annotation.alignment.fraction
+            let layout = TextLayout(string: field.text, fontSize: fontSize, color: annotation.color, runs: field.sizes)
+            // A borderless field insets its text 2 pt on each side.
+            let box = viewRect(CGRect(origin: origin, size: layout.size)).insetBy(dx: -2, dy: 0)
+            field.frame = RunsTextField.frame(unwrapping: box, isEmpty: field.text.isEmpty, alignment: annotation.alignment, minWidth: 200)
         default:
             break
         }
-    }
-
-    @objc private func fieldAction() {
-        commitField()
     }
 
     func controlTextDidChange(_ notification: Notification) {
@@ -361,13 +352,9 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         layoutField()
     }
 
+    /// Esc and ⌘Return keep the text, as they do in the image editor; an empty new label goes away. Return starts a new line.
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        // Esc keeps the text, as it does in the image editor; an empty new label goes away.
-        if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-            commitField()
-            return true
-        }
-        return false
+        (control as? RunsTextField)?.perform(commandSelector, in: textView) ?? false
     }
 
     private func commitField() {

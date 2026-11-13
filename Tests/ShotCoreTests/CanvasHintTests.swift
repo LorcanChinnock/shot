@@ -41,6 +41,12 @@ private let arrow = mark(.arrow(from: .zero, to: CGPoint(x: 100, y: 60)))
     #expect(CanvasHint.hint(tool: .text, selection: [arrow], isTyping: true)?.lead == "Typing")
 }
 
+@Test func typingNamesTheKeysThatFinish() throws {
+    let hint = try #require(CanvasHint.hint(tool: .note, selection: [], isTyping: true))
+    #expect(hint.parts == [CanvasHint.Part([.escape, .commandReturn], "done")])
+    #expect(hint.spoken == "Typing. Escape or Command-Return: done")
+}
+
 @Test func cropModeHasNoHintSinceTheCropBarNamesItsKeys() {
     #expect(CanvasHint.hint(tool: .crop, selection: [arrow], isTyping: false) == nil)
     #expect(CanvasHint.hint(tool: .crop, selection: [], isTyping: false) == nil)

@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import ShotCore
 
 /// The field the image and video editors type a text or a note into. It shows each part of the text in its own size, and
@@ -6,8 +7,9 @@ import ShotCore
 /// zoom. Typing takes the size of the text before the caret, as any Mac text field does. While it's open, the text and
 /// sizes it holds are the ones being typed; `text` and `sizes` read them.
 ///
-/// Clicking another field, such as the style bar's size box, leaves it open with what was selected, rather than ending
-/// the edit, so the size box can size the selection. Return, Esc, Tab and a click on the canvas still end it.
+/// Return and Shift-Return start a new line; Esc and ⌘Return call `onFinish`. Clicking another field, such as the style
+/// bar's size box, leaves it open with what was selected, rather than ending the edit, so the size box can size the
+/// selection.
 final class RunsTextField: NSTextField {
     private static let sizeKey = NSAttributedString.Key("dev.lorcan.Shot.textSize")
 
@@ -25,6 +27,8 @@ final class RunsTextField: NSTextField {
     var onSelectionChange: (() -> Void)?
     /// Called when undo or redo puts back sizes, once the field shows them.
     var onSizesChange: (() -> Void)?
+    /// Called when Esc or ⌘Return finishes typing.
+    var onFinish: (() -> Void)?
 
     /// A field holding `annotation`'s text in its sizes, for a text in bold or a note in regular.
     init(annotation: Annotation) {
@@ -109,6 +113,59 @@ final class RunsTextField: NSTextField {
         if let editor, let selected, NSMaxRange(selected) <= (editor.string as NSString).length {
             editor.setSelectedRange(selected)
         }
+    }
+
+    /// Handles a command the field editor is about to perform, from the delegate's `control(_:textView:doCommandBy:)`:
+    /// Esc and ⌘Return finish, and Return starts a new line rather than ending the edit. An input method takes the Return
+    /// that confirms its text, but if one reaches here mid-composition it confirms the text rather than adding a line.
+    func perform(_ command: Selector, in textView: NSTextView) -> Bool {
+        switch command {
+        case #selector(NSResponder.cancelOperation(_:)):
+            onFinish?()
+            return true
+        case #selector(NSResponder.insertNewline(_:)), #selector(NSResponder.insertLineBreak(_:)):
+            if NSApp.currentEvent?.modifierFlags.contains(.command) == true {
+                onFinish?()
+            } else if textView.hasMarkedText() {
+                Self.confirmComposition(in: textView)
+            } else {
+                textView.insertNewlineIgnoringFieldEditor(nil)
+            }
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// The frame for text placed with a click, whose lines fill `box`, each as wide as its words. It's wider than the text
+    /// by room to type into, and at least `minWidth`, so it reaches back past the anchor by the spare width the alignment
+    /// puts before the text.
+    static func frame(unwrapping box: CGRect, isEmpty: Bool, alignment: TextAlign, minWidth: CGFloat) -> CGRect {
+        let fitted = isEmpty ? 0 : box.width
+        let width = max(minWidth, fitted + 20)
+        return CGRect(x: box.minX - (width - fitted) * alignment.fraction, y: box.minY, width: width, height: box.height)
+    }
+
+    /// Finishes the typing in `window` on ⌘Return. It's a key equivalent, which the window takes before the field editor
+    /// sees the key, so the editors' windows offer it here first.
+    static func finishTyping(on event: NSEvent, in window: NSWindow) -> Bool {
+        let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        guard flags == .command, [kVK_Return, kVK_ANSI_KeypadEnter].contains(Int(event.keyCode)),
+              let editor = window.firstResponder as? NSTextView, let field = editor.delegate as AnyObject? as? RunsTextField, let onFinish = field.onFinish
+        else {
+            return false
+        }
+        if editor.hasMarkedText() {
+            confirmComposition(in: editor)
+        }
+        onFinish()
+        return true
+    }
+
+    /// Keeps the text an input method is composing as typed and ends its session.
+    private static func confirmComposition(in editor: NSTextView) {
+        editor.unmarkText()
+        editor.inputContext?.discardMarkedText()
     }
 
     override func viewWillMove(toSuperview newSuperview: NSView?) {

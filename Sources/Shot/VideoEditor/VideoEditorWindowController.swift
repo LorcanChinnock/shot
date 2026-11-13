@@ -19,6 +19,9 @@ private final class VideoEditorWindow: NSWindow {
             undoing.perform(redo: command.redo, in: self)
             return true
         }
+        if RunsTextField.finishTyping(on: event, in: self) {
+            return true
+        }
         guard !isEditingText else {
             return super.performKeyEquivalent(with: event)
         }

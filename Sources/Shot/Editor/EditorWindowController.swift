@@ -15,6 +15,9 @@ private final class EditorWindow: NSWindow {
             undoing.perform(redo: command.redo, in: self)
             return true
         }
+        if RunsTextField.finishTyping(on: event, in: self) {
+            return true
+        }
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         if flags.contains(.command), let key = event.charactersIgnoringModifiers?.lowercased(), onCommand?(key, flags.contains(.shift), flags.contains(.option)) == true {
             return true
