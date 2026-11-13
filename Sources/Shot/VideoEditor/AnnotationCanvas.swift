@@ -129,9 +129,13 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
+        // With the text or note tool, the press that finishes one text goes on to start the next, or opens the note it
+        // lands on; with any other tool it only finishes it.
         if field != nil {
             commitField()
-            return
+            guard model.annotationTool == .text || model.annotationTool == .note else {
+                return
+            }
         }
         guard let tool = model.annotationTool else {
             return

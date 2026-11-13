@@ -567,9 +567,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard panPoint == nil else {
             return
         }
-        if textField != nil {
+        // With the text or note tool, the press that finishes one text goes on to start the next, or opens the text it
+        // lands on; with any other tool it only finishes it.
+        let finishedTyping = textField != nil
+        if finishedTyping {
             commitText()
-            return
+            guard model.tool == .text || model.tool == .note else {
+                return
+            }
         }
         window?.makeFirstResponder(self)
         if spaceHeld || model.tool == .hand {
@@ -631,7 +636,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         case .note:
             // Clicking a note with the note tool edits it rather than stacking a new one on top.
             pressedText = textOrNote(at: point)
-            pressedTextWasSelected = pressedText?.id == selectedBeforePress
+            pressedTextWasSelected = finishedTyping || pressedText?.id == selectedBeforePress
             if let pressedText {
                 model.selectedID = pressedText.id
             }
@@ -643,7 +648,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             // Pressing existing text selects it to move or edit instead of starting more text on top of it. Elsewhere,
             // the release places the text: a click where it was pressed, a drag a box that wraps it.
             pressedText = textOrNote(at: point)
-            pressedTextWasSelected = pressedText?.id == selectedBeforePress
+            pressedTextWasSelected = finishedTyping || pressedText?.id == selectedBeforePress
             if let pressedText {
                 model.selectedID = pressedText.id
             }
