@@ -24,3 +24,13 @@ import Testing
     #expect(UndoRoute.finishEditingThenEditor.isEnabled)
     #expect(!UndoRoute.none.isEnabled)
 }
+
+@Test func aRedoWhileTypingOnTheCanvasGoesNowhere() {
+    // Finishing the text would save a step and clear what there is to redo.
+    #expect(UndoRoute.choose(editingField: true, fieldCan: false, editorCan: true, redo: true, finishingRecords: true) == .none)
+    #expect(UndoRoute.choose(editingField: true, fieldCan: true, editorCan: true, redo: true, finishingRecords: true) == .field)
+    // A field whose finishing saves nothing, such as the size box, still lets the editor redo.
+    #expect(UndoRoute.choose(editingField: true, fieldCan: false, editorCan: true, redo: true, finishingRecords: false) == .finishEditingThenEditor)
+    // An undo still finishes the text first.
+    #expect(UndoRoute.choose(editingField: true, fieldCan: false, editorCan: true, redo: false, finishingRecords: true) == .finishEditingThenEditor)
+}

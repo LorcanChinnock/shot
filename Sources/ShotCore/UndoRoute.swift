@@ -12,16 +12,20 @@ public enum UndoRoute: Equatable, Sendable {
     /// Nothing to undo, so the menu item is greyed out and the key does nothing.
     case none
 
-    /// The route for an undo, or a redo, given whether a text field is being typed in, whether it can undo (or redo) its
-    /// typing, and whether the editor can.
-    public static func choose(editingField: Bool, fieldCan: Bool, editorCan: Bool) -> UndoRoute {
+    /// The route for an undo, or a `redo`, given whether a text field is being typed in, whether it can undo (or redo) its
+    /// typing, and whether the editor can. `finishingRecords` says whether ending the editing saves a step, as text typed
+    /// on the canvas does: that step would clear what there is to redo, so a redo then goes nowhere.
+    public static func choose(editingField: Bool, fieldCan: Bool, editorCan: Bool, redo: Bool = false, finishingRecords: Bool = false) -> UndoRoute {
         if editingField, fieldCan {
             return .field
         }
         guard editorCan else {
             return .none
         }
-        return editingField ? .finishEditingThenEditor : .editor
+        guard editingField else {
+            return .editor
+        }
+        return redo && finishingRecords ? .none : .finishEditingThenEditor
     }
 
     /// Whether Edit › Undo or Redo is enabled.

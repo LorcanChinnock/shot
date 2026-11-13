@@ -153,7 +153,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
                 guard let self else { return }
                 model.commitPendingText?()
                 window.makeFirstResponder(canvas)
-            }
+            },
+            isTypingOnCanvas: { [model] in model.editingText != nil }
         )
     }
 

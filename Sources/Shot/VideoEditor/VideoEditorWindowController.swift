@@ -180,7 +180,8 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             finishEditing: { [model, weak editorWindow] in
                 model.commitPendingText?()
                 editorWindow?.makeFirstResponder(nil)
-            }
+            },
+            isTypingOnCanvas: { [model] in model.editingText != nil }
         )
     }
 

@@ -12,6 +12,8 @@ struct EditorUndo {
     let redo: () -> Void
     /// Ends typing in whichever field has it, keeping what's typed.
     let finishEditing: () -> Void
+    /// Whether text is being typed on the canvas, whose finishing saves a step.
+    let isTypingOnCanvas: () -> Bool
 
     func route(redo: Bool, in window: NSWindow) -> UndoRoute {
         let field = window.firstResponder as? NSText
@@ -19,7 +21,9 @@ struct EditorUndo {
         return UndoRoute.choose(
             editingField: field != nil,
             fieldCan: (redo ? typing?.canRedo : typing?.canUndo) ?? false,
-            editorCan: redo ? canRedo() : canUndo()
+            editorCan: redo ? canRedo() : canUndo(),
+            redo: redo,
+            finishingRecords: isTypingOnCanvas()
         )
     }
 
