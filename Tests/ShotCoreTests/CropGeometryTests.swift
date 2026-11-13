@@ -18,6 +18,20 @@ private let crop = CGRect(x: 40, y: 30, width: 100, height: 50)
     #expect(CropGeometry.handle(at: CGPoint(x: 1, y: 1), in: tiny, tolerance: 6) == .topLeft)
 }
 
+@Test func aPressOnTheOuterHalfOfAHandleOnTheCanvasEdgeKeepsCropping() {
+    let canvas = CGRect(x: 0, y: 0, width: 200, height: 100)
+    #expect(!CropGeometry.pressApplies(at: CGPoint(x: -4, y: -4), canvas: canvas, crop: canvas, tolerance: 6))
+    #expect(!CropGeometry.pressApplies(at: CGPoint(x: 204, y: 50), canvas: canvas, crop: canvas, tolerance: 6))
+    #expect(!CropGeometry.pressApplies(at: CGPoint(x: 100, y: 50), canvas: canvas, crop: crop, tolerance: 6))
+}
+
+@Test func aPressClearOfTheCanvasAndItsHandlesAppliesTheCrop() {
+    let canvas = CGRect(x: 0, y: 0, width: 200, height: 100)
+    #expect(CropGeometry.pressApplies(at: CGPoint(x: -20, y: 50), canvas: canvas, crop: canvas, tolerance: 6))
+    #expect(CropGeometry.pressApplies(at: CGPoint(x: -4, y: -4), canvas: canvas, crop: crop, tolerance: 6))
+    #expect(CropGeometry.pressApplies(at: CGPoint(x: 300, y: 50), canvas: canvas, crop: nil, tolerance: 6))
+}
+
 @Test func draggingAHandleOutwardGrowsTheCropUpToTheBounds() {
     let grown = CropGeometry.resize(crop, handle: .left, to: CGPoint(x: 10, y: 55), within: bounds)
     #expect(grown == CGRect(x: 10, y: 30, width: 130, height: 50))

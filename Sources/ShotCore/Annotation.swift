@@ -66,9 +66,16 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         set { crop = kind.isImage && newValue?.isEmpty == false ? newValue : nil }
     }
     private var crop: ImageCrop?
+    /// The width a text box wraps its text to, set by dragging it out with the Text tool; `nil` for text as wide as its
+    /// longest line, and for every other kind. Stored only when set, so annotations saved before it still decode.
+    public var textWidth: CGFloat? {
+        get { wrapWidth }
+        set { wrapWidth = kind.isText ? newValue : nil }
+    }
+    private var wrapWidth: CGFloat?
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop
+        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop, wrapWidth
         case imageRadius = "cornerRadius"
         case customName = "name"
     }
@@ -90,6 +97,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         imageRadius = try container.decodeIfPresent(CGFloat.self, forKey: .imageRadius)
         name = try container.decodeIfPresent(String.self, forKey: .customName)
         crop = kind.isImage ? try container.decodeIfPresent(ImageCrop.self, forKey: .crop) : nil
+        wrapWidth = kind.isText ? try container.decodeIfPresent(CGFloat.self, forKey: .wrapWidth) : nil
         // A rounded rectangle from before every shape could be rounded keeps its radius, or the fifth of its shorter side
         // that it had when it had none.
         if !kind.isImage {
@@ -167,6 +175,10 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
         fileprivate var isImage: Bool {
             if case .image = self { true } else { false }
+        }
+
+        fileprivate var isText: Bool {
+            if case .text = self { true } else { false }
         }
     }
 
@@ -319,7 +331,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case let .shape(_, rect), let .highlight(rect), let .pixelate(rect, _), let .blur(rect, _), let .spotlight(rect, _), let .image(_, rect):
             return rect
         case let .text(string, origin, fontSize):
-            return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color).size)
+            return CGRect(origin: origin, size: TextLayout(string: string, fontSize: fontSize, color: color, width: textWidth).size)
         case let .counter(_, center):
             return CGRect(x: center.x - counterRadius, y: center.y - counterRadius, width: counterRadius * 2, height: counterRadius * 2)
         case .note:
@@ -478,7 +490,7 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
 
     /// The resize handles and where they sit: a line's two ends, or the corners and edge midpoints of a box
     /// (a pen stroke's is its bounds). An image has only the corners, since it keeps its shape.
-    /// Text and counters have none.
+    /// A text box has one on each side, to change the width its text wraps to. Other text and counters have none.
     public var handles: [(handle: AnnotationHandle, point: CGPoint)] {
         switch kind {
         case let .arrow(from, to), let .line(from, to):
@@ -489,6 +501,9 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             return AnnotationHandle.box.map { ($0, $0.point(in: frame)) }
         case let .image(_, rect):
             return AnnotationHandle.corners.map { ($0, $0.point(in: rect)) }
+        case .text where textWidth != nil:
+            let frame = bounds
+            return [AnnotationHandle.left, .right].map { ($0, $0.point(in: frame)) }
         case .text, .counter:
             return []
         }
@@ -597,6 +612,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         case (.arrow(let from, let to), .mid), (.line(let from, let to), .mid):
             let drag = CGVector(dx: point.x - (from.x + to.x) / 2, dy: point.y - (from.y + to.y) / 2)
             bend = hypot(drag.dx, drag.dy) < Self.minBend ? nil : drag
+        case let (.text(string, origin, fontSize), _) where textWidth != nil:
+            resizeTextBox(string, origin: origin, fontSize: fontSize, handle: handle, to: point)
         case (.arrow, _), (.line, _), (_, .start), (_, .end), (.text, _), (.counter, _): break
         case let (.shape(shape, rect), _): kind = .shape(shape, rect: box(rect))
         case let (.highlight(rect), _): kind = .highlight(box(rect))
@@ -716,6 +733,23 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             resized = CGRect(x: minX, y: rect.minY, width: width, height: rect.height)
         }
         kind = .note(string, rect: resized)
+    }
+
+    /// A text box's side handle moves that side to `point`, so its text rewraps; the other side stays put, and the box
+    /// never flips or gets narrower than `TextLayout.minWidth`.
+    private mutating func resizeTextBox(_ string: String, origin: CGPoint, fontSize: CGFloat, handle: AnnotationHandle, to point: CGPoint) {
+        let frame = bounds
+        let minWidth = TextLayout.minWidth(fontSize: fontSize)
+        switch handle.dx {
+        case -1:
+            let minX = min(point.x, frame.maxX - minWidth)
+            kind = .text(string, origin: CGPoint(x: minX, y: origin.y), fontSize: fontSize)
+            textWidth = frame.maxX - minX
+        case 1:
+            textWidth = max(point.x - frame.minX, minWidth)
+        default:
+            break
+        }
     }
 
     /// A drag this close to the chord straightens the arrow or line.

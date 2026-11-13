@@ -98,7 +98,7 @@ public struct CanvasHint: Equatable, Sendable {
         case .line: CanvasHint(String(localized: "Drag to draw a line"), [snap])
         case .shape: CanvasHint(String(localized: "Drag to draw a shape"), [Part(.shift, String(localized: "equal sides")), fromCentre])
         case .pen: CanvasHint(String(localized: "Drag to draw freehand"))
-        case .text: CanvasHint(String(localized: "Click to type"))
+        case .text: CanvasHint(String(localized: "Click to type"), [Part(nil, String(localized: "drag for a text box"))])
         case .note: CanvasHint(String(localized: "Drag to add a sticky note"))
         case .highlight: CanvasHint(String(localized: "Drag over text"), [Part(.shift, String(localized: "straight line"))])
         case .spotlight: CanvasHint(String(localized: "Drag around what matters"), [fromCentre])
