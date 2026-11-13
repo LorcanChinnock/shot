@@ -105,9 +105,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SystemShortcuts.giveBackKeys()
     }
 
-    /// Opening Shot again from Finder or Spotlight shows Settings, the way back when the menu bar icon is hidden
-    /// behind the notch or pushed off a crowded bar.
+    /// Opening Shot again from the Dock, Finder or Spotlight brings back the window used last, such as an editor. With
+    /// none open it shows Settings, the way back when the menu bar icon is hidden behind the notch or pushed off a
+    /// crowded bar. Floating panels, such as Quick Access and pins, don't count.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if GlassWindow.showMostRecent() {
+            log.notice("Reopened; showing the window used last")
+            return false
+        }
         log.notice("Reopened; showing Settings")
         SettingsWindowController.show()
         return false
