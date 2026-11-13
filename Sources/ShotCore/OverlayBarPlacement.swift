@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-/// Where the capture overlay puts its bar, so it stays off what is being picked and clear of the Dock.
+/// Where the capture overlay puts its bar, so it stays off what is being picked and 16 pt clear of the Dock or the screen's edge.
 /// Rects are in one screen's view space, with y going up, as AppKit draws it. `visible` is the part of the screen the Dock and
 /// menu bar leave, as `NSScreen.visibleFrame` gives it.
 public enum OverlayBarPlacement: Sendable, Equatable {
@@ -17,25 +17,21 @@ public enum OverlayBarPlacement: Sendable, Equatable {
         case target(CGRect)
     }
 
-    /// From the screen's edge to the near side of the bar.
-    public static let edgeInset: CGFloat = 56
-    /// From the Dock or menu bar to the near side of the bar, when that puts it further in than `edgeInset`.
-    static let visibleInset: CGFloat = 16
+    /// From the Dock, the menu bar, or the screen's edge where they hide, to the near side of the bar.
+    static let inset: CGFloat = 16
     /// Extra room kept around the bar, which also covers its offset shadow.
     static let clearance: CGFloat = 8
     /// The share of a window or page the bar may cover before it moves.
     static let coveredShare: CGFloat = 0.25
 
     /// The frame of a bar of `size`, centred across the visible area at this edge; nil when hidden.
-    public func frame(of size: CGSize, in bounds: CGRect, visible: CGRect) -> CGRect? {
+    public func frame(of size: CGSize, visible: CGRect) -> CGRect? {
         let x = (visible.midX - size.width / 2).rounded()
         switch self {
         case .bottom:
-            let y = max(bounds.minY + Self.edgeInset, visible.minY + Self.visibleInset)
-            return CGRect(x: x, y: y, width: size.width, height: size.height)
+            return CGRect(x: x, y: visible.minY + Self.inset, width: size.width, height: size.height)
         case .top:
-            let y = min(bounds.maxY - Self.edgeInset, visible.maxY - Self.visibleInset) - size.height
-            return CGRect(x: x, y: y, width: size.width, height: size.height)
+            return CGRect(x: x, y: visible.maxY - Self.inset - size.height, width: size.width, height: size.height)
         case .hidden:
             return nil
         }
@@ -43,7 +39,7 @@ public enum OverlayBarPlacement: Sendable, Equatable {
 
     /// Hidden while an area is dragged out. Otherwise at the bottom above the Dock, as the macOS screenshot bar is, unless the aim is under it, then
     /// at the top, else hidden. While the pointer is on the bar, it stays where it is, so a button never moves out from under a click.
-    public static func placement(for size: CGSize, in bounds: CGRect, visible: CGRect, avoiding aim: Aim?, dragging: Bool, current: Self, pointerOnBar: Bool) -> Self {
+    public static func placement(for size: CGSize, visible: CGRect, avoiding aim: Aim?, dragging: Bool, current: Self, pointerOnBar: Bool) -> Self {
         if dragging {
             return .hidden
         }
@@ -54,7 +50,7 @@ public enum OverlayBarPlacement: Sendable, Equatable {
             return .bottom
         }
         for edge in [Self.bottom, .top] {
-            if let frame = edge.frame(of: size, in: bounds, visible: visible), !blocks(frame.insetBy(dx: -clearance, dy: -clearance), aim) {
+            if let frame = edge.frame(of: size, visible: visible), !blocks(frame.insetBy(dx: -clearance, dy: -clearance), aim) {
                 return edge
             }
         }

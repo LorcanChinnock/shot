@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import ShotCore
 
-private let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
 private let bar = CGSize(width: 300, height: 38)
 /// What a screen leaves with the menu bar at the top and the Dock hidden.
 private let visible = CGRect(x: 0, y: 0, width: 1440, height: 875)
@@ -11,36 +10,36 @@ private let visible = CGRect(x: 0, y: 0, width: 1440, height: 875)
 private func place(
     _ aim: OverlayBarPlacement.Aim?, dragging: Bool = false, current: OverlayBarPlacement = .bottom, pointerOnBar: Bool = false
 ) -> OverlayBarPlacement {
-    OverlayBarPlacement.placement(for: bar, in: screen, visible: visible, avoiding: aim, dragging: dragging, current: current, pointerOnBar: pointerOnBar)
+    OverlayBarPlacement.placement(for: bar, visible: visible, avoiding: aim, dragging: dragging, current: current, pointerOnBar: pointerOnBar)
 }
 
 @Test func overlayBarFramesSitAnInsetFromEachEdge() {
-    #expect(OverlayBarPlacement.bottom.frame(of: bar, in: screen, visible: visible) == CGRect(x: 570, y: 56, width: 300, height: 38))
-    #expect(OverlayBarPlacement.top.frame(of: bar, in: screen, visible: visible) == CGRect(x: 570, y: 806, width: 300, height: 38))
-    #expect(OverlayBarPlacement.hidden.frame(of: bar, in: screen, visible: visible) == nil)
+    #expect(OverlayBarPlacement.bottom.frame(of: bar, visible: visible) == CGRect(x: 570, y: 16, width: 300, height: 38))
+    #expect(OverlayBarPlacement.top.frame(of: bar, visible: visible) == CGRect(x: 570, y: 821, width: 300, height: 38))
+    #expect(OverlayBarPlacement.hidden.frame(of: bar, visible: visible) == nil)
 }
 
 @Test func overlayBarSitsAboveADockAtTheBottom() {
     let aboveDock = CGRect(x: 0, y: 80, width: 1440, height: 795)
-    #expect(OverlayBarPlacement.bottom.frame(of: bar, in: screen, visible: aboveDock) == CGRect(x: 570, y: 96, width: 300, height: 38))
-    #expect(OverlayBarPlacement.top.frame(of: bar, in: screen, visible: aboveDock) == CGRect(x: 570, y: 806, width: 300, height: 38))
+    #expect(OverlayBarPlacement.bottom.frame(of: bar, visible: aboveDock) == CGRect(x: 570, y: 96, width: 300, height: 38))
+    #expect(OverlayBarPlacement.top.frame(of: bar, visible: aboveDock) == CGRect(x: 570, y: 821, width: 300, height: 38))
 }
 
 @Test func overlayBarCentresBesideADockOnTheSide() {
     let besideDock = CGRect(x: 80, y: 0, width: 1360, height: 875)
-    #expect(OverlayBarPlacement.bottom.frame(of: bar, in: screen, visible: besideDock) == CGRect(x: 610, y: 56, width: 300, height: 38))
+    #expect(OverlayBarPlacement.bottom.frame(of: bar, visible: besideDock) == CGRect(x: 610, y: 16, width: 300, height: 38))
 }
 
-@Test func overlayBarKeepsItsInsetOverAHiddenDock() {
-    // A Dock that hides itself keeps only a 4 pt strip.
+@Test func overlayBarKeepsTheSameGapOverAHiddenDock() {
+    // Before macOS 26, a Dock that hides itself keeps a 4 pt strip.
     let hiddenDock = CGRect(x: 0, y: 4, width: 1440, height: 871)
-    #expect(OverlayBarPlacement.bottom.frame(of: bar, in: screen, visible: hiddenDock) == CGRect(x: 570, y: 56, width: 300, height: 38))
+    #expect(OverlayBarPlacement.bottom.frame(of: bar, visible: hiddenDock) == CGRect(x: 570, y: 20, width: 300, height: 38))
 }
 
 @Test func overlayBarMovesUpWhenAnAreaReachesTheBarAboveTheDock() {
     let aboveDock = CGRect(x: 0, y: 80, width: 1440, height: 795)
     let area = OverlayBarPlacement.Aim.area(CGRect(x: 600, y: 120, width: 200, height: 200))
-    #expect(OverlayBarPlacement.placement(for: bar, in: screen, visible: aboveDock, avoiding: area, dragging: false, current: .bottom, pointerOnBar: false) == .top)
+    #expect(OverlayBarPlacement.placement(for: bar, visible: aboveDock, avoiding: area, dragging: false, current: .bottom, pointerOnBar: false) == .top)
 }
 
 @Test func overlayBarSitsAtTheBottomWithNothingUnderIt() {
@@ -54,9 +53,9 @@ private func place(
 }
 
 @Test func overlayBarMovesUpWhenAnAreaReachesIt() {
-    #expect(place(.area(CGRect(x: 600, y: 80, width: 200, height: 200))) == .top)
+    #expect(place(.area(CGRect(x: 600, y: 40, width: 200, height: 200))) == .top)
     // Within the clearance counts as touching.
-    #expect(place(.area(CGRect(x: 600, y: 100, width: 200, height: 200))) == .top)
+    #expect(place(.area(CGRect(x: 600, y: 60, width: 200, height: 200))) == .top)
     // Beside the bar, even at the same height, leaves it at the bottom.
     #expect(place(.area(CGRect(x: 10, y: 10, width: 300, height: 200))) == .bottom)
 }
@@ -73,7 +72,7 @@ private func place(
 @Test func overlayBarMovesOffASmallWindowItWouldMostlyCover() {
     #expect(place(.target(CGRect(x: 600, y: 40, width: 200, height: 80))) == .top)
     // A window that only grazes the bar keeps it at the bottom.
-    #expect(place(.target(CGRect(x: 600, y: 80, width: 200, height: 400))) == .bottom)
+    #expect(place(.target(CGRect(x: 600, y: 50, width: 200, height: 400))) == .bottom)
 }
 
 @Test func overlayBarStaysPutUnderThePointer() {

@@ -982,12 +982,15 @@ final class SelectionOverlayView: NSView {
         let size = layout.size
 
         let dragging = dragStart != nil && pressedChip == nil && !isKeyboardSelection && selection != nil
-        let visible = window.screen.map { $0.visibleFrame.offsetBy(dx: -$0.frame.minX, dy: -$0.frame.minY) } ?? bounds
+        let visible = window.screen.map { screen in
+            let dock = controller.shownDock.flatMap { $0.screen == screen.frame ? $0.height : nil }
+            return AutoHideDock.visible(screen.visibleFrame.offsetBy(dx: -screen.frame.minX, dy: -screen.frame.minY), in: bounds, shownHeight: dock)
+        } ?? bounds
         barPlacement = OverlayBarPlacement.placement(
-            for: size, in: bounds, visible: visible, avoiding: aim(hole), dragging: dragging, current: barPlacement,
+            for: size, visible: visible, avoiding: aim(hole), dragging: dragging, current: barPlacement,
             pointerOnBar: dragStart == nil && pointer.map { point in previous.contains { $0.contains(point) } } ?? false
         )
-        guard let frame = barPlacement.frame(of: size, in: bounds, visible: visible) else {
+        guard let frame = barPlacement.frame(of: size, visible: visible) else {
             hoveredChip = nil
             return
         }
