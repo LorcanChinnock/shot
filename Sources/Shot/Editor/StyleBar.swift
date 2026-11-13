@@ -71,7 +71,8 @@ protocol StyleBarEditing: AnyObject, Observable {
 
 extension EditorModel: StyleBarEditing {}
 
-/// The bar: the seven colours and a custom one, a divider and the three widths, then More style for a mark's other options.
+/// The bar: the seven colours and a custom one, a divider and the three widths, rectangle or ellipse for a shape, then
+/// More style for a mark's other options.
 /// Right-clicking it offers Reset Style, as the Edit menu does. A redaction and a
 /// spotlight show their own main choices in its place. The video editor shows it too, at the top of the video's well.
 struct StyleBar<Model: StyleBarEditing>: View {
@@ -88,6 +89,15 @@ struct StyleBar<Model: StyleBarEditing>: View {
                 swatches
                 StyleBarDivider()
                 widths
+                if let shape = model.paletteShape {
+                    StyleBarDivider()
+                    GlyphSegmented(
+                        selection: shape, options: BoxShape.styleBarShapes.map { ($0, $0.title) }, choose: model.setShape
+                    ) { shape, selected in
+                        StyleBarGlyph(symbol: shape.symbol, selected: selected)
+                    }
+                    .accessibilityLabel(Text("Shape"))
+                }
             case .redaction:
                 if let redaction = model.paletteRedaction {
                     GlyphSegmented(
@@ -284,7 +294,7 @@ private struct MoreStyleButton<Model: StyleBarEditing>: View {
     }
 }
 
-/// What the bar has no room for: for a mark, its shape, its fill and the text's alignment; for a redaction its amount; for a spotlight its strength and soft edge. Reset is last.
+/// What the bar has no room for: for a shape, its other outlines and its fill; for a mark, its fill and the text's alignment; for a redaction its amount; for a spotlight its strength and soft edge. Reset is last.
 private struct MoreStyle<Model: StyleBarEditing>: View {
     @Bindable var model: Model
 
@@ -292,18 +302,16 @@ private struct MoreStyle<Model: StyleBarEditing>: View {
         VStack(alignment: .leading, spacing: 12) {
             if model.showsStyle {
                 if let shape = model.paletteShape {
-                    row("Shape") {
-                        ThemeDropdown(title: "Shape", entries: BoxShape.allCases.map { option in
-                            .item(option.title, symbol: option.symbol, selected: option == shape) { model.setShape(option) }
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: shape.symbol).font(Theme.toolIcon)
-                                Text(shape.title)
-                                Image(systemName: "chevron.up.chevron.down").font(.scaled(9, weight: .bold))
+                    row("More shapes") {
+                        HStack(spacing: 4) {
+                            ForEach(BoxShape.moreStyleShapes, id: \.self) { option in
+                                Tile(selected: shape == option, help: option.title) {
+                                    model.setShape(option)
+                                } label: {
+                                    Image(systemName: option.symbol).font(Theme.toolIcon)
+                                }
                             }
                         }
-                        .buttonStyle(ThemeButtonStyle(.popUp))
-                        .fixedSize()
                     }
                 }
                 if model.showsFill {

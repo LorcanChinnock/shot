@@ -56,6 +56,7 @@ The hint at the bottom right of the canvas tells you what the tool does, or what
 A small style bar floats over the screenshot with the options for the tool you picked. It sits at the top of the screenshot until you draw, then moves next to the mark you selected, above it where there's room, and otherwise below or beside it, so it never covers the mark. It steps out of the way while you drag.
 
 - **Colour and width:** seven colours, white included, a rainbow swatch that picks any colour, and three widths, thin, medium and thick. The rainbow swatch's eyedropper takes a colour from anywhere on screen, such as a brand colour in the screenshot itself. For text, sticky notes and counters, the widths are text sizes, and changing the size or colour while you type updates the text as you go.
+- **Shape:** a rectangle or an ellipse, after the colours and widths. Picking one with a shape selected changes that shape, and <kbd>⌘Z</kbd> changes it back.
 - **Redact:** blur or pixelate.
 - **Spotlight:** a rectangle or an ellipse, and whether to darken or blur outside it. Every spotlight in the screenshot shares one dim, so the effect applies to all of them.
 
@@ -63,7 +64,7 @@ The bar doesn't show while you crop, since the crop has a bar of its own, or whe
 
 When a tool has more options, **…** at the end of the bar opens **More style**:
 
-- **Shape:** which shape, and a fill.
+- **Shape:** a triangle, diamond or star, and a fill.
 - **Text and sticky notes:** left, centre or right alignment. A sticky note can also put its text at the top, middle or bottom, which shows when you drag the note taller than its text.
 - **Redact:** how strong the blur or pixelation is.
 - **Spotlight:** a soft edge, and how much to darken or blur outside it, which applies to every spotlight.
