@@ -89,9 +89,16 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         var length: Int
         var scale: CGFloat
     }
+    /// Whether an arrow's or line's stroke is solid, dashed or dotted; always solid for every other kind. Stored only when
+    /// it isn't solid, so annotations saved before it still decode.
+    public var lineDash: LineDash {
+        get { dash ?? .solid }
+        set { dash = takesLineDash && newValue != .solid ? newValue : nil }
+    }
+    private var dash: LineDash?
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop, wrapWidth, sizeRuns
+        case id, kind, color, fill, lineWidth, bend, textAlign, textVerticalAlign, hidden, locked, objectStyle, boxRadius, crop, wrapWidth, sizeRuns, dash
         case noteInk = "noteTextColor"
         case imageRadius = "cornerRadius"
         case customName = "name"
@@ -121,6 +128,8 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
             || runs.reduce(0, { $0 + $1.length }) != text?.utf16.count {
             sizeRuns = nil
         }
+        // A style from a newer version reads as solid rather than failing the whole document.
+        dash = takesLineDash ? (try? container.decodeIfPresent(LineDash.self, forKey: .dash)) ?? nil : nil
         // A rounded rectangle from before every shape could be rounded keeps its radius, or the fifth of its shorter side
         // that it had when it had none.
         if !kind.isImage {
@@ -247,6 +256,14 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
     /// True for what the style sections and a pasted style can set a corner radius on: a placed image or a shape with corners.
     public var takesCornerRadius: Bool {
         styleKind?.takesCorners == true || roundsShape
+    }
+
+    /// True for the kinds whose stroke can be dashed or dotted: arrows and lines.
+    public var takesLineDash: Bool {
+        switch kind {
+        case .arrow, .line: true
+        case .shape, .highlight, .pixelate, .blur, .spotlight, .text, .counter, .note, .freehand, .marker, .image: false
+        }
     }
 
     public var supportsFill: Bool {

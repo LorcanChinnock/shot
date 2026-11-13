@@ -5,7 +5,7 @@ import Foundation
 /// selected mark, or at the top of the canvas for the tool's next mark.
 public enum StyleBarContent: Equatable, Sendable {
     /// Rows of colour swatches on the left for arrows, lines, shapes, pens, text, notes, highlights and counters, with the
-    /// width or text size, a shape's outlines and a text's alignment on the right (`AnnotationPalette.colorRows` and
+    /// width or text size, a line's dashes, a shape's outlines and a text's alignment on the right (`AnnotationPalette.colorRows` and
     /// `controlRows`).
     case colorAndWidth
     /// Blur or pixelate and the amount, in one row.
@@ -162,6 +162,8 @@ public enum StyleBarColorRow: Equatable, Sendable {
 public enum StyleBarControl: Equatable, Sendable {
     /// Thinner and thicker, or for text, a note or a counter, smaller and larger, with the size between them.
     case width
+    /// An arrow's or line's solid, dashed or dotted stroke.
+    case lineDash
     /// A shape's five outlines.
     case outline
     /// Left, centre or right.

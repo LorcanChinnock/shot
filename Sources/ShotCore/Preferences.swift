@@ -53,6 +53,8 @@ public enum PreferenceKey {
     /// A new note's text colour, empty for black or white to suit the paper.
     public static let editorNoteTextColor = "editorNoteTextColor"
     public static let editorShape = "editorShape"
+    /// Whether the next arrow or line is solid, dashed or dotted.
+    public static let editorLineDash = "editorLineDash"
     public static let editorRedaction = "editorRedaction"
     public static let editorRedactionAmount = "editorRedactionAmount"
     public static let editorSpotlight = "editorSpotlight"
@@ -161,6 +163,7 @@ public struct Preferences {
             PreferenceKey.editorCustomColors: Data(),
             PreferenceKey.editorNoteTextColor: Data(),
             PreferenceKey.editorShape: EditorStyle().shape.rawValue,
+            PreferenceKey.editorLineDash: EditorStyle().lineDash.rawValue,
             PreferenceKey.editorRedaction: EditorStyle().redaction.rawValue,
             PreferenceKey.editorRedactionAmount: Double(EditorStyle().redactionAmount),
             PreferenceKey.editorSpotlight: Data(),
@@ -326,6 +329,9 @@ public struct Preferences {
         if changed(\.shape) {
             store.set(style.shape.rawValue, forKey: PreferenceKey.editorShape)
         }
+        if changed(\.lineDash) {
+            store.set(style.lineDash.rawValue, forKey: PreferenceKey.editorLineDash)
+        }
         if changed(\.redaction) {
             store.set(style.redaction.rawValue, forKey: PreferenceKey.editorRedaction)
         }
@@ -479,6 +485,7 @@ public struct Preferences {
             fill: decoded(PreferenceKey.editorFill),
             noteTextColor: decoded(PreferenceKey.editorNoteTextColor),
             width: width,
+            lineDash: LineDash(rawValue: store.string(forKey: PreferenceKey.editorLineDash) ?? "") ?? defaults.lineDash,
             customColors: decoded(PreferenceKey.editorCustomColors) ?? defaults.customColors,
             // `rounded` was a shape of its own before every shape could be rounded.
             shape: store.string(forKey: PreferenceKey.editorShape).flatMap { BoxShape(rawValue: $0 == "rounded" ? "rectangle" : $0) } ?? defaults.shape,

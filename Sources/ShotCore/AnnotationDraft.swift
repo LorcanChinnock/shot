@@ -12,6 +12,8 @@ public enum AnnotationDraft {
         /// A new note's text colour; `nil` follows the paper.
         public var noteTextColor: RGBA?
         public var lineWidth: CGFloat
+        /// Whether a new arrow or line is solid, dashed or dotted.
+        public var lineDash: LineDash
         public var shape: BoxShape
         public var redaction: Redaction
         public var redactionAmount: CGFloat
@@ -24,13 +26,14 @@ public enum AnnotationDraft {
         public init(
             color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
             redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign, noteAlignment: TextAlign,
-            verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil
+            verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil, lineDash: LineDash = .solid
         ) {
             self.color = color
             self.fill = fill
             self.noteColor = noteColor
             self.noteTextColor = noteTextColor
             self.lineWidth = lineWidth
+            self.lineDash = lineDash
             self.shape = shape
             self.redaction = redaction
             self.redactionAmount = redactionAmount
@@ -88,6 +91,7 @@ public enum AnnotationDraft {
         if shape.supportsFill {
             shape.fill = style.fill
         }
+        shape.lineDash = style.lineDash
         return shape
     }
 

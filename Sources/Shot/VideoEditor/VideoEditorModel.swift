@@ -1077,7 +1077,7 @@ extension VideoEditorModel {
         return AnnotationDraft.Style(
             color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
             redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment, noteAlignment: style.noteAlignment,
-            verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor
+            verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor, lineDash: style.lineDash
         )
     }
 
@@ -1142,6 +1142,15 @@ extension VideoEditorModel {
     var sizesText: Bool { palette.sizesText }
 
     var showsFill: Bool { palette.showsFill }
+
+    /// Whether the line the palette shows is solid, dashed or dotted. `nil` when it isn't an arrow or line.
+    var paletteLineDash: LineDash? { palette.lineDash }
+
+    func setLineDash(_ dash: LineDash) {
+        var changed = palette
+        changed.setLineDash(dash)
+        adopt(changed)
+    }
 
     /// The outline the palette shows: the selected shape's, else the next shape's. `nil` when neither is a shape.
     var paletteShape: BoxShape? { palette.shape }

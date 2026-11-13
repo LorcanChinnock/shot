@@ -93,6 +93,14 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         case .select, .hand, .arrow, .line, .shape, .pen, .highlight, .spotlight, .redact, .crop: false
         }
     }
+
+    /// True for the tools whose lines can be dashed or dotted.
+    public var takesLineDash: Bool {
+        switch self {
+        case .arrow, .line: true
+        case .select, .hand, .shape, .pen, .text, .note, .highlight, .spotlight, .redact, .counter, .crop: false
+        }
+    }
 }
 
 /// The tool, colours and width a new editor window starts with: the last ones used.
@@ -161,6 +169,8 @@ public struct EditorStyle: Equatable, Sendable {
     public var noteTextColor: RGBA?
     /// The line width in points, usually one of `widths`; the image's scale multiplies it.
     public var width: CGFloat
+    /// Whether the next arrow or line is solid, dashed or dotted.
+    public var lineDash: LineDash
     /// The last custom colour picked in each palette, which its rainbow swatch offers again.
     public var customColors: [ColorSlot: RGBA]
     public var shape: BoxShape
@@ -181,7 +191,7 @@ public struct EditorStyle: Equatable, Sendable {
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
         highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, noteTextColor: RGBA? = nil,
-        width: CGFloat = EditorStyle.defaultWidth, customColors: [ColorSlot: RGBA] = [:],
+        width: CGFloat = EditorStyle.defaultWidth, lineDash: LineDash = .solid, customColors: [ColorSlot: RGBA] = [:],
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
         spotlight: SpotlightStyle = SpotlightStyle(),
         alignment: TextAlign = .left, noteAlignment: TextAlign = .center, verticalAlignment: VerticalTextAlign = .middle, objectStyles: [StyleKind: ObjectStyle] = [:]
@@ -193,6 +203,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.fill = fill
         self.noteTextColor = noteTextColor
         self.width = width
+        self.lineDash = lineDash
         self.customColors = customColors
         self.shape = shape
         self.redaction = redaction

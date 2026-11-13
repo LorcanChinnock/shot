@@ -252,7 +252,8 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
 }
 
 @Test func theControlsBesideTheColoursStackSoTheBarStaysNarrow() {
-    #expect(palette(tool: .arrow).controlRows == [[.width]])
+    #expect(palette(tool: .arrow).controlRows == [[.width, .lineDash]])
+    #expect(palette(tool: .line).controlRows == [[.width, .lineDash]])
     #expect(palette(tool: .counter).controlRows == [[.width]])
     #expect(palette(tool: .shape).controlRows == [[.width], [.outline]])
     #expect(palette(tool: .text).controlRows == [[.width, .alignment]])

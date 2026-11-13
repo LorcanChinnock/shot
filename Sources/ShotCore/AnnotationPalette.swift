@@ -153,14 +153,17 @@ public struct AnnotationPalette: Equatable, Sendable {
         return tool.map(StyleBarColorRow.rows(for:)) ?? []
     }
 
-    /// The controls on the right of the colour rows, a row at a time, top to bottom: the width first, then a shape's
-    /// outlines under it, and a text's alignment beside it. A note's alignments go under its size, one a row, since beside
+    /// The controls on the right of the colour rows, a row at a time, top to bottom: the width first, an arrow's or line's
+    /// dashes beside it, then a shape's outlines under it, and a text's alignment beside it. A note's alignments go under its size, one a row, since beside
     /// it they'd make the bar too wide to fit a small window with its panels open.
     public var controlRows: [[StyleBarControl]] {
         guard showsStyle else {
             return []
         }
         var rows: [[StyleBarControl]] = [[.width]]
+        if lineDash != nil {
+            rows[0].append(.lineDash)
+        }
         if shape != nil {
             rows.append([.outline])
         }
@@ -381,6 +384,24 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
     }
 
+    // MARK: Dashes
+
+    /// Whether the line shown is solid, dashed or dotted: the selected arrow's or line's, else the next one's. `nil` when
+    /// neither is an arrow or line.
+    public var lineDash: LineDash? {
+        if let shown {
+            return shown.takesLineDash ? shown.lineDash : nil
+        }
+        return tool?.takesLineDash == true ? style.lineDash : nil
+    }
+
+    public mutating func setLineDash(_ dash: LineDash) {
+        selection?.lineDash = dash
+        if stylesNextAnnotation {
+            style.lineDash = dash
+        }
+    }
+
     // MARK: Shape
 
     /// The outline shown: the selected shape's, else the next shape's. `nil` when neither is a shape.
@@ -578,6 +599,9 @@ public struct AnnotationPalette: Equatable, Sendable {
             if showsFill {
                 setFill(defaults.fill)
             }
+        }
+        if lineDash != nil {
+            setLineDash(defaults.lineDash)
         }
         if shape != nil {
             setShape(defaults.shape)

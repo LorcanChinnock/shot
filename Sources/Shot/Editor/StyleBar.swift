@@ -47,6 +47,8 @@ protocol StyleBarEditing: AnyObject, Observable {
     func setShownSize(_ size: CGFloat)
     func canStepLineWidth(by steps: Int) -> Bool
     func stepLineWidth(by steps: Int)
+    var paletteLineDash: LineDash? { get }
+    func setLineDash(_ dash: LineDash)
     var paletteShape: BoxShape? { get }
     func setShape(_ shape: BoxShape)
     var paletteRedaction: Redaction? { get }
@@ -76,7 +78,7 @@ extension EditorModel: StyleBarEditing {}
 /// The bar. On the left, a row of colours for each colour the mark has, named on its left: Line, and Fill under it for a
 /// shape; Text, and Background under it for a note. Each row has the seven colours and a custom one, then transparent
 /// where the mark stays visible without that colour. On the
-/// right, the width or text size, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
+/// right, the width or text size, a line's dashes, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
 /// options in one row in place of the colours. Right-clicking it offers Reset Style, as the Edit menu does. The video
 /// editor shows it too, at the top of the video's well.
 struct StyleBar<Model: StyleBarEditing>: View {
@@ -142,6 +144,13 @@ struct StyleBar<Model: StyleBarEditing>: View {
         switch control {
         case .width:
             stepper
+        case .lineDash:
+            if let dash = model.paletteLineDash {
+                GlyphSegmented(selection: dash, options: LineDash.allCases.map { ($0, $0.title) }, choose: model.setLineDash) { dash, selected in
+                    LineDashGlyph(dash: dash, color: StyleBarGlyph.color(selected: selected))
+                }
+                .accessibilityLabel(Text("Line style"))
+            }
         case .outline:
             if let shape = model.paletteShape {
                 GlyphSegmented(selection: shape, options: BoxShape.allCases.map { ($0, $0.title) }, choose: model.setShape) { shape, selected in
@@ -323,6 +332,36 @@ struct StyleBar<Model: StyleBarEditing>: View {
                 .frame(height: 24)
                 .accessibilityLabel(Text(title))
         }
+    }
+}
+
+extension LineDash {
+    /// The segment's tooltip and VoiceOver name.
+    var title: String {
+        switch self {
+        case .solid: String(localized: "Solid")
+        case .dashed: String(localized: "Dashed")
+        case .dotted: String(localized: "Dotted")
+        }
+    }
+}
+
+/// A short level line drawn solid, dashed or dotted with the renderer's own pattern, as a segment's picture.
+private struct LineDashGlyph: View {
+    let dash: LineDash
+    let color: ContrastAware
+
+    private static let width: CGFloat = 2
+    private static let length: CGFloat = 20
+
+    var body: some View {
+        let lengths = dash.pattern(width: Self.width, length: Self.length) ?? []
+        Path { path in
+            path.move(to: CGPoint(x: Self.width / 2, y: Self.width / 2))
+            path.addLine(to: CGPoint(x: Self.width / 2 + Self.length, y: Self.width / 2))
+        }
+        .stroke(color, style: StrokeStyle(lineWidth: Self.width, lineCap: .round, dash: lengths))
+        .frame(width: Self.length + Self.width, height: Self.width)
     }
 }
 

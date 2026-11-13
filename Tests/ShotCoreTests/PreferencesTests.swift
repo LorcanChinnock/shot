@@ -177,6 +177,19 @@ import Testing
         #expect(prefs.editorStyle.color == RGBA.presets[3])
     }
 
+    @Test func theLineDashIsRememberedAndStartsSolid() throws {
+        let suite = try TestDefaults()
+        let store = suite.store
+        defer { suite.remove() }
+        Preferences.registerDefaults(in: store)
+        let prefs = Preferences(store: store)
+        #expect(prefs.editorStyle.lineDash == .solid)
+        Preferences.changeEditorStyle(in: store) { $0.lineDash = .dotted }
+        #expect(prefs.editorStyle.lineDash == .dotted)
+        store.set("wavy", forKey: PreferenceKey.editorLineDash)
+        #expect(prefs.editorStyle.lineDash == .solid)
+    }
+
     @Test func selectAndCropAreNeverTheStartingTool() throws {
         let suite = try TestDefaults()
         let store = suite.store

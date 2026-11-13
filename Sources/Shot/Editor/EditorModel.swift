@@ -97,6 +97,10 @@ final class EditorModel {
     var noteTextColor: RGBA? {
         didSet { rememberStyle { $0.noteTextColor = noteTextColor } }
     }
+    /// Whether the next arrow or line is solid, dashed or dotted.
+    var lineDash: LineDash {
+        didSet { rememberStyle { $0.lineDash = lineDash } }
+    }
     /// The outline of the next shape.
     var shape: BoxShape {
         didSet { rememberStyle { $0.shape = shape } }
@@ -211,6 +215,7 @@ final class EditorModel {
         highlightColor = style.highlightColor
         fill = style.fill
         noteTextColor = style.noteTextColor
+        lineDash = style.lineDash
         shape = style.shape
         redaction = style.redaction
         redactionAmount = style.redactionAmount
@@ -372,7 +377,7 @@ final class EditorModel {
     private var nextStyle: EditorStyle {
         EditorStyle(
             tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, noteTextColor: noteTextColor, width: width,
-            customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
+            lineDash: lineDash, customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
             alignment: alignment, noteAlignment: noteAlignment, verticalAlignment: verticalAlignment, objectStyles: objectStyles
         )
     }
@@ -394,6 +399,7 @@ final class EditorModel {
         if next.fill != fill { fill = next.fill }
         if next.noteTextColor != noteTextColor { noteTextColor = next.noteTextColor }
         if next.width != width { width = next.width }
+        if next.lineDash != lineDash { lineDash = next.lineDash }
         if next.shape != shape { shape = next.shape }
         if next.redaction != redaction { redaction = next.redaction }
         if next.redactionAmount != redactionAmount { redactionAmount = next.redactionAmount }
@@ -433,6 +439,15 @@ final class EditorModel {
 
     /// True when the toolbar offers a fill: a shape is selected, or is the tool.
     var showsFill: Bool { palette.showsFill }
+
+    /// Whether the line the toolbar shows is solid, dashed or dotted. `nil` when it isn't an arrow or line.
+    var paletteLineDash: LineDash? { palette.lineDash }
+
+    func setLineDash(_ dash: LineDash) {
+        var changed = palette
+        changed.setLineDash(dash)
+        adopt(changed)
+    }
 
     /// The outline the toolbar shows: the selected shape's, else the next shape's. `nil` when neither is a shape.
     var paletteShape: BoxShape? { palette.shape }
@@ -844,7 +859,7 @@ final class EditorModel {
         AnnotationDraft.Style(
             color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
             redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment, noteAlignment: noteAlignment,
-            verticalAlignment: verticalAlignment, noteTextColor: noteTextColor
+            verticalAlignment: verticalAlignment, noteTextColor: noteTextColor, lineDash: lineDash
         )
     }
     /// Space kept between an annotation and a canvas edge that grew to hold it.

@@ -221,6 +221,18 @@ public enum AnnotationRenderer {
         drawPlain(annotation, base: base, over: below, look: look, in: ctx)
     }
 
+    /// Strokes an arrow's shaft or a line solid, dashed or dotted, with the round caps already set.
+    private static func stroke(_ path: CGPath, dash: LineDash, width: CGFloat, in ctx: CGContext) {
+        guard let lengths = dash.pattern(width: width, length: LineDash.length(of: path)) else {
+            ctx.stroke(path)
+            return
+        }
+        ctx.saveGState()
+        ctx.setLineDash(phase: 0, lengths: lengths)
+        ctx.stroke(path)
+        ctx.restoreGState()
+    }
+
     /// Draws `annotation` without its shadow.
     private static func drawPlain(_ annotation: Annotation, base: CGImage, over below: ArraySlice<Annotation>, look: CaptureLook, in ctx: CGContext) {
         let color = annotation.color
@@ -253,7 +265,7 @@ public enum AnnotationRenderer {
             } else {
                 shaft.addLine(to: base)
             }
-            ctx.stroke(shaft)
+            stroke(shaft, dash: annotation.lineDash, width: width, in: ctx)
             let tip = CGMutablePath()
             tip.move(to: to)
             tip.addLine(to: CGPoint(x: base.x - uy * half, y: base.y + ux * half))
@@ -268,7 +280,7 @@ public enum AnnotationRenderer {
             } else {
                 line.addLine(to: to)
             }
-            ctx.stroke(line)
+            stroke(line, dash: annotation.lineDash, width: width, in: ctx)
         case let .shape(shape, rect):
             let path = shape.path(in: rect, cornerRadius: annotation.cornerRadius)
             if let fill = annotation.fill {
