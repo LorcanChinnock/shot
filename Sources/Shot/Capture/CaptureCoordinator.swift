@@ -339,6 +339,21 @@ final class CaptureCoordinator {
         }
     }
 
+    var recordingHasMicrophone: Bool { recorder.hasMicrophone }
+    var isMicrophoneMuted: Bool { recorder.isMicrophoneMuted }
+    var canToggleRecordingCamera: Bool { recorder.canToggleCamera }
+    var isRecordingCameraOn: Bool { recorder.isCameraOn }
+
+    func toggleMute() {
+        recorder.toggleMute()
+    }
+
+    func toggleCamera() {
+        Task {
+            await recorder.toggleCamera()
+        }
+    }
+
     /// Picks the area, then starts recording, first showing the setup panel or a countdown if Settings asks for them.
     private func startRecording(mode: CaptureTarget, remembering: Bool) async throws {
         guard let pick = await RecordingSetupController.pickRegion(mode: mode, remembering: remembering, opensOverlayOnScreen: remembering) else {

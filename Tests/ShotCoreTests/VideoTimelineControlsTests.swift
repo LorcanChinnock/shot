@@ -84,3 +84,12 @@ private func timelineRecording() -> Project {
     }
     #expect(TimelineZoom.zoom(atSliderPosition: 2) == TimelineZoom.range.upperBound)
 }
+
+@Test func theZoomSliderReadsTheZoomLevel() {
+    #expect(TimelineZoom.label(for: 1) == "Fit")
+    #expect(TimelineZoom.label(for: 2.25) == "2.3×")
+    #expect(TimelineZoom.label(for: 1.5) == "1.5×")
+    #expect(TimelineZoom.label(for: 16) == "16×")
+    #expect(TimelineZoom.label(for: 64) == "64×")
+    #expect(TimelineZoom.label(for: 0.5) == "Fit")
+}

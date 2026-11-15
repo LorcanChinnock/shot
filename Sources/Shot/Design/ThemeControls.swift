@@ -298,6 +298,8 @@ struct ThemeSlider: View {
         defaultValue.flatMap { $0 > range.lowerBound && $0 < range.upperBound ? $0 : nil }
     }
     var onEditingChanged: (Bool) -> Void = { _ in }
+    /// What VoiceOver reads for `value`, such as a zoom level, in place of how far along the track the knob is.
+    var accessibilityValue: ((Double) -> String)?
     @State private var isDragging = false
     /// Whether the drag sits on the default, so the trackpad taps once as it snaps there, not on every move.
     @State private var isOnDefault = false
@@ -395,7 +397,7 @@ struct ThemeSlider: View {
         // A caller's label after this applies to it.
         .accessibilityRepresentation {
             Slider(value: accessibleValue, in: range, step: accessibleStep)
-                .accessibilityValue(Text("\(Int((fraction * 100).rounded())) percent"))
+                .accessibilityValue(accessibilityValue.map { Text(verbatim: $0(value)) } ?? Text("\(Int((fraction * 100).rounded())) percent"))
         }
     }
 

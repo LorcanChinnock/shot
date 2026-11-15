@@ -1182,6 +1182,9 @@
         }
       }
     },
+    "%@×" : {
+
+    },
     "%lld" : {
       "localizations" : {
         "de" : {
@@ -5302,6 +5305,9 @@
           }
         }
       }
+    },
+    "Annotations" : {
+
     },
     "Appearance" : {
       "localizations" : {
@@ -16070,6 +16076,9 @@
         }
       }
     },
+    "Discard Recording" : {
+
+    },
     "Discard recording" : {
       "localizations" : {
         "de" : {
@@ -22802,6 +22811,9 @@
         }
       }
     },
+    "Hide Camera" : {
+
+    },
     "Hide Track" : {
       "localizations" : {
         "de" : {
@@ -27914,6 +27926,9 @@
           }
         }
       }
+    },
+    "Mute Microphone" : {
+
     },
     "Mute Track" : {
       "localizations" : {
@@ -35398,6 +35413,9 @@
         }
       }
     },
+    "Recording ready in Quick Access" : {
+
+    },
     "Recording without the microphone. Turn it on in System Settings › Privacy & Security › Microphone." : {
       "localizations" : {
         "de" : {
@@ -39944,6 +39962,9 @@
         }
       }
     },
+    "Screenshot ready in Quick Access" : {
+
+    },
     "Screenshot shortcut: %@" : {
       "localizations" : {
         "de" : {
@@ -43341,6 +43362,9 @@
           }
         }
       }
+    },
+    "Show Camera" : {
+
     },
     "Show File" : {
       "localizations" : {
@@ -51045,6 +51069,9 @@
           }
         }
       }
+    },
+    "Unmute Microphone" : {
+
     },
     "Unmute Track" : {
       "localizations" : {

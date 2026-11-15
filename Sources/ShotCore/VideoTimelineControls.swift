@@ -82,6 +82,18 @@ extension TimelineZoom {
         return log(clamped / range.lowerBound) / log(range.upperBound / range.lowerBound)
     }
 
+    /// What the zoom slider says to VoiceOver: "Fit" with the whole recording in view, otherwise how many times closer,
+    /// such as "2.3×" or "16×".
+    public static func label(for zoom: Double) -> String {
+        let clamped = min(max(zoom, range.lowerBound), range.upperBound)
+        guard clamped > range.lowerBound * 1.01 else {
+            return String(localized: "Fit")
+        }
+        let digits = clamped < 10 ? 1 : 0
+        let times = clamped.formatted(.number.precision(.fractionLength(0...digits)).rounded(rule: .toNearestOrAwayFromZero))
+        return String(localized: "\(times)×")
+    }
+
     /// The zoom at slider `position`, the inverse of `sliderPosition(for:)`.
     public static func zoom(atSliderPosition position: Double) -> Double {
         let clamped = min(max(position, 0), 1)
