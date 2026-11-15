@@ -83,6 +83,23 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             menu.addItem(row(pause, symbol: state.isPaused ? "play.circle" : "pause.circle") { [weak self] in
                 self?.coordinator.togglePause()
             })
+            // The recording controls never take keyboard focus, so their other buttons are here too.
+            if coordinator.recordingHasMicrophone {
+                let muted = coordinator.isMicrophoneMuted
+                menu.addItem(row(muted ? String(localized: "Unmute Microphone") : String(localized: "Mute Microphone"), symbol: muted ? "mic" : "mic.slash") { [weak self] in
+                    self?.coordinator.toggleMute()
+                })
+            }
+            if coordinator.canToggleRecordingCamera {
+                let on = coordinator.isRecordingCameraOn
+                menu.addItem(row(on ? String(localized: "Hide Camera") : String(localized: "Show Camera"), symbol: on ? "video.slash" : "video") { [weak self] in
+                    self?.coordinator.toggleCamera()
+                })
+            }
+            // As on the controls, Undo in the toast that follows brings it back.
+            menu.addItem(row(String(localized: "Discard Recording"), symbol: "trash") { [weak self] in
+                self?.coordinator.stopRecording(discard: true)
+            })
             menu.addItem(.separator())
         }
         menu.addItem(action(.screenshot, symbol: ShotAction.screenshot.symbol))

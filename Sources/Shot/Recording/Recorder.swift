@@ -102,6 +102,12 @@ final class Recorder: NSObject {
     }
 
     var isRecording: Bool { phase == .recording || phase == .paused }
+    /// The recording captures the microphone, so the menu bar can mute it.
+    var hasMicrophone: Bool { isRecording && session?.microphone == true }
+    var isMicrophoneMuted: Bool { model.microphoneMuted }
+    /// The camera bubble can be shown or hidden: anything but a single window, as on the recording controls.
+    var canToggleCamera: Bool { isRecording && session?.windowID == nil }
+    var isCameraOn: Bool { model.cameraOn }
 
     /// The file the recording in progress will be saved as.
     var outputURL: URL? { session?.finalURL }

@@ -16070,6 +16070,9 @@
         }
       }
     },
+    "Discard Recording" : {
+
+    },
     "Discard recording" : {
       "localizations" : {
         "de" : {
@@ -22799,6 +22802,9 @@
         }
       }
     },
+    "Hide Camera" : {
+
+    },
     "Hide Track" : {
       "localizations" : {
         "de" : {
@@ -27911,6 +27917,9 @@
           }
         }
       }
+    },
+    "Mute Microphone" : {
+
     },
     "Mute Track" : {
       "localizations" : {
@@ -43336,6 +43345,9 @@
         }
       }
     },
+    "Show Camera" : {
+
+    },
     "Show File" : {
       "localizations" : {
         "de" : {
@@ -51039,6 +51051,9 @@
           }
         }
       }
+    },
+    "Unmute Microphone" : {
+
     },
     "Unmute Track" : {
       "localizations" : {
