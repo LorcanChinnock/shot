@@ -105,6 +105,46 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         return clip
     }
 
+    // MARK: Accessibility
+
+    private var annotationElements: [UUID: VideoAnnotationElement] = [:]
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .group }
+    override func accessibilityLabel() -> String? { String(localized: "Annotations") }
+
+    /// The annotations showing at the playhead, top layer first, as the image canvas lists them. Pressing one selects its
+    /// clip, so the Inspector and the timeline act on it.
+    override func accessibilityChildren() -> [Any]? {
+        let shown = Array(model.project.annotationClips(at: model.playhead).reversed())
+        annotationElements = shown.reduce(into: [:]) { elements, clip in
+            let element = annotationElements[clip.id] ?? VideoAnnotationElement(id: clip.id) { [weak self] id in
+                self?.model.selectClip(id)
+            }
+            element.setAccessibilityParent(self)
+            element.setAccessibilityLabel(clip.annotation.layerName)
+            element.setAccessibilityRoleDescription(clip.annotation.accessibilityKind)
+            element.setAccessibilityValue(Self.accessibilityText(of: clip.annotation))
+            element.setAccessibilitySelected(model.selectedClipID == clip.id)
+            element.setAccessibilityFrame(NSAccessibility.screenRect(fromView: self, rect: viewRect(clip.annotation.paintedBounds)))
+            elements[clip.id] = element
+        }
+        return shown.compactMap { annotationElements[$0.id] }
+    }
+
+    override func accessibilitySelectedChildren() -> [Any]? {
+        _ = accessibilityChildren()
+        return model.selectedClipID.flatMap { annotationElements[$0] }.map { [$0] }
+    }
+
+    /// All of a text's or note's words, which its name cuts short.
+    private static func accessibilityText(of annotation: Annotation) -> String? {
+        switch annotation.kind {
+        case let .text(string, _, _), let .note(string, _): string
+        case .arrow, .line, .shape, .highlight, .pixelate, .blur, .spotlight, .counter, .freehand, .marker, .image: nil
+        }
+    }
+
     // MARK: Drawing the handles
 
     override func draw(_ dirtyRect: NSRect) {
@@ -398,4 +438,23 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 
 private extension Annotation {
     var isEditableText: Bool { text != nil }
+}
+
+/// An annotation over the video as VoiceOver sees it. Pressing it selects its clip, as clicking it with the select tool does.
+private final class VideoAnnotationElement: NSAccessibilityElement {
+    let id: UUID
+    private let select: (UUID) -> Void
+
+    init(id: UUID, select: @escaping (UUID) -> Void) {
+        self.id = id
+        self.select = select
+        super.init()
+        setAccessibilityRole(.image)
+        setAccessibilityEnabled(true)
+    }
+
+    override func accessibilityPerformPress() -> Bool {
+        select(id)
+        return true
+    }
 }
