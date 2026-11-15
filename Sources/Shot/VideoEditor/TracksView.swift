@@ -70,8 +70,9 @@ struct TracksView: View {
             let reach = model.project.tracks.indices.flatMap(model.project.trimmedEnds).map(\.end).max() ?? 0
             ScrollView([.horizontal, .vertical], showsIndicators: false) {
                 lanes(timeline, layout: layout, leadX: leadX)
-                    // The lanes are one VoiceOver element, the playhead; the lane names beside them stay their own.
-                    .modifier(TimelineAccessibility(model: model, label: Text("Timeline")))
+                    // Each clip, keyframe and cut is its own VoiceOver element, and the playhead adjusts the time.
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel(Text("Timeline"))
                     .offset(x: originX)
                     .frame(width: LaneLayout.labelWidth + max(width, leadX + CGFloat(reach) * pointsPerSecond), height: layout.height, alignment: .topLeading)
                     .overlay(alignment: .topLeading) { laneNames(layout).offset(x: scrollX) }
@@ -148,6 +149,7 @@ struct TracksView: View {
         let project = model.project
         return ZStack(alignment: .topLeading) {
             ruler(timeline, pointsPerSecond: pointsPerSecond)
+                .accessibilityHidden(true)
             ForEach(layout.lanes, id: \.track) { lane in
                 ForEach(project.tracks[lane.track].annotations) { clip in
                     annotationClip(clip, height: lane.height, pointsPerSecond: pointsPerSecond)
@@ -157,6 +159,7 @@ struct TracksView: View {
                 }
                 ForEach(Array(project.trimmedEnds(ofTrack: lane.track).enumerated()), id: \.offset) { _, end in
                     clip(end, in: lane, pointsPerSecond: pointsPerSecond, trimmed: true)
+                        .accessibilityHidden(true)
                 }
                 ForEach(project.tracks[lane.track].clips) { clip in
                     self.clip(clip, in: lane, pointsPerSecond: pointsPerSecond)
@@ -165,6 +168,7 @@ struct TracksView: View {
             }
             if let preview = model.laneDrop {
                 laneDropMarker(preview, layout: layout, pointsPerSecond: pointsPerSecond)
+                    .accessibilityHidden(true)
             }
             if let selection = model.selection, let main = layout.lane(ofTrack: 0) {
                 let from = timeline.x(for: selection.lowerBound), to = timeline.x(for: selection.upperBound)
@@ -173,17 +177,29 @@ struct TracksView: View {
                     .frame(width: max(0, to - from), height: layout.height - (layout.lanes.first?.y ?? main.y))
                     .offset(x: from, y: layout.lanes.first?.y ?? main.y)
                     .allowsHitTesting(false)
+                    .accessibilityElement()
+                    .accessibilityLabel(Text("Selected section"))
+                    .accessibilityValue(Text("\(Timecode.string(selection.lowerBound)) to \(Timecode.string(selection.upperBound))"))
             }
             if let id = model.selectedClipID, let animation = model.selectedAnimation, let start = project.clipStart(id), let lane = layout.lane(ofTrack: trackIndex(of: id)) {
                 ForEach(animation.times, id: \.self) { time in
-                    diamond(selected: model.selectedKeyframe.map { abs($0 - time) <= Keyframes.tolerance } ?? false)
+                    let selected = model.selectedKeyframe.map { abs($0 - time) <= Keyframes.tolerance } ?? false
+                    diamond(selected: selected)
                         // On the lane's bottom edge, clear of the clip's name.
                         .offset(x: timeline.x(for: start + time) - 6, y: lane.y + lane.height - 6)
+                        .accessibilityElement()
+                        .accessibilityLabel(Text("Keyframe"))
+                        .accessibilityValue(Text(Timecode.string(start + time)))
+                        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+                        .accessibilityAction { model.selectKeyframe(time) }
                 }
             }
             if let main = layout.lane(ofTrack: 0), let first = project.main.clips.first, let last = project.main.clips.last {
+                // The Inspector trims for VoiceOver, so the handles stay out of its way.
                 handle(.start, height: main.height).offset(x: timeline.x(for: first.start), y: main.y)
+                    .accessibilityHidden(true)
                 handle(.end, height: main.height).offset(x: timeline.x(for: last.end) - TrimTimeline.handleWidth, y: main.y)
+                    .accessibilityHidden(true)
                 ForEach(project.mainCutMarks, id: \.time) { mark in
                     // Centred on the cut in a fixed frame; an alignment guide would move the whole stack's origin.
                     CutBadge(length: mark.length)
@@ -194,6 +210,9 @@ struct TracksView: View {
             }
             Playhead(model: model, timeline: timeline, height: layout.height - Self.rulerHeight + 8)
                 .offset(y: Self.rulerHeight - 6)
+                .modifier(TimelineAccessibility(model: model, label: Text("Playhead")))
+                // First, so VoiceOver lands on the time before the clips.
+                .accessibilitySortPriority(1)
         }
     }
 
@@ -368,6 +387,11 @@ struct TracksView: View {
         .opacity(trimmed ? 0.35 : 1)
         // A point in from each end, so clips that meet, at a split or a cut, show a gap between them.
         .offset(x: CGFloat(clip.start) * pointsPerSecond + Self.clipGap, y: lane.y)
+        .accessibilityElement()
+        .accessibilityLabel(Text(Self.title(model.project.laneName(ofTrack: lane.track))))
+        .accessibilityValue(Text("\(Timecode.string(clip.start)) to \(Timecode.string(clip.end))"))
+        .accessibilityAddTraits(isSelected(clip) ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { model.selectClip(clip.id) }
     }
 
     /// Half the gap between clips that meet.
@@ -453,6 +477,11 @@ struct TracksView: View {
         .clipShape(clipShape())
         .inkBorder(clipShape(), width: selected ? 1.5 : 1, color: selected ? .white : Color(light: Theme.line.opacity(0.1), dark: .white.opacity(0.14)))
         .allowsHitTesting(false)
+        .accessibilityElement()
+        .accessibilityLabel(Text(verbatim: clip.annotation.layerName))
+        .accessibilityValue(Text("\(Timecode.string(clip.start)) to \(Timecode.string(clip.end))"))
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { model.selectClip(clip.id) }
         .offset(x: Self.clipGap)
         // Over the clip rather than in it, so a short clip doesn't squeeze the field.
         .overlay(alignment: .leading) {
@@ -656,6 +685,7 @@ private struct CutBadge: View {
         .padding(.vertical, 1)
         .background(Theme.line, in: RoundedRectangle(cornerRadius: Theme.Radius.tiny, style: .circular))
         .fixedSize()
+        .accessibilityElement(children: .combine)
     }
 }
 
