@@ -35392,6 +35392,9 @@
         }
       }
     },
+    "Recording ready in Quick Access" : {
+
+    },
     "Recording without the microphone. Turn it on in System Settings › Privacy & Security › Microphone." : {
       "localizations" : {
         "de" : {
@@ -39937,6 +39940,9 @@
           }
         }
       }
+    },
+    "Screenshot ready in Quick Access" : {
+
     },
     "Screenshot shortcut: %@" : {
       "localizations" : {
