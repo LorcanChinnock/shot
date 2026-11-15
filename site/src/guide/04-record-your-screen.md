@@ -44,7 +44,7 @@ A dark bar of controls sits under the recorded area, and you can drag it out of 
 | **Discard** | Throws the recording away. **Undo** brings it back for 5 seconds, and so does <kbd>⌘Z</kbd>, whichever app is in front. |
 | **Stop** | Stops and saves. |
 
-You can also stop by pressing any record shortcut again. Shot's menu bar menu has **Pause Recording** (**Resume Recording** while paused) and **Stop Recording** too.
+You can also stop by pressing any record shortcut again. While you record, Shot's menu bar menu has the same controls: **Stop Recording**, **Pause Recording** (**Resume Recording** while paused), **Mute Microphone** when you're recording your voice, **Hide Camera** or **Show Camera** when you're not recording a single window, and **Discard Recording**. They're the way to reach the controls from the keyboard, since the bar under the recording never takes keyboard focus: open the menu with VoiceOver, or with <kbd>Ctrl</kbd><kbd>F8</kbd> when keyboard navigation is on.
 
 ## Record a window
 
