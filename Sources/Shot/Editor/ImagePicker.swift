@@ -25,7 +25,7 @@ struct ImagePicker: View {
                                 .frame(width: Self.tile, height: Self.tile * 0.7)
                                 .inkBorder(RoundedRectangle(cornerRadius: Theme.Radius.chip, style: .circular), width: 2)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.halo(radius: Theme.Radius.chip))
                         .accessibilityLabel(Text(item.name))
                         .themeTip(item.name)
                     }

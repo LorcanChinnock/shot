@@ -124,7 +124,7 @@ struct ThemeSearchField: View {
                         .font(.scaled(12))
                         .foregroundStyle(Theme.tertiaryText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.halo(radius: 7))
                 .accessibilityLabel(Text("Clear search"))
             }
         }

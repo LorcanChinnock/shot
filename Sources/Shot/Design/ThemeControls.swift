@@ -65,7 +65,7 @@ struct CustomColorButton: View {
             }
         }
         .buttonStyle(.plain)
-        .focusEffectDisabled(compact)
+        .focusEffectDisabled()
         .focused($focused)
         .themeTip(help)
         .accessibilityLabel(Text(help))
@@ -113,6 +113,12 @@ struct CustomColorButton: View {
         .inkBorder(Circle(), width: 2)
         .background(Circle().fill(Theme.line).offset(x: isSelected ? 2 : 0, y: isSelected ? 2 : 0))
         .frame(width: isSelected ? 22 : 18, height: isSelected ? 22 : 18)
+        // The accent halo, round like the compact swatch's, in place of the system's square focus ring.
+        .background {
+            if focused {
+                Color.clear.inkBorder(Circle(), width: 4, color: Theme.focusRing).padding(-4)
+            }
+        }
         .frame(width: 26, height: 30)
         .contentShape(Rectangle())
     }
@@ -497,7 +503,7 @@ private struct Swatch: View {
             .frame(width: 26, height: 30)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo(radius: 13))
         .themeTip(name)
         .accessibilityLabel(Text(name))
         .accessibilityAddTraits(isSelected ? .isSelected : [])

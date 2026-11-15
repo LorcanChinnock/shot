@@ -714,7 +714,7 @@ private struct CropBadge: View {
                 .opacity(isEnabled ? 1 : 0.5)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo(radius: Theme.Radius.tiny))
         .accessibilityLabel(Text("Adjust crop"))
         .themeTip("Adjust crop")
     }
