@@ -851,6 +851,16 @@
         }
       }
     },
+    "%@ to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ to %2$@"
+          }
+        }
+      }
+    },
     "%@ · X turns" : {
       "localizations" : {
         "de" : {
@@ -24845,6 +24855,9 @@
         }
       }
     },
+    "Keyframe" : {
+
+    },
     "Keyframe %@ here" : {
       "localizations" : {
         "de" : {
@@ -41362,6 +41375,9 @@
           }
         }
       }
+    },
+    "Selected section" : {
+
     },
     "Selected shape" : {
       "localizations" : {
