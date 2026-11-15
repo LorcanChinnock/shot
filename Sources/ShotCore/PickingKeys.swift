@@ -36,6 +36,7 @@ extension ShotAction {
         case .record: "record.circle"
         case .pickColor: "eyedropper"
         case .copyPath: "doc.on.clipboard"
+        case .focusQuickAccess: "rectangle.stack"
         }
     }
 }

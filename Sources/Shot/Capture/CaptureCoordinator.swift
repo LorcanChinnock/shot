@@ -65,6 +65,12 @@ final class CaptureCoordinator {
             Task { await copyLatestPath() }
             return
         }
+        if action == .focusQuickAccess {
+            if !QuickAccessController.shared.focusNewestCard(), !PinController.shared.focusNewestPin() {
+                Toast.show("No Quick Access card or pin to focus")
+            }
+            return
+        }
         if action == .screenshot, let scrolling {
             scrolling.finish()
             return
@@ -89,7 +95,7 @@ final class CaptureCoordinator {
                     try await captureWithOverlay(target: target ?? Preferences().screenshotTarget, remembering: target == nil)
                 case .record:
                     try await startRecording(mode: target ?? Preferences().recordTarget, remembering: target == nil)
-                case .pickColor, .copyPath:
+                case .pickColor, .copyPath, .focusQuickAccess:
                     break
                 }
             } catch {

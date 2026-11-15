@@ -25,7 +25,7 @@ struct QuickAccessView: View {
         ZStack(alignment: .bottom) {
             ForEach(Array(model.cards.enumerated()), id: \.element.id) { index, card in
                 let placement = layout.placements[index]
-                QuickAccessCardView(card: card, height: placement.height, isBehind: placement.isBehind, controller: controller)
+                QuickAccessCardView(card: card, height: placement.height, isBehind: placement.isBehind, hasKeyboard: model.keyboardCard == card.id, controller: controller)
                     .scaleEffect(placement.scale, anchor: .bottom)
                     .offset(y: QuickAccessLayout.padding - placement.frame.minY)
                     // Cards move with the change that moved them. Reduce Motion puts them in place at once.
@@ -51,6 +51,8 @@ private struct QuickAccessCardView: View {
     let card: QuickAccessCard
     let height: CGFloat
     let isBehind: Bool
+    /// The Focus Quick Access shortcut gave this card the keyboard, so its buttons show as on hover.
+    let hasKeyboard: Bool
     let controller: QuickAccessController
     @State private var hovering = false
     @Environment(\.colorSchemeContrast) private var contrast
@@ -66,7 +68,7 @@ private struct QuickAccessCardView: View {
                 FloatingPanel.cardBehind
                     .transition(.opacity)
                     .accessibilityHidden(true)
-            } else if hovering {
+            } else if hovering || hasKeyboard {
                 hoverActions
                     .transition(.opacity)
             }

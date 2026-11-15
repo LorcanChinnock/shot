@@ -30,6 +30,8 @@ final class QuickAccessModel {
     /// Whether every card shows in full, as it does while the pointer is on the stack, rather than the older ones
     /// waiting behind the newest.
     var isFannedOut = false
+    /// The card the Focus Quick Access shortcut gave the keyboard to, which shows its buttons as if hovered.
+    var keyboardCard: UUID?
 
     var layout: QuickAccessLayout { QuickAccessLayout(cardHeights: cards.map(\.height), fannedOut: isFannedOut) }
 }
@@ -51,7 +53,9 @@ final class QuickAccessController {
     var onExportGIF: ((URL) -> Void)?
 
     private let model = QuickAccessModel()
-    private var panel: FloatingPanelWindow?
+    private var panel: QuickAccessPanel?
+    /// The app in front when the shortcut focused a card, which Esc gives the keyboard back to.
+    private var appBeforeFocus: NSRunningApplication?
     private var timers: [UUID: Task<Void, Never>] = [:]
     private var settleTask: Task<Void, Never>?
     /// Watch the pointer while the stack is fanned out, to fold it again once the pointer leaves.
@@ -140,6 +144,13 @@ final class QuickAccessController {
 
     func remove(_ id: UUID) {
         timers.removeValue(forKey: id)?.cancel()
+        if model.keyboardCard == id {
+            // The keyboard moves to the card that takes its place in front, or goes back once there's none.
+            model.keyboardCard = model.cards.last(where: { $0.id != id })?.id
+            if model.keyboardCard == nil {
+                giveKeyboardBack()
+            }
+        }
         if let styled = model.cards.first(where: { $0.id == id })?.styledURL {
             Self.removeStyled(styled)
         }
@@ -253,8 +264,8 @@ final class QuickAccessController {
             guard !Task.isCancelled, let self else {
                 return
             }
-            // Every card waits while the pointer is on the stack, so none moves under it.
-            if self.isPointerOverStack {
+            // Every card waits while the pointer is on the stack, so none moves under it, and while one has the keyboard.
+            if self.isPointerOverStack || self.model.keyboardCard != nil {
                 self.startTimer(for: id)
             } else {
                 self.remove(id)
@@ -274,7 +285,10 @@ final class QuickAccessController {
         if panel == nil {
             // The system shadow follows each card's shape and, unlike one drawn in SwiftUI, needs no margin that
             // would catch clicks.
-            let panel = FloatingPanelWindow(contentRect: .zero)
+            let panel = QuickAccessPanel(contentRect: .zero)
+            panel.onKeyboardLost = { [weak self] in self?.keyboardLost() }
+            panel.onEscape = { [weak self] in self?.giveKeyboardBack() }
+            panel.onDefaultAction = { [weak self] in self?.copyFocusedCard() ?? false }
             panel.level = .floating
             panel.becomesKeyOnlyIfNeeded = true
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -333,6 +347,61 @@ final class QuickAccessController {
         }
         actions.append(QuickAccessCardAction(title: String(localized: "Show in Finder")) { self.showInFinder(card) })
         return actions
+    }
+
+    // MARK: Keyboard
+
+    /// Gives the keyboard to the newest card, for the Focus Quick Access shortcut: Tab moves between its buttons, Space
+    /// presses one, Return copies when no button has focus, and Esc gives the keyboard back. Every card waits meanwhile.
+    /// False when no card is showing.
+    func focusNewestCard() -> Bool {
+        guard let panel, panel.isVisible, let card = model.cards.last else {
+            return false
+        }
+        if model.keyboardCard == nil {
+            // The app whose menu bar shows: `frontmostApplication` can still name Shot after a link or shortcut reached it.
+            appBeforeFocus = NSWorkspace.shared.menuBarOwningApplication
+        }
+        model.keyboardCard = card.id
+        panel.takesKeyboard = true
+        panel.makeKey()
+        return true
+    }
+
+    /// Esc, or the last card closing: the panel stops taking the keyboard and the app that had it gets it back. Shot never
+    /// became active, so a plain `activate()` of that app is only a request macOS can turn down; Shot takes activation on
+    /// the key press and yields it to that app instead.
+    private func giveKeyboardBack() {
+        let app = appBeforeFocus
+        keyboardLost()
+        guard let app, app != NSRunningApplication.current else {
+            return
+        }
+        NSApp.activate()
+        NSApp.yieldActivation(to: app)
+        app.activate()
+    }
+
+    private func keyboardLost() {
+        guard let panel, panel.takesKeyboard else {
+            return
+        }
+        panel.takesKeyboard = false
+        appBeforeFocus = nil
+        let card = model.keyboardCard
+        model.keyboardCard = nil
+        if let card {
+            startTimer(for: card)
+        }
+    }
+
+    /// Return or Space that no focused button took: Copy, the card's main button.
+    private func copyFocusedCard() -> Bool {
+        guard let id = model.keyboardCard, let card = model.cards.first(where: { $0.id == id }) else {
+            return false
+        }
+        copy(card)
+        return true
     }
 
     // MARK: Card actions
@@ -402,5 +471,35 @@ final class QuickAccessController {
 
     func exportGIF(_ card: QuickAccessCard) {
         onExportGIF?(card.fileURL)
+    }
+}
+
+/// The Quick Access panel. It takes the keyboard only after the Focus Quick Access shortcut, never from a click, so pressing
+/// Copy with the pointer leaves typing in the app in front.
+final class QuickAccessPanel: FloatingPanelWindow {
+    var takesKeyboard = false
+    var onKeyboardLost: (() -> Void)?
+    var onEscape: (() -> Void)?
+    /// Return or Space that no focused button used; true when it did something.
+    var onDefaultAction: (() -> Bool)?
+
+    override var canBecomeKey: Bool { takesKeyboard }
+
+    override func resignKey() {
+        super.resignKey()
+        onKeyboardLost?()
+    }
+
+    override func cancelOperation(_ sender: Any?) {
+        onEscape?()
+    }
+
+    /// The end of the responder chain, so a button that Tab focused keeps Space.
+    override func keyDown(with event: NSEvent) {
+        let plain = event.modifierFlags.intersection([.command, .option, .control]).isEmpty
+        if plain, [36, 76, 49].contains(event.keyCode), onDefaultAction?() == true {
+            return
+        }
+        super.keyDown(with: event)
     }
 }

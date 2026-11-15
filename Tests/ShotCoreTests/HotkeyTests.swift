@@ -27,7 +27,7 @@ import Testing
 
 @Test func replacementHotkeysTakeTheMacOSKeys() {
     let replaced = ShotAction.allCases.map { $0.defaultCombo(replacingSystemScreenshots: true)?.displayString }
-    #expect(replaced == ["⇧⌘4", "⇧⌘5", nil, nil])
+    #expect(replaced == ["⇧⌘4", "⇧⌘5", nil, nil, nil])
     #expect(ShotAction.allCases.allSatisfy { $0.defaultCombo(replacingSystemScreenshots: false) == $0.defaultCombo })
 }
 
@@ -42,6 +42,16 @@ import Testing
     // HotkeyCenter numbers hotkeys by position, so a new action goes last and existing ones keep their ids.
     #expect(ShotAction.allCases.firstIndex(of: .pickColor) == 2)
     #expect(ShotAction.allCases.firstIndex(of: .copyPath) == 3)
+}
+
+@Test func focusQuickAccessHasAShortcutButNoDefault() {
+    #expect(ShotAction.focusQuickAccess.hasShortcut)
+    #expect(ShotAction.focusQuickAccess.defaultCombo == nil)
+    #expect(ShotAction.focusQuickAccess.defaultCombo(replacingSystemScreenshots: true) == nil)
+    #expect(!ShotAction.focusQuickAccess.isRecording)
+    #expect(ShotAction.focusQuickAccess.rawValue == "focus-quick-access")
+    // Last, so the earlier actions keep their hotkey ids.
+    #expect(ShotAction.allCases.last == .focusQuickAccess)
 }
 
 @Test func tabStepsThroughTheTargetsAndWraps() {

@@ -50,6 +50,16 @@ The newest card sits in front, with older ones waiting behind it as a dark edge 
 
 In **Settings › Quick Access**, set **Screen corner** to **Bottom left** or **Bottom right**, and **Auto-close** to how long cards stay: 4, 8, 15 or 30 seconds, or **Never**. The preview under those options shows a card in the corner you chose and counts down the time you picked. To skip the card altogether, turn off **Show Quick Access** in **Settings › Capture**.
 
+## Use Quick Access from the keyboard
+
+Quick Access cards and pins don't take the keyboard by themselves, so pressing **Copy** with the pointer never takes typing away from the app you're in. To reach them from the keyboard, set a key combination for **Focus Quick Access** in **Settings › Shortcuts**. It has none until you set one.
+
+1. Press your Focus Quick Access shortcut. The newest card shows its buttons, and no card closes while it has the keyboard.
+2. Press <kbd>Return</kbd> to copy the capture. With keyboard navigation on in System Settings, <kbd>Tab</kbd> moves between the card's buttons and <kbd>Space</kbd> presses one.
+3. Press <kbd>Esc</kbd> to give the keyboard back to the app you were in.
+
+With no card showing, the shortcut focuses the newest pin instead. <kbd>↑</kbd> and <kbd>↓</kbd> then change its opacity, and <kbd>Esc</kbd> closes it.
+
 ## Messages after you copy or save
 
 When you copy or save from a card, a small dark message such as **Copied** or **Saved Shot 2026-11-07 at 10.42.15.png** confirms it, with a yellow tick. It sits in the same corner as the cards, just above them while they're showing, and a click dismisses it. The same message shows how far a GIF export has got, with **Cancel**, and offers **Undo** after you discard a recording.

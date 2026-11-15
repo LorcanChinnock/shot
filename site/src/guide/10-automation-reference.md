@@ -31,6 +31,7 @@ Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
 | `shot://pause` | Pause or resume the recording |
 | `shot://pick-color` | Pick a colour on screen and copy its hex |
 | `shot://copy-path` | Copy the newest capture's path |
+| `shot://focus-quick-access` | Give the keyboard to the newest Quick Access card, or the newest pin when there's no card |
 | `shot://capture-timer?seconds=<n>` | Count down `n` seconds (1 to 60, default 5), then capture the full screen |
 | `shot://annotate?path=<file>` | Open an image in the editor, or a video in the video editor |
 | `shot://edit-video?path=<file>` | Open a video in the video editor to trim it |

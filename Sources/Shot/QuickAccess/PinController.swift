@@ -38,6 +38,16 @@ final class PinController {
         }
     }
 
+    /// Gives the keyboard to the newest pin, as clicking it does, so Esc closes it and ↑ and ↓ change its opacity. False
+    /// when no pin is open.
+    func focusNewestPin() -> Bool {
+        guard let panel = panels.last(where: \.isVisible) else {
+            return false
+        }
+        panel.makeKey()
+        return true
+    }
+
     private func show(_ image: CGImage, scale: CGFloat, name: String, frameless: Bool) {
         let size = CGSize(width: CGFloat(image.width) / max(scale, 1), height: CGFloat(image.height) / max(scale, 1))
         let screen = NSScreen.underPointer ?? NSScreen.screens[0]

@@ -10,6 +10,9 @@ public enum ShotAction: String, CaseIterable, Sendable {
     case pickColor = "pick-color"
     /// Copies the newest capture's path.
     case copyPath = "copy-path"
+    /// Gives the keyboard to the newest Quick Access card, or the newest pin when no card is showing, since neither takes
+    /// focus by itself.
+    case focusQuickAccess = "focus-quick-access"
 
     public var isRecording: Bool { self == .record }
 
@@ -18,16 +21,17 @@ public enum ShotAction: String, CaseIterable, Sendable {
     public var hasShortcut: Bool {
         switch self {
         case .pickColor, .copyPath: false
-        case .screenshot, .record: true
+        case .screenshot, .record, .focusQuickAccess: true
         }
     }
 
-    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Pick Colour and Copy Path stay out of the way with none.
+    /// Mirrors the macOS screenshot keys with ⌃ in place of ⌘. Pick Colour and Copy Path stay out of the way with none,
+    /// and Focus Quick Access starts with none, for whoever needs it to set.
     public var defaultCombo: KeyCombo? {
         switch self {
         case .screenshot: KeyCombo(keyCode: 21, modifiers: KeyCombo.control | KeyCombo.shift)
         case .record: KeyCombo(keyCode: 23, modifiers: KeyCombo.control | KeyCombo.shift)
-        case .pickColor, .copyPath: nil
+        case .pickColor, .copyPath, .focusQuickAccess: nil
         }
     }
 
@@ -39,7 +43,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         switch self {
         case .screenshot: return KeyCombo(keyCode: 21, modifiers: KeyCombo.command | KeyCombo.shift)
         case .record: return KeyCombo(keyCode: 23, modifiers: KeyCombo.command | KeyCombo.shift)
-        case .pickColor, .copyPath: return defaultCombo
+        case .pickColor, .copyPath, .focusQuickAccess: return defaultCombo
         }
     }
 
@@ -145,6 +149,7 @@ extension ShotAction {
         case .record: String(localized: "Record")
         case .pickColor: String(localized: "Pick Colour")
         case .copyPath: String(localized: "Copy Latest Capture's Path")
+        case .focusQuickAccess: String(localized: "Focus Quick Access")
         }
     }
 }

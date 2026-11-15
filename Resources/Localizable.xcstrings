@@ -20815,6 +20815,9 @@
         }
       }
     },
+    "Focus Quick Access" : {
+
+    },
     "Folder" : {
       "localizations" : {
         "de" : {
@@ -28639,6 +28642,9 @@
           }
         }
       }
+    },
+    "No Quick Access card or pin to focus" : {
+
     },
     "No camera found" : {
       "localizations" : {
