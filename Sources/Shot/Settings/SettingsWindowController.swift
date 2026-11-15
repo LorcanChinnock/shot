@@ -1,12 +1,23 @@
 import AppKit
 import SwiftUI
 
+/// Hands ↑ and ↓ to `SettingsWindowController` once no focused control, such as a scroll view or a slider, has used them.
+private final class SettingsWindow: NSWindow {
+    var onKey: ((NSEvent) -> Bool)?
+
+    override func keyDown(with event: NSEvent) {
+        if onKey?(event) == true {
+            return
+        }
+        super.keyDown(with: event)
+    }
+}
+
 /// The Settings window, with every section picked from a sidebar. The gallery has its own window, `GalleryWindowController`.
 @MainActor
 enum SettingsWindowController {
     private static var window: NSWindow?
     private static var contentReleased = false
-    private static var keyMonitor: Any?
     static let size = NSSize(width: 1080, height: 720)
     /// Narrowest window that still shows every section.
     static let minSize = NSSize(width: 800, height: 420)
@@ -35,17 +46,16 @@ enum SettingsWindowController {
 
     private static func makeWindow() {
         let visible = (NSScreen.underPointer ?? NSScreen.screens[0]).visibleFrame
-        let window = GlassWindow.make(size: NSSize(width: min(size.width, visible.width), height: min(size.height, visible.height)), title: String(localized: "Settings"), resizable: true) {
+        let window = SettingsWindow()
+        GlassWindow.make(window, size: NSSize(width: min(size.width, visible.width), height: min(size.height, visible.height)), title: String(localized: "Settings"), resizable: true) {
             SettingsView()
         }
         window.minSize = minSize
-        let windowNumber = window.windowNumber
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            guard event.windowNumber == windowNumber, event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
-                return event
+        window.onKey = { event in
+            guard event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
+                return false
             }
-            let keyCode = event.keyCode
-            return MainActor.assumeIsolated { moveBetweenSections(keyCode: keyCode) } ? nil : event
+            return moveBetweenSections(keyCode: event.keyCode)
         }
         // The window is kept when closed, so its views never disappear on their own: turn off any camera or microphone test, and
         // once closed drop the views. `show` builds them again.

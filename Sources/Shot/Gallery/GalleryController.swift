@@ -71,7 +71,8 @@ final class GalleryController {
         return true
     }
 
-    /// Arrows, Return, Space, Delete and Escape work wherever focus is, except while typing in the search field.
+    /// Arrows, Return, Space, Delete and Escape, which reach here only when no focused control used them. While typing in the
+    /// search field, only Escape does, to leave it.
     func handleKey(_ event: NSEvent, in window: NSWindow) -> Bool {
         guard event.modifierFlags.intersection([.command, .option, .control]).isEmpty, model.trashRequest == nil else {
             return false

@@ -50,12 +50,14 @@ private final class VideoEditorWindow: NSWindow {
         return super.validateUserInterfaceItem(item)
     }
 
-    /// Space, the arrow keys, Delete and Escape work wherever focus is, except in a text field.
-    override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, !isEditingText, onKey?(event) == true {
+    /// Space, the arrow keys, Delete, Escape and the letter shortcuts, once nothing focused has used them: the end of the
+    /// responder chain, so a button, slider or segmented control that Tab focused keeps its keys, and a text field keeps all of
+    /// them.
+    override func keyDown(with event: NSEvent) {
+        if !isEditingText, onKey?(event) == true {
             return
         }
-        super.sendEvent(event)
+        super.keyDown(with: event)
     }
 }
 
