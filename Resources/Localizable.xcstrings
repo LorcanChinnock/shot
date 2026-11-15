@@ -5644,6 +5644,9 @@
     "Arrow keys move the crop and Option-arrow keys resize it. Return applies it." : {
 
     },
+    "Arrow keys move the frame and Option-arrow keys resize it." : {
+
+    },
     "Arrows: move" : {
       "localizations" : {
         "de" : {
@@ -26535,6 +26538,18 @@
         }
       }
     },
+    "Make Frame Narrower" : {
+
+    },
+    "Make Frame Shorter" : {
+
+    },
+    "Make Frame Taller" : {
+
+    },
+    "Make Frame Wider" : {
+
+    },
     "Make Narrower" : {
 
     },
@@ -27235,6 +27250,18 @@
           }
         }
       }
+    },
+    "Move Frame Down" : {
+
+    },
+    "Move Frame Left" : {
+
+    },
+    "Move Frame Right" : {
+
+    },
+    "Move Frame Up" : {
+
     },
     "Move Left" : {
 
