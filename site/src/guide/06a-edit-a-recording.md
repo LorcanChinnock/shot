@@ -14,7 +14,7 @@ group: Edit and share
 
 ## Play and move around
 
-Under the video, the controls area shows **Play**, the playhead's time and the edit's length ("0:02.40 / 0:10.50"), then **Split**, **Cut**, **Trim idle** and **Add media**, and zoom at the right. Under that is the timeline: a ruler, then each lane with its name on the left. A plain recording has a **Video** lane and, if it has sound, a **Sound** lane. Annotations add **Draw** or **Text** lanes above the video, and added files add lanes of their own. Hover over a lane's name to lock it, hide it or mute it.
+Under the video, the controls area shows **Play**, the playhead's time and the edit's length ("0:02.40 / 0:10.50"), then **Split**, **Cut**, **Trim idle** and **Add media**, and zoom at the right. Under that is the timeline: a ruler, then each lane with its name on the left. A plain recording has a **Video** lane and, if it has sound, a **Sound** lane. Annotations add **Draw** or **Text** lanes above the video, and added files add lanes of their own. Hover over a lane's name to lock it, hide it or mute it. With keyboard navigation on, <kbd>Tab</kbd> reaches the same switches, and with VoiceOver they're in the actions for the lane's name, along with **Delete Track** for an added track.
 
 | Press | To |
 |---|---|

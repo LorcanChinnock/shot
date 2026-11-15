@@ -46,6 +46,8 @@ struct TracksView: View {
     @State private var gesture: (kind: Gesture, startX: CGFloat, pointsPerSecond: CGFloat)?
     @State private var pinchStart: Double?
     @State private var hoveredTrack: Int?
+    /// The lane switch Tab has focused, which shows that lane's switches as the pointer would.
+    @FocusState private var focusedSwitch: LaneSwitch?
     /// The annotation clip under the pointer, which right-clicking offers to rename.
     @State private var hoveredAnnotation: UUID?
     /// The annotation clip whose name is being edited in place.
@@ -68,6 +70,8 @@ struct TracksView: View {
             let reach = model.project.tracks.indices.flatMap(model.project.trimmedEnds).map(\.end).max() ?? 0
             ScrollView([.horizontal, .vertical], showsIndicators: false) {
                 lanes(timeline, layout: layout, leadX: leadX)
+                    // The lanes are one VoiceOver element, the playhead; the lane names beside them stay their own.
+                    .modifier(TimelineAccessibility(model: model, label: Text("Timeline")))
                     .offset(x: originX)
                     .frame(width: LaneLayout.labelWidth + max(width, leadX + CGFloat(reach) * pointsPerSecond), height: layout.height, alignment: .topLeading)
                     .overlay(alignment: .topLeading) { laneNames(layout).offset(x: scrollX) }
@@ -117,7 +121,7 @@ struct TracksView: View {
                 .onEnded { _ in pinchStart = nil })
         }
         .frame(height: height)
-        .modifier(TimelineAccessibility(model: model, label: Text("Timeline")))
+        .accessibilityElement(children: .contain)
         .help("Drag to scrub. Drag the yellow handles to trim, a clip to move it and its edges to trim it, and an annotation or picture up or down to restack it. Shift-drag to select a section, then press Delete to cut it. Right-click a lane for its options.")
         .allowsHitTesting(!model.isExporting)
     }
@@ -263,11 +267,12 @@ struct TracksView: View {
                         .fixedSize()
                     Spacer(minLength: 2)
                     // The name always shows whole; at a larger text size the switches give way, and the lane's
-                    // right-click menu still has them.
+                    // right-click menu and VoiceOver actions still have them.
                     ViewThatFits(in: .horizontal) {
                         HStack(spacing: 0) {
-                            ForEach(shownControls(onTrack: lane.track), id: \.self) { control in
+                            ForEach(LaneControl.allCases.filter { $0.applies(to: track.kind) }, id: \.self) { control in
                                 laneButton(control, track: lane.track, isOn: track[keyPath: control.flag])
+                                    .opacity(showsControl(control, onTrack: lane.track) ? 1 : 0)
                             }
                         }
                         Color.clear.frame(width: 0)
@@ -276,6 +281,9 @@ struct TracksView: View {
                 .padding(.leading, 4)
                 .padding(.trailing, 2)
                 .frame(width: LaneLayout.labelWidth, height: lane.height)
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(Text(Self.title(model.project.laneName(ofTrack: lane.track))))
+                .accessibilityActions { laneActions(onTrack: lane.track) }
                 .offset(y: lane.y)
             }
         }
@@ -291,9 +299,24 @@ struct TracksView: View {
         }
     }
 
-    private func shownControls(onTrack index: Int) -> [LaneControl] {
-        let track = model.project.tracks[index]
-        return LaneControl.allCases.filter { $0.applies(to: track.kind) && (hoveredTrack == index || track[keyPath: $0.flag]) }
+    /// A switch shows while it's on, and every switch on a lane shows while the pointer is over it or Tab is on one of them.
+    /// The ones that don't show are still there, see-through, so Tab can reach a switch that's off.
+    private func showsControl(_ control: LaneControl, onTrack index: Int) -> Bool {
+        hoveredTrack == index || focusedSwitch?.track == index || model.project.tracks[index][keyPath: control.flag]
+    }
+
+    /// The lane's switches and Delete Track, as VoiceOver actions on its name, since the right-click menu needs a pointer.
+    @ViewBuilder
+    private func laneActions(onTrack index: Int) -> some View {
+        if model.project.tracks.indices.contains(index) {
+            let track = model.project.tracks[index]
+            ForEach(LaneControl.allCases.filter { $0.applies(to: track.kind) }, id: \.self) { control in
+                Button(control.menuTitle(isOn: track[keyPath: control.flag])) { model.toggle(control.flag, ofTrack: index) }
+            }
+            if track.kind == .overlay {
+                Button("Delete Track") { model.deleteTrack(index) }
+            }
+        }
     }
 
     private func laneButton(_ control: LaneControl, track: Int, isOn: Bool) -> some View {
@@ -306,6 +329,7 @@ struct TracksView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.halo(radius: Theme.Radius.tiny))
+        .focused($focusedSwitch, equals: LaneSwitch(track: track, control: control))
         .themeTip(control.tip(isOn: isOn))
         .accessibilityLabel(Text(control.menuTitle(isOn: isOn)))
     }
@@ -673,6 +697,12 @@ private struct FollowPlayhead: ViewModifier {
             }
         }
     }
+}
+
+/// One lane's switch, for keyboard focus.
+private struct LaneSwitch: Hashable {
+    let track: Int
+    let control: LaneControl
 }
 
 /// A switch on a lane, for the kinds of track it means something on.
