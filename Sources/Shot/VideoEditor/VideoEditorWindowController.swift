@@ -238,6 +238,17 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
     }
 
     private func handleKey(_ event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        // ⌥ and the arrows select clips and lanes, the timeline's only way to select without a drag.
+        if modifiers == .option, !model.isCropping {
+            switch event.keyCode {
+            case 123: return model.selectAdjacentClip(forward: false)
+            case 124: return model.selectAdjacentClip(forward: true)
+            case 126: return model.moveToAdjacentLane(down: false)
+            case 125: return model.moveToAdjacentLane(down: true)
+            default: return false
+            }
+        }
         guard event.modifierFlags.intersection([.command, .option, .control]).isEmpty else {
             return false
         }
@@ -281,6 +292,10 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
             model.toggleAllKeyframes()
         case 45: // N
             model.toggleSnapping()
+        case 34: // I, the start of a range
+            model.markRange(start: true)
+        case 31: // O, the end of a range
+            model.markRange(start: false)
         case 53: // Escape
             return model.cancelExport() || model.clearSelection() || model.escapeAnnotating() || model.closeExportPanel()
         default:

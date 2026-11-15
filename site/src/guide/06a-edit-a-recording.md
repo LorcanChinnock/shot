@@ -40,7 +40,7 @@ Most recordings start with a few seconds of reaching for the mouse and end with 
 
 ## Cut out a section
 
-1. Hold <kbd>Shift</kbd> and drag along the timeline to select a section.
+1. Hold <kbd>Shift</kbd> and drag along the timeline to select a section. From the keyboard, move the playhead to where the section starts and press <kbd>I</kbd>, then to where it ends and press <kbd>O</kbd>.
 2. Click **Cut**, or press <kbd>Delete</kbd>.
 
 A black **CUT** badge on the Video lane shows where each cut is and how long it was, such as "CUT 1.2s".
@@ -52,6 +52,8 @@ A black **CUT** badge on the Video lane shows where each cut is and how long it 
 - **Snap** (<kbd>N</kbd>), the button with two arrows beside zoom, snaps the playhead, and clips you drag or trim, to clip edges and the playhead.
 
 Clips that meet, after a split or a cut, show a small gap between them. The selected clip has a blue outline.
+
+To select clips from the keyboard, press <kbd>⌥←</kbd> or <kbd>⌥→</kbd> for the previous or next clip on the lane, which also moves the playhead to its start. <kbd>⌥↑</kbd> and <kbd>⌥↓</kbd> move to the lane above or below and select what's on it under the playhead. Once a clip is selected, the Inspector and Cut act on it.
 
 ## Add video or sound
 
