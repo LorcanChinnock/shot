@@ -41,4 +41,14 @@ struct ToastLayoutTests {
         let frame = ToastLayout.resized(CGRect(x: 1150, y: 70, width: 260, height: 36), to: CGSize(width: 400, height: 36), side: .right)
         #expect(frame == CGRect(x: 1010, y: 70, width: 400, height: 36))
     }
+
+    @Test func aToastWithAButtonStaysAtLeastFiveSeconds() {
+        #expect(ToastLayout.duration(.seconds(1.5), hasAction: true) == .seconds(5))
+        #expect(ToastLayout.duration(.seconds(8), hasAction: true) == .seconds(8))
+        #expect(ToastLayout.duration(nil, hasAction: true) == nil)
+    }
+
+    @Test func aToastWithoutAButtonKeepsItsDuration() {
+        #expect(ToastLayout.duration(.seconds(1.5), hasAction: false) == .seconds(1.5))
+    }
 }

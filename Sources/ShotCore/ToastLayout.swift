@@ -7,6 +7,18 @@ public enum ToastLayout {
     /// The space between the top of the Quick Access cards and the toast.
     public static let gap: CGFloat = 22
 
+    /// The least time a toast with a button (Undo, Cancel or Show) stays, so there's time to reach the button with VoiceOver
+    /// or the keyboard, or to read it at a large text size.
+    public static let minimumWithAction: Duration = .seconds(5)
+
+    /// How long a toast stays: `requested`, raised to `minimumWithAction` when it has a button. Nil stays until replaced.
+    public static func duration(_ requested: Duration?, hasAction: Bool) -> Duration? {
+        guard let requested, hasAction else {
+            return requested
+        }
+        return max(requested, minimumWithAction)
+    }
+
     /// The toast's frame for a pill `size` big on a screen whose visible frame is `visible`.
     /// - Parameters:
     ///   - side: the Quick Access corner.

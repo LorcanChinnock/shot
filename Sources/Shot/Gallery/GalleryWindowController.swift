@@ -1,7 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// Passes the gallery's shortcuts to `GalleryController` before the menus and the focused view see them.
+/// Passes the gallery's ⌘ shortcuts to `GalleryController` before the menus see them, and its plain keys once no focused control
+/// has used them.
 private final class GalleryWindow: NSWindow {
     var onCommand: ((String, Bool) -> Bool)?
     var onKey: ((NSEvent) -> Bool)?
@@ -14,11 +15,20 @@ private final class GalleryWindow: NSWindow {
         return super.performKeyEquivalent(with: event)
     }
 
+    /// Esc leaves the search field before the field sees it, so the next arrow moves through the grid.
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, onKey?(event) == true {
+        if event.type == .keyDown, firstResponder is NSText, onKey?(event) == true {
             return
         }
         super.sendEvent(event)
+    }
+
+    /// The end of the responder chain, so a button, slider or sidebar row that Tab focused keeps Space and the arrow keys.
+    override func keyDown(with event: NSEvent) {
+        if onKey?(event) == true {
+            return
+        }
+        super.keyDown(with: event)
     }
 }
 
