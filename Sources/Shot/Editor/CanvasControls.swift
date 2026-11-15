@@ -8,6 +8,7 @@ import SwiftUI
 ///
 /// Neither stays over the picture: both fade while a drag draws or moves something, and the hint fades a few seconds
 /// after it changes and lets clicks through to the canvas. Fading keeps their space, so the style bar's clearance holds.
+/// A zoomed canvas scrolls `canvasFootHeight` further at the bottom, so any part of the picture can be brought above them.
 struct CanvasFoot: View {
     @Bindable var model: EditorModel
     let canvas: EditorCanvasView

@@ -50,22 +50,23 @@ public struct Viewport: Equatable, Sendable {
     }
 
     /// Centres the canvas along an axis where it fits inside the inset; along one where it doesn't,
-    /// stops it scrolling more than the inset past either edge.
-    public func clamped(to canvas: CGRect, in size: CGSize) -> Viewport {
-        func axis(origin: CGFloat, canvasMin: CGFloat, canvasLength: CGFloat, viewLength: CGFloat) -> CGFloat {
+    /// stops it scrolling more than the inset past either edge. `bottom` is extra room past the bottom edge, used only
+    /// when the canvas is taller than the view, so a zoomed picture can scroll clear of the controls along the foot.
+    public func clamped(to canvas: CGRect, in size: CGSize, bottom: CGFloat = 0) -> Viewport {
+        func axis(origin: CGFloat, canvasMin: CGFloat, canvasLength: CGFloat, viewLength: CGFloat, end: CGFloat) -> CGFloat {
             let length = canvasLength * scale
             let start: CGFloat
             if length <= viewLength - 2 * Self.inset {
                 // Rounded so the canvas edges sit on whole points.
                 start = ((viewLength - length) / 2).rounded()
             } else {
-                start = min(max(origin + canvasMin * scale, viewLength - Self.inset - length), Self.inset)
+                start = min(max(origin + canvasMin * scale, viewLength - Self.inset - end - length), Self.inset)
             }
             return start - canvasMin * scale
         }
         return Viewport(scale: scale, origin: CGPoint(
-            x: axis(origin: origin.x, canvasMin: canvas.minX, canvasLength: canvas.width, viewLength: size.width),
-            y: axis(origin: origin.y, canvasMin: canvas.minY, canvasLength: canvas.height, viewLength: size.height)
+            x: axis(origin: origin.x, canvasMin: canvas.minX, canvasLength: canvas.width, viewLength: size.width, end: 0),
+            y: axis(origin: origin.y, canvasMin: canvas.minY, canvasLength: canvas.height, viewLength: size.height, end: max(0, bottom))
         ))
     }
 

@@ -103,7 +103,7 @@ What you've just drawn stays selected, so you can fix its colour, width or fill 
 
 ## Zoom in
 
-Pinch, press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, or click **−** and **+** in the zoom control at the bottom left of the canvas. **Fit**, or <kbd>⌘0</kbd>, fits the screenshot to the window. Click the percentage for a menu with **Actual Size** (<kbd>⌘1</kbd>). To move around when zoomed in, scroll, hold <kbd>Space</kbd> and drag, drag with the middle mouse button, or use the hand tool (<kbd>H</kbd>).
+Pinch, press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, or click **−** and **+** in the zoom control at the bottom left of the canvas. **Fit**, or <kbd>⌘0</kbd>, fits the screenshot to the window. Click the percentage for a menu with **Actual Size** (<kbd>⌘1</kbd>). To move around when zoomed in, scroll, hold <kbd>Space</kbd> and drag, drag with the middle mouse button, or use the hand tool (<kbd>H</kbd>). Scrolled to the bottom, the screenshot stops above the zoom control and the hint, so they never cover its last rows.
 
 ## Copy or save
 

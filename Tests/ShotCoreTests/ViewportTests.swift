@@ -74,6 +74,22 @@ private func isRed(_ p: [UInt8]) -> Bool { p[0] > 225 && p[1] < 30 && p[2] < 30 
     #expect(Viewport(scale: 4, origin: CGPoint(x: 1000, y: 0)).clamped(to: grown, in: view).origin.x == 400 + Viewport.inset)
 }
 
+/// #1293: a zoomed picture scrolls far enough that its bottom edge clears the zoom control and hint.
+@Test func aZoomedCanvasScrollsItsBottomEdgeAboveTheFoot() {
+    let foot: CGFloat = 60
+    let bottomMost = Viewport(scale: 4, origin: CGPoint(x: 0, y: -5000)).clamped(to: canvas, in: view, bottom: foot)
+    #expect(bottomMost.viewPoint(CGPoint(x: 0, y: canvas.maxY)).y == 600 - Viewport.inset - foot)
+    // The top edge and the sides keep the plain inset.
+    let topMost = Viewport(scale: 4, origin: CGPoint(x: 500, y: 5000)).clamped(to: canvas, in: view, bottom: foot)
+    #expect(topMost.origin == CGPoint(x: Viewport.inset, y: Viewport.inset))
+    // A canvas that fits is centred as before, so a fitted picture keeps its size and place.
+    let fit = Viewport.fit(canvas, in: view, maxScale: 0.5)
+    #expect(fit.clamped(to: canvas, in: view, bottom: foot) == fit)
+    // Only a little taller than the view's room: it can still reach both edges.
+    let barely = Viewport(scale: 1.9, origin: CGPoint(x: 0, y: -5000)).clamped(to: canvas, in: view, bottom: foot)
+    #expect(barely.viewPoint(CGPoint(x: 0, y: canvas.maxY)).y == 600 - Viewport.inset - foot)
+}
+
 @Test func panningMovesTheOrigin() {
     let viewport = Viewport(scale: 2, origin: CGPoint(x: 10, y: 20))
     #expect(viewport.panned(by: CGVector(dx: -15, dy: 7)) == Viewport(scale: 2, origin: CGPoint(x: -5, y: 27)))
