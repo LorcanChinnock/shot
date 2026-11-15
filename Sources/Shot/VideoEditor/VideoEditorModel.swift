@@ -337,6 +337,47 @@ final class VideoEditorModel {
         selectedClipID = id
     }
 
+    // MARK: Keyboard selection
+
+    /// The lane ⌥↑ and ⌥↓ last moved to, which ⌥← and ⌥→ step along while nothing on it is selected.
+    @ObservationIgnored private var keyboardLane = 0
+
+    /// The lane the keyboard is on: the selected clip's, or the one it last moved to.
+    private var currentLane: Int {
+        if let id = selectedClipID, let track = project.trackID(of: id), let index = project.tracks.firstIndex(where: { $0.id == track }) {
+            return index
+        }
+        return project.tracks.indices.contains(keyboardLane) ? keyboardLane : 0
+    }
+
+    /// ⌥← and ⌥→: selects the previous or next clip on the lane and puts the playhead at its start. False at either end.
+    func selectAdjacentClip(forward: Bool) -> Bool {
+        let lane = currentLane
+        guard let target = TimelineNavigation.step(forward: forward, onTrack: lane, in: project, selected: selectedClipID, playhead: playhead) else {
+            return false
+        }
+        keyboardLane = lane
+        selectClip(target.id)
+        seekTimeline(to: target.start)
+        return true
+    }
+
+    /// ⌥↑ and ⌥↓: moves to the lane above or below and selects what's on it under the playhead, or nothing. False at the top
+    /// or bottom.
+    func moveToAdjacentLane(down: Bool) -> Bool {
+        guard let lane = TimelineNavigation.lane(down: down, from: currentLane, in: project) else {
+            return false
+        }
+        keyboardLane = lane
+        selectClip(TimelineNavigation.item(onTrack: lane, at: playhead, in: project)?.id)
+        return true
+    }
+
+    /// I and O: marks the start or end of the range Delete cuts at the playhead, keeping the other end.
+    func markRange(start: Bool) {
+        selection = TimelineNavigation.marking(start, at: playhead, current: selection, duration: project.duration)
+    }
+
     func selectClip(at time: Double?) {
         selectedClipID = time.flatMap { project.mainClip(at: $0)?.id }
     }
