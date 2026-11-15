@@ -56,3 +56,31 @@ private let screen = CGRect(x: 0, y: 0, width: 800, height: 600)
     let grown = KeyboardArea.resized(portrait, dw: 0, dh: 16, ratio: 16.0 / 9, in: screen)
     #expect(abs(grown.height / grown.width - 16.0 / 9) < 0.001)
 }
+
+@Test func steppingInATopLeftSpaceMovesUpOnScreen() {
+    let bounds = CGRect(x: 0, y: 0, width: 1000, height: 800)
+    let rect = CGRect(x: 100, y: 100, width: 200, height: 100)
+    #expect(KeyboardArea.stepped(rect, right: 10, up: 0, resizing: false, ratio: nil, in: bounds) == CGRect(x: 110, y: 100, width: 200, height: 100))
+    #expect(KeyboardArea.stepped(rect, right: 0, up: 10, resizing: false, ratio: nil, in: bounds) == CGRect(x: 100, y: 90, width: 200, height: 100))
+    #expect(KeyboardArea.stepped(CGRect(x: 0, y: 0, width: 200, height: 100), right: -10, up: 10, resizing: false, ratio: nil, in: bounds).origin == .zero)
+}
+
+@Test func resizingInATopLeftSpaceKeepsTheBottomEdge() {
+    let bounds = CGRect(x: 0, y: 0, width: 1000, height: 800)
+    let rect = CGRect(x: 100, y: 100, width: 200, height: 100)
+    let taller = KeyboardArea.stepped(rect, right: 0, up: 10, resizing: true, ratio: nil, in: bounds)
+    #expect(taller == CGRect(x: 100, y: 90, width: 200, height: 110))
+    let wider = KeyboardArea.stepped(rect, right: 10, up: 0, resizing: true, ratio: nil, in: bounds)
+    #expect(wider == CGRect(x: 100, y: 100, width: 210, height: 100))
+}
+
+@Test func resizingKeepsAPortraitRatioGivenEitherWay() {
+    let bounds = CGRect(x: 0, y: 0, width: 1000, height: 800)
+    let portrait = CGRect(x: 100, y: 100, width: 90, height: 160)
+    for ratio: CGFloat in [16.0 / 9, 9.0 / 16] {
+        let grown = KeyboardArea.stepped(portrait, right: 0, up: 16, resizing: true, ratio: ratio, in: bounds)
+        #expect(abs(grown.width / grown.height - 9.0 / 16) < 0.001)
+        #expect(grown.maxY == portrait.maxY)
+    }
+}
+

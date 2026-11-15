@@ -504,6 +504,49 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     /// How far the crop can reach: the canvas, or all of the placed image being cropped.
     private var cropBounds: CGRect { model.cropImageFullRect ?? canvasRect }
 
+    /// Arrow keys move the crop and Option-arrows resize it, as in the capture overlay, by `right` and `up` points on screen.
+    /// Says the size it keeps, which VoiceOver also reads as the crop's value.
+    @discardableResult
+    private func stepCrop(right: CGFloat, up: CGFloat, resizing: Bool, announcing: Bool = true) -> Bool {
+        guard let draft = model.cropDraft else {
+            return false
+        }
+        let scale = max(viewScale, .leastNonzeroMagnitude)
+        model.cropDraft = KeyboardArea.stepped(draft, right: right / scale, up: up / scale, resizing: resizing,
+                                               ratio: model.cropAspect.ratio(for: draft.size), in: cropBounds)
+        needsDisplay = true
+        if announcing {
+            NSAccessibility.post(element: self, notification: .announcementRequested, userInfo: [.announcement: cropSizeText, .priority: NSAccessibilityPriorityLevel.medium.rawValue])
+        }
+        return true
+    }
+
+    private var cropSizeText: String {
+        let size = model.cropKeptSize
+        return String(localized: "\(Int(size.width.rounded())) by \(Int(size.height.rounded())) pixels")
+    }
+
+    /// The crop as VoiceOver sees it while the crop tool is on: its size as the value, and moving and resizing as actions.
+    private lazy var cropElement: NSAccessibilityElement = {
+        let element = NSAccessibilityElement()
+        element.setAccessibilityRole(.group)
+        element.setAccessibilityLabel(String(localized: "Crop"))
+        element.setAccessibilityHelp(String(localized: "Arrow keys move the crop and Option-arrow keys resize it. Return applies it."))
+        let step = KeyboardArea.step
+        let steps: [(String, CGFloat, CGFloat, Bool)] = [
+            (String(localized: "Move Left"), -step, 0, false), (String(localized: "Move Right"), step, 0, false),
+            (String(localized: "Move Up"), 0, step, false), (String(localized: "Move Down"), 0, -step, false),
+            (String(localized: "Make Wider"), step, 0, true), (String(localized: "Make Narrower"), -step, 0, true),
+            (String(localized: "Make Taller"), 0, step, true), (String(localized: "Make Shorter"), 0, -step, true),
+        ]
+        element.setAccessibilityCustomActions(steps.map { name, right, up, resizing in
+            NSAccessibilityCustomAction(name: name) { [weak self] in
+                self?.stepCrop(right: right, up: up, resizing: resizing) ?? false
+            }
+        })
+        return element
+    }()
+
     /// Edges stick to the image's edges.
     private var cropSnap: CropSnap {
         let image = model.cropImageFullRect ?? model.document.fullRect
@@ -909,6 +952,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             case 51, 117:
                 model.resetCrop()
                 return
+            case 123...126 where model.cropDraft != nil && event.modifierFlags.intersection([.command, .control]).isEmpty:
+                let step = event.modifierFlags.contains(.shift) ? KeyboardArea.fineStep : KeyboardArea.step
+                let right: CGFloat = event.keyCode == 124 ? step : event.keyCode == 123 ? -step : 0
+                let up: CGFloat = event.keyCode == 126 ? step : event.keyCode == 125 ? -step : 0
+                stepCrop(right: right, up: up, resizing: event.modifierFlags.contains(.option), announcing: !event.isARepeat)
+                return
             default:
                 break
             }
@@ -988,8 +1037,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     override func accessibilityRole() -> NSAccessibility.Role? { .group }
     override func accessibilityLabel() -> String? { String(localized: "Canvas") }
 
-    /// Top layer first, as the layers panel lists them.
+    /// Top layer first, as the layers panel lists them, after the crop while it's being adjusted.
     override func accessibilityChildren() -> [Any]? {
+        var crop: [Any] = []
+        if model.tool == .crop, let draft = model.cropDraft {
+            cropElement.setAccessibilityParent(self)
+            cropElement.setAccessibilityValue(cropSizeText)
+            cropElement.setAccessibilityFrame(NSAccessibility.screenRect(fromView: self, rect: viewRect(draft)))
+            crop = [cropElement]
+        }
+        return crop + (annotationChildren() ?? [])
+    }
+
+    private func annotationChildren() -> [Any]? {
         let visible = model.layers.filter { !$0.isHidden }
         annotationElements = visible.reduce(into: [:]) { elements, annotation in
             let element = annotationElements[annotation.id] ?? AnnotationAccessibilityElement(id: annotation.id) { [weak self] id in
@@ -1007,7 +1067,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     }
 
     override func accessibilitySelectedChildren() -> [Any]? {
-        _ = accessibilityChildren()
+        _ = annotationChildren()
         return model.selectedIDs.compactMap { annotationElements[$0] }
     }
 
