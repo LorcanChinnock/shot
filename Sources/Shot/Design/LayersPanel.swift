@@ -700,6 +700,7 @@ private struct GripDots: View {
 /// The Crop badge on a placed image with a crop of its own: click it to adjust the crop.
 private struct CropBadge: View {
     let action: () -> Void
+    @FocusState private var focused: Bool
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.colorSchemeContrast) private var contrast
 
@@ -714,7 +715,12 @@ private struct CropBadge: View {
                 .opacity(isEnabled ? 1 : 0.5)
                 .contentShape(Rectangle())
         }
+        // As `RowButton` does: the accent halo, and telling the list it has focus, so the list doesn't draw its own halo too.
         .buttonStyle(.plain)
+        .focusEffectDisabled()
+        .focused($focused)
+        .focusHalo(focused && isEnabled, radius: Theme.Radius.tiny)
+        .preference(key: RowButtonFocus.self, value: focused)
         .accessibilityLabel(Text("Adjust crop"))
         .themeTip("Adjust crop")
     }

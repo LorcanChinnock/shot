@@ -751,7 +751,7 @@ private struct GalleryTagManagerRow: View {
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.halo)
             .themeTip("Remove this tag from every capture")
             .accessibilityLabel(Text("Remove tag"))
         }
@@ -840,7 +840,7 @@ struct GalleryTagPopover: View {
             .padding(.vertical, 4)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .accessibilityAddTraits(coverage == .all ? .isSelected : [])
         // The minus box shows a tag on only some of the captures, which the selected trait can't say.
         .accessibilityValue(coverage == .some ? Text("On some") : Text(verbatim: ""))

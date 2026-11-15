@@ -1555,7 +1555,7 @@ private struct LinkRow: View {
                 .contentShape(Rectangle())
                 .environment(\.settingsContext, context + [words])
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.halo)
             .pointerStyle(.link)
             .accessibilityLabel(Text(title))
             .accessibilityAddTraits(.isLink)

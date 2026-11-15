@@ -518,7 +518,7 @@ private struct GalleryPreviewDetails: View {
                         .inkBorder(Capsule(), width: 1, color: Theme.controlEdge)
                         .contentShape(Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.halo(radius: 10))
                 .themeTip("Add or remove tags, which show in Finder too")
                 .accessibilityLabel(Text("Add tag"))
                 .popover(isPresented: $tagging, arrowEdge: .bottom) {

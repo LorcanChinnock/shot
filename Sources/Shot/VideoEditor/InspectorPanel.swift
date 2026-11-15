@@ -252,7 +252,7 @@ struct InspectorPanel: View {
                 }
                 .contentShape(chip)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.halo)
         .themeTip(here ? String(localized: "Remove this keyframe") : String(localized: "Keyframe \(name) here"), key: "K", detail: String(localized: "K keys every property at once."))
         .accessibilityLabel(Text(here ? "Remove \(name) keyframe" : "Add \(name) keyframe"))
     }
