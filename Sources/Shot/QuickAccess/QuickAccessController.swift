@@ -54,6 +54,8 @@ final class QuickAccessController {
     private var panel: FloatingPanelWindow?
     private var timers: [UUID: Task<Void, Never>] = [:]
     private var settleTask: Task<Void, Never>?
+    /// The cards VoiceOver's focus is on, which hold every card as the pointer does.
+    private var voiceOverFocus: Set<UUID> = []
     /// Watch the pointer while the stack is fanned out, to fold it again once the pointer leaves.
     private var pointerMonitors: [Any] = []
 
@@ -136,10 +138,25 @@ final class QuickAccessController {
             self.startTimer(for: card.id)
             self.settle()
         }
+        announce(card)
+    }
+
+    /// Tells VoiceOver a card is there, since it may close before the VoiceOver cursor ever reaches the panel. Medium
+    /// priority, so it doesn't cut off a toast saying the capture was copied or saved.
+    private func announce(_ card: QuickAccessCard) {
+        guard let panel else {
+            return
+        }
+        let message = card.isVideo ? String(localized: "Recording ready in Quick Access") : String(localized: "Screenshot ready in Quick Access")
+        NSAccessibility.post(element: panel, notification: .announcementRequested, userInfo: [
+            .announcement: message,
+            .priority: NSAccessibilityPriorityLevel.medium.rawValue,
+        ])
     }
 
     func remove(_ id: UUID) {
         timers.removeValue(forKey: id)?.cancel()
+        voiceOverFocus.remove(id)
         if let styled = model.cards.first(where: { $0.id == id })?.styledURL {
             Self.removeStyled(styled)
         }
@@ -176,6 +193,15 @@ final class QuickAccessController {
         if hovering {
             fanOut()
         } else {
+            startTimer(for: id)
+        }
+    }
+
+    /// VoiceOver's focus on a card holds every card, as the pointer on the stack does. Leaving restarts that card's timer.
+    func setVoiceOverFocus(_ focused: Bool, card id: UUID) {
+        if focused {
+            voiceOverFocus.insert(id)
+        } else if voiceOverFocus.remove(id) != nil {
             startTimer(for: id)
         }
     }
@@ -253,8 +279,8 @@ final class QuickAccessController {
             guard !Task.isCancelled, let self else {
                 return
             }
-            // Every card waits while the pointer is on the stack, so none moves under it.
-            if self.isPointerOverStack {
+            // Every card waits while the pointer is on the stack, so none moves under it, and while VoiceOver is on a card.
+            if self.isPointerOverStack || !self.voiceOverFocus.isEmpty {
                 self.startTimer(for: id)
             } else {
                 self.remove(id)

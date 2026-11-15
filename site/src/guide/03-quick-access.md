@@ -46,7 +46,7 @@ When you hover a pin, a dark bar appears across its top, with **Pinned** and its
 
 ## Choose where cards go and how long they stay
 
-The newest card sits in front, with older ones waiting behind it as a dark edge along its top, up to five. A sixth closes the oldest. Point at the stack to spread the cards out above the front one and reach an older one. The front card stays where it was, so **Copy** never moves under the pointer. Each card closes on its own after 8 seconds, but none closes while the pointer is on the stack.
+The newest card sits in front, with older ones waiting behind it as a dark edge along its top, up to five. A sixth closes the oldest. Point at the stack to spread the cards out above the front one and reach an older one. The front card stays where it was, so **Copy** never moves under the pointer. Each card closes on its own after 8 seconds, but none closes while the pointer is on the stack. With VoiceOver on, Shot says when a new card appears, and no card closes while the VoiceOver cursor is on one. Its buttons are in VoiceOver's actions for the card.
 
 In **Settings › Quick Access**, set **Screen corner** to **Bottom left** or **Bottom right**, and **Auto-close** to how long cards stay: 4, 8, 15 or 30 seconds, or **Never**. The preview under those options shows a card in the corner you chose and counts down the time you picked. To skip the card altogether, turn off **Show Quick Access** in **Settings › Capture**.
 

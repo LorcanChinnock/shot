@@ -53,6 +53,7 @@ private struct QuickAccessCardView: View {
     let isBehind: Bool
     let controller: QuickAccessController
     @State private var hovering = false
+    @AccessibilityFocusState private var voiceOverFocused: Bool
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -62,6 +63,7 @@ private struct QuickAccessCardView: View {
         ZStack {
             picture
                 .accessibilityActions { accessibilityActions }
+                .accessibilityFocused($voiceOverFocused)
             if isBehind {
                 FloatingPanel.cardBehind
                     .transition(.opacity)
@@ -88,6 +90,9 @@ private struct QuickAccessCardView: View {
                 hovering = inside
             }
             controller.setHovering(inside, card: card.id)
+        }
+        .onChange(of: voiceOverFocused) { _, focused in
+            controller.setVoiceOverFocus(focused, card: card.id)
         }
         .onDrag { NSItemProvider(contentsOf: card.styledURL ?? card.fileURL) ?? NSItemProvider() }
         .contextMenu { menu }
