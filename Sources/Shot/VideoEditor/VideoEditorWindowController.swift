@@ -239,6 +239,13 @@ final class VideoEditorWindowController: NSObject, NSWindowDelegate, NSMenuItemV
 
     private func handleKey(_ event: NSEvent) -> Bool {
         let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        // In crop mode the arrows move the crop and ⌥-arrows resize it, with ⇧ for single points, as in the capture overlay.
+        if model.isCropping, (123...126).contains(event.keyCode), modifiers.subtracting([.option, .shift]).isEmpty {
+            let step = modifiers.contains(.shift) ? KeyboardArea.fineStep : KeyboardArea.step
+            let right: CGFloat = event.keyCode == 124 ? step : event.keyCode == 123 ? -step : 0
+            let up: CGFloat = event.keyCode == 126 ? step : event.keyCode == 125 ? -step : 0
+            return model.stepCrop(right: right, up: up, resizing: modifiers.contains(.option), announcing: !event.isARepeat)
+        }
         // ⌥ and the arrows select clips and lanes, the timeline's only way to select without a drag.
         if modifiers == .option, !model.isCropping {
             switch event.keyCode {

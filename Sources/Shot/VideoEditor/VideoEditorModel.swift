@@ -78,6 +78,8 @@ final class VideoEditorModel {
     private(set) var cropTarget: VideoCropTarget?
     /// The crop being adjusted: in canvas pixels for the frame, or in the clip's picture's pixels, y down, for a clip.
     var cropDraft: CGRect?
+    /// How the crop's pixels map to the view, which the crop overlay keeps up to date, so arrow keys step in screen points.
+    @ObservationIgnored var cropViewTransform: CGAffineTransform = .identity
     /// How much of the well's bottom the crop bar covers in crop mode, which the video fits above.
     var cropBarClearance: CGFloat = 0
     var cropAspect: CropAspect = CropAspect(rawValue: UserDefaults.standard.string(forKey: PreferenceKey.editorCropAspect) ?? "") ?? .free {

@@ -57,6 +57,23 @@ struct VideoCropOverlay: View {
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(model.cropBarName))
+                .accessibilityValue(Text(model.cropSizeText))
+                .accessibilityHint(Text("Arrow keys move the crop and Option-arrow keys resize it. Return applies it."))
+                .accessibilityActions {
+                    let step = KeyboardArea.step
+                    Button("Move Left") { model.stepCrop(right: -step, up: 0, resizing: false) }
+                    Button("Move Right") { model.stepCrop(right: step, up: 0, resizing: false) }
+                    Button("Move Up") { model.stepCrop(right: 0, up: step, resizing: false) }
+                    Button("Move Down") { model.stepCrop(right: 0, up: -step, resizing: false) }
+                    Button("Make Wider") { model.stepCrop(right: step, up: 0, resizing: true) }
+                    Button("Make Narrower") { model.stepCrop(right: -step, up: 0, resizing: true) }
+                    Button("Make Taller") { model.stepCrop(right: 0, up: step, resizing: true) }
+                    Button("Make Shorter") { model.stepCrop(right: 0, up: -step, resizing: true) }
+                }
+                // The arrow keys step the crop in screen points, so the model needs the mapping from its pixels.
+                .onChange(of: mapping.transform, initial: true) { _, transform in
+                    model.cropViewTransform = transform
+                }
             }
         }
         .coordinateSpace(name: "crop")
@@ -177,6 +194,34 @@ extension VideoEditorModel: CropBarEditing {
     }
 
     var canResetCrop: Bool { cropDraft != nil && cropDraft != cropBounds }
+
+    /// The size the crop keeps, as VoiceOver reads it.
+    var cropSizeText: String {
+        let size = cropKeptSize
+        return String(localized: "\(Int(size.width.rounded())) by \(Int(size.height.rounded())) pixels")
+    }
+
+    /// One arrow-key step: moves the crop `right` and `up` points on screen, or with `resizing` makes it wider and taller
+    /// (negative goes the other way), holding any aspect ratio. A turned clip's crop moves the way the arrow points on screen.
+    @discardableResult
+    func stepCrop(right: CGFloat, up: CGFloat, resizing: Bool, announcing: Bool = true) -> Bool {
+        guard let draft = cropDraft, let bounds = cropBounds else {
+            return false
+        }
+        let linear = CGAffineTransform(a: cropViewTransform.a, b: cropViewTransform.b, c: cropViewTransform.c, d: cropViewTransform.d, tx: 0, ty: 0)
+        if resizing {
+            let scale = max(hypot(linear.a, linear.b), .leastNonzeroMagnitude)
+            cropDraft = KeyboardArea.stepped(draft, right: right / scale, up: up / scale, resizing: true, ratio: cropAspect.ratio(for: draft.size), in: bounds)
+        } else {
+            // The view runs top to bottom, so up on screen is negative there.
+            let delta = CGPoint(x: right, y: -up).applying(linear.inverted())
+            cropDraft = CropGeometry.move(draft, dx: delta.x, dy: delta.y, within: bounds)
+        }
+        if announcing, let window = NSApp.keyWindow {
+            NSAccessibility.post(element: window, notification: .announcementRequested, userInfo: [.announcement: cropSizeText, .priority: NSAccessibilityPriorityLevel.medium.rawValue])
+        }
+        return true
+    }
 
     // Each branch returns its own literal, since a ternary's second branch isn't extracted for translation.
     var cropBarName: LocalizedStringResource {
