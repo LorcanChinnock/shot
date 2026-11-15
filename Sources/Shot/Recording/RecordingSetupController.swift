@@ -321,6 +321,11 @@ final class RecordingSetupController {
                     CameraBubble.shared.step(by: step)
                 }
             },
+            moveCamera: { [weak self] right, up in
+                if self?.model.cameraOn == true {
+                    CameraBubble.shared.nudge(right: right, up: up)
+                }
+            },
             record: { [weak self] in self?.confirm() },
             cancel: { [weak self] in self?.cancel() },
             stepFrame: { [weak self] right, up, resizing in self?.stepFrame(right: right, up: up, resizing: resizing) }
@@ -658,6 +663,8 @@ private final class SetupBarPanel: FloatingPanelWindow {
         let setFrameRate: @MainActor (Int) -> Void
         /// Steps the camera bubble one size larger (1) or smaller (-1), from ⌘+ and ⌘−.
         let resizeCamera: @MainActor (Int) -> Void
+        /// Moves the camera bubble `right` and `up` points, from ⌘ and the arrow keys.
+        let moveCamera: @MainActor (_ right: CGFloat, _ up: CGFloat) -> Void
         let record: @MainActor () -> Void
         let cancel: @MainActor () -> Void
         /// Moves the frame `right` and `up` points, or with `resizing` makes it wider and taller (negative goes the other way).
@@ -704,8 +711,16 @@ private final class SetupBarPanel: FloatingPanelWindow {
         actions.stepFrame(right, up, modifiers.contains(.option))
     }
 
-    /// ⌘+ (or ⌘=) and ⌘− change the camera bubble's size, since its own panel never takes the keyboard.
+    /// ⌘+ (or ⌘=) and ⌘− change the camera bubble's size and ⌘-arrows move it, with ⇧ for single points, since its own panel
+    /// never takes the keyboard.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.intersection([.command, .option, .control]) == .command, (123...126).contains(event.keyCode) {
+            let step = event.modifierFlags.contains(.shift) ? KeyboardArea.fineStep : KeyboardArea.step
+            let right: CGFloat = event.keyCode == 124 ? step : event.keyCode == 123 ? -step : 0
+            let up: CGFloat = event.keyCode == 126 ? step : event.keyCode == 125 ? -step : 0
+            actions.moveCamera(right, up)
+            return true
+        }
         if event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.shift) == .command {
             switch event.charactersIgnoringModifiers {
             case "=", "+":

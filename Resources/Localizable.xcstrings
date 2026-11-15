@@ -7311,6 +7311,9 @@
         }
       }
     },
+    "Camera bubble moved" : {
+
+    },
     "Camera unavailable: %@" : {
       "localizations" : {
         "de" : {
@@ -17775,57 +17778,8 @@
         }
       }
     },
-    "Drag to move it. Double-click to change its size." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zum Bewegen ziehen. Doppelklicken, um die Größe zu ändern."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arrástrala para moverla. Haz doble clic para cambiar su tamaño."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Faites-la glisser pour la déplacer. Double-cliquez pour changer sa taille."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trascinala per spostarla. Fai doppio clic per cambiarne le dimensioni."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ドラッグで移動、ダブルクリックでサイズを変更します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "드래그하여 이동하고, 이중 클릭하여 크기를 바꿉니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arraste para mover. Clique duas vezes para mudar o tamanho."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拖移可移动，连按两次可更改大小。"
-          }
-        }
-      }
+    "Drag to move it, or press Command and an arrow key while you check before recording. Double-click to change its size." : {
+
     },
     "Drag to point at something." : {
       "localizations" : {
