@@ -42,6 +42,13 @@ final class CameraBubble {
         panel?.step(by: step)
     }
 
+    /// Moves the bubble `right` and `up` points, kept inside the recorded area, for ⌘-arrows and VoiceOver. False when it
+    /// isn't showing or can't go further that way.
+    @discardableResult
+    func nudge(right: CGFloat, up: CGFloat) -> Bool {
+        panel?.nudge(right: right, up: up) ?? false
+    }
+
     func move(by delta: CGVector) {
         guard let panel else {
             return
@@ -315,6 +322,20 @@ private final class CameraBubblePanel: NSPanel {
         layoutLayers()
     }
 
+    /// Moves the bubble `right` and `up` points, kept inside the recorded area, and says where it is. False when it didn't move.
+    @discardableResult
+    func nudge(right: CGFloat, up: CGFloat) -> Bool {
+        let before = frame.origin
+        place(circle.offsetBy(dx: right, dy: up))
+        guard frame.origin != before else {
+            return false
+        }
+        if !(NSApp.currentEvent?.isARepeat ?? false) {
+            NSAccessibility.post(element: bubbleView, notification: .announcementRequested, userInfo: [.announcement: String(localized: "Camera bubble moved"), .priority: NSAccessibilityPriorityLevel.low.rawValue])
+        }
+        return true
+    }
+
     /// Moves the bubble so the window's origin is `origin`, kept inside the recorded area.
     func place(windowOrigin origin: CGPoint) {
         let margin = CameraBubbleStyle.margin
@@ -436,8 +457,15 @@ private final class BubbleView: NSView {
         setAccessibilityRole(.group)
         setAccessibilityLabel(String(localized: "Camera bubble"))
         setAccessibilityValue(size.title)
-        setAccessibilityHelp(String(localized: "Drag to move it. Double-click to change its size."))
+        setAccessibilityHelp(String(localized: "Drag to move it, or press Command and an arrow key while you check before recording. Double-click to change its size."))
         var actions: [NSAccessibilityCustomAction] = []
+        let step = KeyboardArea.step
+        for (name, right, up) in [(String(localized: "Move Left"), -step, 0.0), (String(localized: "Move Right"), step, 0.0),
+                                  (String(localized: "Move Up"), 0.0, step), (String(localized: "Move Down"), 0.0, -step)] {
+            actions.append(NSAccessibilityCustomAction(name: name) { [weak self] in
+                self?.panel?.nudge(right: right, up: up) ?? false
+            })
+        }
         if panel?.canStep(by: 1) == true {
             actions.append(NSAccessibilityCustomAction(name: String(localized: "Make larger")) { [weak self] in
                 self?.panel?.step(by: 1) ?? false
