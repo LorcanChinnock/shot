@@ -184,6 +184,8 @@ private struct GalleryGrid: View {
 
     let model: GalleryModel
     @State private var position = ScrollPosition()
+    /// The tile VoiceOver is on, which follows the selection as the arrow keys move it.
+    @AccessibilityFocusState private var voiceOverTile: URL?
     /// The part of the layout that's built, in steps of `overscan`.
     @State private var built: Range<CGFloat> = 0..<(overscan * 3)
     /// A tile's height below its thumbnail, and a header's height. They start at typical values, and the first tile
@@ -223,6 +225,7 @@ private struct GalleryGrid: View {
                                         tagging: model.taggingItem == item.url, tag: model.tags[item.url]?.first,
                                         detail: Gallery.tileDetail(for: item, sort: model.sort))
                                 .equatable()
+                                .accessibilityFocused($voiceOverTile, equals: item.url)
                                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { captionHeight = $0 - GalleryTile.thumbnailHeight(width: cell) }
                                 .offset(x: x, y: y)
                         }
@@ -250,6 +253,7 @@ private struct GalleryGrid: View {
                 }
             }
             .background { LeadScroller(model: model, layout: layout, position: $position) }
+            .background { VoiceOverFollower(model: model, focus: $voiceOverTile) }
             .onChange(of: columns, initial: true) {
                 model.columns = columns
             }
@@ -429,6 +433,30 @@ private struct GallerySelectionBarContent: View, Equatable {
         entries.append(.divider)
         entries.append(.item("New Folder…", symbol: "folder.badge.plus") { [model] in model.newFolder(moving: model.selectedItems) })
         return entries
+    }
+}
+
+/// Moves VoiceOver to the tile the selection moved to, so it reads that capture rather than staying where it was, as the
+/// arrow keys change the selection without moving focus. Only while VoiceOver runs, since setting the focus re-evaluates the
+/// grid, and a view of its own for the same reason as `LeadScroller`.
+private struct VoiceOverFollower: View {
+    let model: GalleryModel
+    var focus: AccessibilityFocusState<URL?>.Binding
+
+    var body: some View {
+        Color.clear.onChange(of: model.lead) {
+            guard NSWorkspace.shared.isVoiceOverEnabled, let lead = model.lead else {
+                return
+            }
+            Task { @MainActor in
+                // A tile `LeadScroller` has just scrolled into view is built a moment later.
+                try? await Task.sleep(for: .milliseconds(80))
+                guard model.lead == lead else {
+                    return
+                }
+                focus.wrappedValue = lead
+            }
+        }
     }
 }
 
