@@ -246,3 +246,17 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(recent.map(\.name) == ["newest.png", "new.jpg"])
     #expect(Gallery.recentImages(items, excluding: nil, limit: 10).map(\.name) == ["newest.png", "editing.png", "new.jpg", "old.png"])
 }
+
+@Test func theMoreMenuOffersWhatOneItemCanTake() {
+    func summary(_ names: String...) -> Gallery.SelectionSummary {
+        Gallery.SelectionSummary(names.map { name in
+            GalleryItem(url: URL(fileURLWithPath: "/shots/\(name)"), kind: GalleryKind(fileExtension: (name as NSString).pathExtension)!, date: now, bytes: 1, folder: "")
+        })
+    }
+    #expect(summary("a.png").singleItemActions == [.rename, .pin])
+    #expect(summary("b.mp4").singleItemActions == [.exportGIF, .rename])
+    #expect(summary("c.gif").singleItemActions == [.rename])
+    #expect(summary("a.png", "b.mp4").singleItemActions.isEmpty)
+    #expect(summary().singleItemActions.isEmpty)
+}
+

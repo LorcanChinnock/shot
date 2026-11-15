@@ -286,13 +286,32 @@ public enum Gallery {
         public let canEdit: Bool
         /// The folder every item is in, which Move to greys out, or nil when they're in different folders.
         public let sharedFolder: String?
+        /// What one selected item is, for the actions only one item can take; nil with none or several selected.
+        public let singleKind: GalleryKind?
 
         public init(_ items: [GalleryItem]) {
             count = items.count
             canEdit = Gallery.canEdit(items) { _ in true }
             let folders = Set(items.map(\.folder))
             sharedFolder = folders.count == 1 ? folders.first : nil
+            singleKind = items.count == 1 ? items[0].kind : nil
         }
+
+        /// The actions the selection bar's More menu offers, as a tile's right-click menu does for one item: Rename for
+        /// any, Pin for a screenshot and Export GIF for a recording. Empty unless exactly one item is selected.
+        public var singleItemActions: [SingleItemAction] {
+            switch singleKind {
+            case .image: [.rename, .pin]
+            case .video: [.exportGIF, .rename]
+            case .gif: [.rename]
+            case nil: []
+            }
+        }
+    }
+
+    /// What can be done to one selected item, beyond what the selection bar does for any number.
+    public enum SingleItemAction: Sendable {
+        case rename, pin, exportGIF
     }
 
     /// The next item to select after an arrow key, clamped to the ends.
