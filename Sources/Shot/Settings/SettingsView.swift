@@ -1,7 +1,10 @@
 import AVFoundation
+import os
 import ServiceManagement
 import ShotCore
 import SwiftUI
+
+private let log = Logger.shot("settings")
 
 enum SettingsSection: String, CaseIterable, Identifiable {
     case general, capture, quickAccess, recording, shortcuts, about
@@ -383,7 +386,8 @@ private struct GeneralSettings: View {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            Toast.error("Couldn't change whether Shot opens at login: \(error.localizedDescription)")
+            log.error("Open at login failed: \(error.localizedDescription, privacy: .public)")
+            Toast.error("Couldn't change whether Shot opens at login. Restart your Mac and try again, or change it in System Settings › General › Login Items.")
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
     }
