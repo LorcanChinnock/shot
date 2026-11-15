@@ -322,7 +322,8 @@ final class RecordingSetupController {
                 }
             },
             record: { [weak self] in self?.confirm() },
-            cancel: { [weak self] in self?.cancel() }
+            cancel: { [weak self] in self?.cancel() },
+            stepFrame: { [weak self] right, up, resizing in self?.stepFrame(right: right, up: up, resizing: resizing) }
         ))
         bar.onResize = { [weak self] in self?.updateGeometry() }
         self.bar = bar
@@ -359,6 +360,16 @@ final class RecordingSetupController {
         model.windowID = nil
         model.pageInsets = nil
         updateGeometry()
+    }
+
+    /// Arrow keys move the frame and Option-arrows resize it, as the area overlay before them does, by stepping the move grip
+    /// or the top-right handle, so the frame keeps its ratio, stays on screen and takes the camera bubble along as a drag does.
+    /// The bottom-left corner stays put while it resizes. Says the new size.
+    private func stepFrame(right: CGFloat, up: CGFloat, resizing: Bool) {
+        drag(resizing ? .topRight : .move, by: CGVector(dx: right, dy: up))
+        if !(NSApp.currentEvent?.isARepeat ?? false), let bar {
+            NSAccessibility.post(element: bar, notification: .announcementRequested, userInfo: [.announcement: model.frameLabel, .priority: NSAccessibilityPriorityLevel.medium.rawValue])
+        }
     }
 
     private func updateGeometry() {
@@ -649,6 +660,8 @@ private final class SetupBarPanel: FloatingPanelWindow {
         let resizeCamera: @MainActor (Int) -> Void
         let record: @MainActor () -> Void
         let cancel: @MainActor () -> Void
+        /// Moves the frame `right` and `up` points, or with `resizing` makes it wider and taller (negative goes the other way).
+        let stepFrame: @MainActor (_ right: CGFloat, _ up: CGFloat, _ resizing: Bool) -> Void
     }
 
     /// From the frame's bottom edge to the bar.
@@ -675,6 +688,20 @@ private final class SetupBarPanel: FloatingPanelWindow {
 
     override func cancelOperation(_ sender: Any?) {
         actions.cancel()
+    }
+
+    /// The arrow keys that no focused control used move the frame, Option-arrows resize it, and Shift takes single points,
+    /// since the frame's own handles never take the keyboard.
+    override func keyDown(with event: NSEvent) {
+        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        guard (123...126).contains(event.keyCode), modifiers.subtracting([.option, .shift]).isEmpty else {
+            super.keyDown(with: event)
+            return
+        }
+        let step = modifiers.contains(.shift) ? KeyboardArea.fineStep : KeyboardArea.step
+        let right: CGFloat = event.keyCode == 124 ? step : event.keyCode == 123 ? -step : 0
+        let up: CGFloat = event.keyCode == 126 ? step : event.keyCode == 125 ? -step : 0
+        actions.stepFrame(right, up, modifiers.contains(.option))
     }
 
     /// ⌘+ (or ⌘=) and ⌘− change the camera bubble's size, since its own panel never takes the keyboard.
@@ -765,6 +792,18 @@ private struct SetupBarView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Check before recording"))
         .accessibilityValue(Text(verbatim: model.frameLabel))
+        .accessibilityHint(Text("Arrow keys move the frame and Option-arrow keys resize it."))
+        .accessibilityActions {
+            let step = KeyboardArea.step
+            Button("Move Frame Left") { actions.stepFrame(-step, 0, false) }
+            Button("Move Frame Right") { actions.stepFrame(step, 0, false) }
+            Button("Move Frame Up") { actions.stepFrame(0, step, false) }
+            Button("Move Frame Down") { actions.stepFrame(0, -step, false) }
+            Button("Make Frame Wider") { actions.stepFrame(step, 0, true) }
+            Button("Make Frame Narrower") { actions.stepFrame(-step, 0, true) }
+            Button("Make Frame Taller") { actions.stepFrame(0, step, true) }
+            Button("Make Frame Shorter") { actions.stepFrame(0, -step, true) }
+        }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { onSize($0) }
     }
 

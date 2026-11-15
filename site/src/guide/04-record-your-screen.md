@@ -23,7 +23,7 @@ The camera bubble, microphone and cursor are on or off as you set them in **Sett
 
 Hold <kbd>⌥</kbd> as you finish picking an area or window. The rest of the screen dims, the frame shows its size in pixels, and a bar appears under it. Before recording starts, you can then:
 
-- move and resize the frame with its handles, or drag the grip above it. If you picked an area with a ratio, the handles keep it, and the size shows the ratio.
+- move and resize the frame with its handles, or drag the grip above it. If you picked an area with a ratio, the handles keep it, and the size shows the ratio. From the keyboard, the arrow keys move the frame and <kbd>⌥</kbd> with the arrow keys resizes it, with <kbd>Shift</kbd> for a point at a time. VoiceOver has the same moves as actions on the bar.
 - switch between an area, a window and the full screen.
 - turn the microphone, camera bubble, **Mac sound** and **Cursor** on or off, just for this recording. One that's off has its icon struck through. With the microphone on, the bars under its name move as you speak, so you can check it's working before you start.
 - pick the frame rate for this recording from the menu that shows it, such as **60 fps**.
