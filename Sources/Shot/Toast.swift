@@ -8,6 +8,8 @@ enum Toast {
     private static var panel: FloatingPanelWindow?
     private static var hideTask: Task<Void, Never>?
     private static var duration: Duration?
+    /// What's holding the toast on screen: the pointer over it, VoiceOver's focus on it, or both.
+    private static var holders: Set<ToastHold> = []
     private static var undoable: PendingAction?
     private static var shown: ToastText?
     private static var action: ToastView.Action?
@@ -84,7 +86,7 @@ enum Toast {
         let size = size(of: message, fraction: nil, action: action, tick: tick)
         let text = ToastText(message: message)
         shown = text
-        panel.contentView = NSView(hosting: ToastView(text: text, action: action, tick: tick, hold: { hold($0) }, dismiss: { hide() }))
+        panel.contentView = NSView(hosting: ToastView(text: text, action: action, tick: tick, hold: { hold($0, by: $1) }, dismiss: { hide() }))
         let screen = NSScreen.underPointer ?? NSScreen.main ?? NSScreen.screens[0]
         side = Preferences().quickAccessPosition
         let frame = ToastLayout.frame(
@@ -96,7 +98,8 @@ enum Toast {
         )
         arrive(panel, at: frame)
         NSAccessibility.post(element: panel, notification: .announcementRequested, userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
-        self.duration = duration
+        self.duration = ToastLayout.duration(duration, hasAction: action != nil)
+        holders = []
         scheduleHide()
     }
 
@@ -193,10 +196,16 @@ enum Toast {
         return NSSize(width: total + 2, height: height)
     }
 
-    private static func hold(_ holding: Bool) {
+    private static func hold(_ holding: Bool, by holder: ToastHold) {
+        let wasHeld = !holders.isEmpty
         if holding {
-            hideTask?.cancel()
+            holders.insert(holder)
         } else {
+            holders.remove(holder)
+        }
+        if !holders.isEmpty {
+            hideTask?.cancel()
+        } else if wasHeld {
             scheduleHide()
         }
     }
@@ -257,6 +266,15 @@ private final class ToastText {
 }
 
 /// A dark pill, like the other floating panels in both appearances, with the message, any progress bar and one button.
+fileprivate enum ToastHold {
+    case pointer, voiceOver
+}
+
+/// The parts of a toast VoiceOver can land on.
+private enum ToastPart: Hashable {
+    case message, action
+}
+
 private struct ToastView: View {
     struct Action {
         let title: String
@@ -285,8 +303,9 @@ private struct ToastView: View {
     let text: ToastText
     let action: Action?
     let tick: Tick?
-    let hold: (Bool) -> Void
+    let hold: (Bool, ToastHold) -> Void
     let dismiss: () -> Void
+    @AccessibilityFocusState private var voiceOverFocus: ToastPart?
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.textSize) private var textSize
 
@@ -300,6 +319,7 @@ private struct ToastView: View {
                     .font(Toast.font)
                     .foregroundStyle(.white)
                     .lineLimit(1)
+                    .accessibilityFocused($voiceOverFocus, equals: .message)
             }
             if let fraction = text.fraction {
                 ThemeProgressBar(value: fraction)
@@ -320,6 +340,7 @@ private struct ToastView: View {
                     }
                 }
                 .buttonStyle(ToastButtonStyle())
+                .accessibilityFocused($voiceOverFocus, equals: .action)
             }
         }
         .padding(.leading, tick == nil ? Self.leading : Self.tickLeading)
@@ -327,7 +348,9 @@ private struct ToastView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .floatingPanel(Capsule(), opacity: FloatingPanel.Opacity.toast)
         .contentShape(Capsule())
-        .onHover(perform: hold)
+        .onHover { hold($0, .pointer) }
+        // VoiceOver's focus holds the toast as the pointer does, so it stays while its text is read or its button reached.
+        .onChange(of: voiceOverFocus != nil) { _, focused in hold(focused, .voiceOver) }
         .onTapGesture(perform: dismiss)
         .accessibilityElement(children: .contain)
     }
