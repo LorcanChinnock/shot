@@ -1396,6 +1396,16 @@
         }
       }
     },
+    "%lld by %lld pixels" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld by %2$lld pixels"
+          }
+        }
+      }
+    },
     "%lld captures" : {
       "localizations" : {
         "de" : {
@@ -5630,6 +5640,9 @@
           }
         }
       }
+    },
+    "Arrow keys move the crop and Option-arrow keys resize it. Return applies it." : {
+
     },
     "Arrow keys move the frame and Option-arrow keys resize it." : {
 
@@ -26537,6 +26550,18 @@
     "Make Frame Wider" : {
 
     },
+    "Make Narrower" : {
+
+    },
+    "Make Shorter" : {
+
+    },
+    "Make Taller" : {
+
+    },
+    "Make Wider" : {
+
+    },
     "Make a folder, then drag captures onto it." : {
       "localizations" : {
         "de" : {
@@ -27236,6 +27261,12 @@
 
     },
     "Move Frame Up" : {
+
+    },
+    "Move Left" : {
+
+    },
+    "Move Right" : {
 
     },
     "Move Up" : {

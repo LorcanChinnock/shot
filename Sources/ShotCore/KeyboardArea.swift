@@ -59,4 +59,20 @@ public enum KeyboardArea {
         }
         return CGRect(x: rect.minX, y: rect.minY, width: width, height: height)
     }
+
+    /// One arrow-key step for a frame in a top-left-origin space, such as the image and video crops: arrows move it `right`
+    /// and `up` (negative goes the other way), or with `resizing`, → and ↑ make it wider and taller and ← and ↓ narrower
+    /// and shorter, its bottom-left corner staying put as in the capture overlay. `ratio` is width over height in either
+    /// orientation; the frame keeps whichever it already has.
+    public static func stepped(_ rect: CGRect, right: CGFloat, up: CGFloat, resizing: Bool, ratio: CGFloat?, in bounds: CGRect) -> CGRect {
+        guard resizing else {
+            return moved(rect, dx: right, dy: -up, in: bounds)
+        }
+        // Mirrored top to bottom, so `resized` keeps the bottom edge, then mirrored back.
+        func mirrored(_ r: CGRect) -> CGRect {
+            CGRect(x: r.minX, y: bounds.minY + bounds.maxY - r.maxY, width: r.width, height: r.height)
+        }
+        let landscape = ratio.map { max($0, 1 / $0) }
+        return mirrored(resized(mirrored(rect), dw: right, dh: up, ratio: landscape, in: bounds))
+    }
 }
