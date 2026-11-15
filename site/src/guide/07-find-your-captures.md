@@ -30,7 +30,7 @@ Under each thumbnail are its name, its file type and, depending on the sort, the
 
 Click, <kbd>⌘</kbd>-click or <kbd>⇧</kbd>-click, press <kbd>⌘A</kbd> or use the arrow keys. You can also click the circle in the corner of a thumbnail to add it. Selected thumbnails have a blue outline and a tick. Press <kbd>⌘⇧A</kbd> or <kbd>Esc</kbd>, or click an empty part of the grid, to deselect everything.
 
-While something is selected, a bar floats at the bottom of the gallery. It says how many are selected and has **Edit**, **Move to…**, **Tag**, **Show in Finder**, the Trash button and **Copy**.
+While something is selected, a bar floats at the bottom of the gallery. It says how many are selected and has **Edit**, **Move to…**, **Tag**, **Show in Finder**, the Trash button and **Copy**. With one capture selected, the **…** button holds **Rename…**, plus **Pin to Screen** for a screenshot or **Export GIF** for a recording.
 
 ## Open, copy and share
 

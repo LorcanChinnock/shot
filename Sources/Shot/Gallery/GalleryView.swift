@@ -372,6 +372,17 @@ private struct GallerySelectionBarContent: View, Equatable {
             Button("Show in Finder") { model.reveal(model.selectedItems) }
                 .buttonStyle(ThemeButtonStyle(.toolbar))
                 .themeTip("Show in Finder (⌘R)")
+            // One menu rather than three buttons, so the bar stays short; the keyboard reaches these here too, not only
+            // from a tile's right-click menu.
+            if !summary.singleItemActions.isEmpty {
+                ThemeDropdown(title: "More", entries: moreEntries) {
+                    Image(systemName: "ellipsis")
+                        .font(.scaled(13, weight: .semibold))
+                }
+                .buttonStyle(ThemeButtonStyle(.toolbar))
+                .themeTip("More actions for this capture")
+                .accessibilityLabel(Text("More"))
+            }
             Button {
                 model.askToTrash(model.selectedItems)
             } label: {
@@ -393,6 +404,20 @@ private struct GallerySelectionBarContent: View, Equatable {
         .depth(.float, fill: Theme.group, radius: Theme.Radius.panel)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Selection"))
+    }
+
+    /// Read when the menu opens, so the actions act on the capture selected then.
+    private var moreEntries: [ThemeMenuEntry] {
+        summary.singleItemActions.map { action in
+            switch action {
+            case .rename:
+                .item("Rename…", symbol: "pencil") { model.selectedItems.first.map(model.rename) }
+            case .pin:
+                .item("Pin to Screen", symbol: "pin") { model.selectedItems.first.map { PinController.shared.pin($0.url) } }
+            case .exportGIF:
+                .item("Export GIF", symbol: "photo.stack") { model.selectedItems.first.map(model.exportGIF) }
+            }
+        }
     }
 
     private var moveEntries: [ThemeMenuEntry] {
