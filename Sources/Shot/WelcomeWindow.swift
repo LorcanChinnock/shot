@@ -174,7 +174,7 @@ private final class WelcomeModel {
                 }
             } catch {
                 log.error("Open at login failed: \(error.localizedDescription, privacy: .public)")
-                Toast.error("Couldn't change whether Shot opens at login: \(error.localizedDescription)")
+                Toast.error("Couldn't change whether Shot opens at login. Restart your Mac and try again, or change it in System Settings › General › Login Items.")
             }
         }
         WelcomeWindow.markDone()

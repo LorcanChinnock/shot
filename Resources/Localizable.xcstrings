@@ -12269,54 +12269,54 @@
         }
       }
     },
-    "Couldn't change whether Shot opens at login: %@" : {
+    "Couldn't change whether Shot opens at login. Restart your Mac and try again, or change it in System Settings › General › Login Items." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Öffnen beim Anmelden konnte nicht geändert werden: %@"
+            "value" : "Öffnen beim Anmelden konnte nicht geändert werden. Starte deinen Mac neu und versuch es noch einmal, oder ändere es unter Systemeinstellungen › Allgemein › Anmeldeobjekte."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se pudo cambiar si Shot se abre al iniciar sesión: %@"
+            "value" : "No se pudo cambiar si Shot se abre al iniciar sesión. Reinicia el Mac y vuelve a intentarlo, o cámbialo en Ajustes del Sistema › General › Ítems de inicio."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de modifier l'ouverture de Shot à la connexion : %@"
+            "value" : "Impossible de modifier l'ouverture de Shot à la connexion. Redémarrez votre Mac et réessayez, ou modifiez-la dans Réglages Système › Général › Éléments de connexion."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossibile modificare l'apertura di Shot al login: %@"
+            "value" : "Impossibile modificare l'apertura di Shot al login. Riavvia il Mac e riprova, oppure modificala in Impostazioni di Sistema › Generali › Elementi login."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ログイン時にShotを開く設定を変更できませんでした：%@"
+            "value" : "ログイン時にShotを開く設定を変更できませんでした。Macを再起動してもう一度試すか、システム設定 › 一般 › ログイン項目で変更してください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "로그인 시 Shot 열기 설정을 변경할 수 없음: %@"
+            "value" : "로그인 시 Shot 열기 설정을 변경할 수 없습니다. Mac을 재시동한 후 다시 시도하거나 시스템 설정 › 일반 › 로그인 항목에서 변경하세요."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Não foi possível alterar a abertura do Shot no login: %@"
+            "value" : "Não foi possível alterar a abertura do Shot no login. Reinicie o Mac e tente de novo, ou altere em Ajustes do Sistema › Geral › Itens de Login."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法更改 Shot 是否在登录时打开：%@"
+            "value" : "无法更改 Shot 是否在登录时打开。请重新启动 Mac 后再试一次，或在“系统设置” › “通用” › “登录项”中更改。"
           }
         }
       }
