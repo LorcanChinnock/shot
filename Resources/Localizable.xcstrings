@@ -481,6 +481,9 @@
         }
       }
     },
+    "%@ menu" : {
+
+    },
     "%@ of %@" : {
       "localizations" : {
         "de" : {
@@ -1081,6 +1084,9 @@
           }
         }
       }
+    },
+    "%@, checked" : {
+
     },
     "%@, update available" : {
       "localizations" : {

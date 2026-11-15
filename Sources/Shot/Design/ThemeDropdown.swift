@@ -132,11 +132,13 @@ private final class DropdownMenu {
     private var observers: [NSObjectProtocol] = []
     private var typed = ""
     private var lastTyped = Date.distantPast
+    private var title = ""
 
     func open(_ title: String, _ entries: [ThemeMenuEntry]) {
         guard panel == nil, let window = anchor?.window else {
             return
         }
+        self.title = title
         state.entries = entries
         state.highlighted = entries.firstIndex { entry in
             if case .button(let item) = entry {
@@ -163,6 +165,7 @@ private final class DropdownMenu {
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel]) { [weak self] event in
             self?.handle(event) ?? event
         }
+        announceHighlight(opening: true)
         let center = NotificationCenter.default
         for (name, object) in [(NSWindow.didResignKeyNotification, window as AnyObject), (NSWindow.willCloseNotification, window), (NSApplication.didResignActiveNotification, NSApp)] {
             observers.append(center.addObserver(forName: name, object: object, queue: .main) { [weak self] _ in
@@ -226,8 +229,10 @@ private final class DropdownMenu {
         switch event.keyCode {
         case 125:
             state.highlighted = Dropdown.step(from: state.highlighted, by: 1, pickable: pickable)
+            announceHighlight()
         case 126:
             state.highlighted = Dropdown.step(from: state.highlighted, by: -1, pickable: pickable)
+            announceHighlight()
         case 36, 76, 49:
             if let highlighted = state.highlighted {
                 pick(highlighted)
@@ -252,7 +257,28 @@ private final class DropdownMenu {
         let titles = state.entries.map { $0.pickable?.title }
         if let match = Dropdown.match(typed, titles: titles, from: state.highlighted) {
             state.highlighted = match
+            announceHighlight()
         }
+    }
+
+    /// Says the highlighted row, and on opening the menu's name first. VoiceOver may never move into the menu's panel, which
+    /// doesn't take focus, so this is posted on the button that opened it, where VoiceOver already is.
+    private func announceHighlight(opening: Bool = false) {
+        let row = state.highlighted.flatMap { state.entries[$0].pickable }
+        var parts: [String] = []
+        if opening {
+            parts.append(String(localized: "\(title) menu"))
+        }
+        if let row {
+            parts.append(row.isSelected ? String(localized: "\(row.title), checked") : row.title)
+        }
+        guard !parts.isEmpty, let element = anchor ?? panel else {
+            return
+        }
+        NSAccessibility.post(element: element, notification: .announcementRequested, userInfo: [
+            .announcement: parts.joined(separator: ", "),
+            .priority: NSAccessibilityPriorityLevel.high.rawValue,
+        ])
     }
 }
 
