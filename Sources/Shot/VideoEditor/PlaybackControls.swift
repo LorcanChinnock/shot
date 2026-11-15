@@ -130,7 +130,7 @@ struct PlaybackControls: View {
                 TimelineZoom.sliderPosition(for: model.zoom)
             } set: {
                 model.setZoom(TimelineZoom.zoom(atSliderPosition: $0))
-            }, width: 80)
+            }, width: 80, accessibilityValue: { TimelineZoom.label(for: TimelineZoom.zoom(atSliderPosition: $0)) })
             .themeTip("Zoom", key: "⌘0", detail: "Fits the whole recording in the timeline again.")
             .accessibilityLabel(Text("Zoom"))
             Button { model.zoom(bySteps: 1) } label: { Image(systemName: "plus").font(Theme.toolIcon) }
