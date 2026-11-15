@@ -142,7 +142,13 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Clamped on every read, so a crop or a window resize never leaves the canvas scrolled away.
     private var viewport: Viewport {
-        zoomedViewport?.clamped(to: canvasRect, in: viewportSize) ?? fitViewport
+        zoomedViewport.map(clamped) ?? fitViewport
+    }
+
+    /// Kept within the canvas, with room to scroll the picture's bottom edge above the zoom control and hint. Crop
+    /// mode's viewport already ends above the crop bar, so it needs none.
+    private func clamped(_ viewport: Viewport) -> Viewport {
+        viewport.clamped(to: canvasRect, in: viewportSize, bottom: model.tool == .crop ? 0 : model.canvasFootHeight)
     }
 
     /// The room the image fits and scrolls in: the view above the crop bar in crop mode, so the crop's bottom handles
@@ -1039,7 +1045,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard zoom != currentZoom else {
             return
         }
-        zoomedViewport = viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point).clamped(to: canvasRect, in: viewportSize)
+        zoomedViewport = clamped(viewport.zoomed(to: Viewport.scale(forZoom: zoom, pixelsPerPoint: model.scale), about: point))
         viewportDidChange()
     }
 
@@ -1048,7 +1054,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         guard zoomedViewport != nil else {
             return
         }
-        zoomedViewport = viewport.panned(by: offset).clamped(to: canvasRect, in: viewportSize)
+        zoomedViewport = clamped(viewport.panned(by: offset))
         viewportDidChange()
     }
 
