@@ -358,7 +358,7 @@ private struct GalleryVideoPlayer: NSViewRepresentable {
     let url: URL
 
     func makeNSView(context: Context) -> AVPlayerView {
-        let view = AVPlayerView()
+        let view = FocusablePlayerView()
         view.controlsStyle = .inline
         view.showsFullScreenToggleButton = false
         view.player = AVPlayer(url: url)
@@ -377,6 +377,12 @@ private struct GalleryVideoPlayer: NSViewRepresentable {
         view.player?.pause()
         view.player = nil
     }
+}
+
+/// Takes the keyboard only when Tab moves to it with keyboard navigation on, so Space plays and the arrows scrub there. A click
+/// on its controls leaves the focus where it was, so Space still closes the preview and the arrows still step through captures.
+private final class FocusablePlayerView: AVPlayerView {
+    override var acceptsFirstResponder: Bool { NSApp.isFullKeyboardAccessEnabled }
 }
 
 // MARK: Details
