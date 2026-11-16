@@ -8,6 +8,13 @@ public enum FileNaming {
         return "\(prefix) \(formatter.string(from: date))"
     }
 
+    /// Whether a file name ends with the date and time `baseName` writes, before any "(2)" or "(recovered)" and the
+    /// extension. Those names share their start, so a name too long for its space is cut from the front, keeping the
+    /// time that tells it apart; any other name is cut in the middle.
+    public static func endsWithTimestamp(_ fileName: String) -> Bool {
+        fileName.contains(#/\d{4}-\d{2}-\d{2} at \d{2}\.\d{2}\.\d{2}(?: \([^)]*\))*(?:\.\w+)?$/#)
+    }
+
     public static func uniqueURL(in folder: URL, date: Date, pathExtension: String, prefix: String = Preferences.defaultFilePrefix, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL {
         let base = baseName(for: date, prefix: prefix)
         var url = folder.appendingPathComponent("\(base).\(pathExtension)")

@@ -134,7 +134,7 @@ private struct VideoEditorTitleBar: View {
                 Text(model.fileURL.lastPathComponent)
                     .font(Theme.label)
                     .foregroundStyle(Theme.ink)
-                    .truncationMode(.middle)
+                    .truncationMode(FileNaming.endsWithTimestamp(model.fileURL.lastPathComponent) ? .head : .middle)
                 Text(verbatim: subtitle)
                     .font(Theme.caption)
                     .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))

@@ -571,7 +571,7 @@ private struct GalleryTile: View, Equatable {
                     .font(.scaled(12.5, weight: .medium))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
-                    .truncationMode(.middle)
+                    .truncationMode(FileNaming.endsWithTimestamp(item.name) ? .head : .middle)
                 HStack(spacing: 5) {
                     if let tag {
                         TagDot(tag: tag, size: 7)

@@ -184,7 +184,7 @@ private struct GalleryPreviewToolbar: View {
                     .font(.scaled(13, weight: .semibold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
-                    .truncationMode(.middle)
+                    .truncationMode(FileNaming.endsWithTimestamp(item.name) ? .head : .middle)
                     .accessibilityAddTraits(.isHeader)
                 Text("\(position) of \(model.visible.count)")
                     .font(.scaled(12, tabular: true))
