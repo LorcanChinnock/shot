@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.92](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.91...v0.7.0-beta.92) (2026-11-16)
+
+
+### Bug Fixes
+
+* **update:** let the update window be dragged ([#1399](https://github.com/LorcanChinnock/shot/issues/1399)) ([a6fbf45](https://github.com/LorcanChinnock/shot/commit/a6fbf45062dd2fa4e5a3809e1240a9418816c127)), closes [#1398](https://github.com/LorcanChinnock/shot/issues/1398)
+
 ## [0.7.0-beta.91](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.90...v0.7.0-beta.91) (2026-11-16)
 
 
