@@ -873,12 +873,13 @@ final class VideoEditorModel {
         guard await export(to: trimmed, creating: nil, keepingProject: false) else {
             return false
         }
+        // Replacing is atomic but leaves no way back to the cut footage, so a copy of the original goes to the Trash first.
+        var trashed: NSURL?
         do {
-            // Replacing is atomic but leaves no way back to the cut footage, so a copy of the original goes to the Trash first.
             let original = replacements.appendingPathComponent("original").appendingPathComponent(fileURL.lastPathComponent)
             try FileManager.default.createDirectory(at: original.deletingLastPathComponent(), withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: fileURL, to: original)
-            try FileManager.default.trashItem(at: original, resultingItemURL: nil)
+            try FileManager.default.trashItem(at: original, resultingItemURL: &trashed)
             _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: trimmed)
         } catch {
             Toast.error("Couldn't save: \(error.localizedDescription)")
@@ -888,7 +889,9 @@ final class VideoEditorModel {
         version = nil
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
-        Toast.done("Saved and copied.\(TemporaryCaptures.toastNote(for: fileURL))")
+        // Says where the cut footage went, with Show to find it, since nothing else in Shot leads back to it (#1382).
+        Toast.show("Saved and copied. The original recording is in the Trash.\(TemporaryCaptures.toastNote(for: fileURL))",
+                   duration: .seconds(5), reveal: trashed as URL?)
         do {
             try await load()
         } catch {

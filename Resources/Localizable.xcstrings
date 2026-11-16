@@ -39253,54 +39253,54 @@
         }
       }
     },
-    "Saved and copied.%@" : {
+    "Saved and copied. The original recording is in the Trash.%@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gesichert und kopiert.%@"
+            "value" : "Gesichert und kopiert. Die ursprüngliche Aufnahme liegt im Papierkorb.%@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Guardado y copiado.%@"
+            "value" : "Guardado y copiado. La grabación original está en la papelera.%@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistré et copié.%@"
+            "value" : "Enregistré et copié. L’enregistrement d’origine est dans la corbeille.%@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Salvato e copiato.%@"
+            "value" : "Salvato e copiato. La registrazione originale è nel Cestino.%@"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "保存してコピーしました。%@"
+            "value" : "保存してコピーしました。元の収録はゴミ箱にあります。%@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "저장 및 복사됨.%@"
+            "value" : "저장 및 복사됨. 원본 녹화는 휴지통에 있습니다.%@"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Salvo e copiado.%@"
+            "value" : "Salvo e copiado. A gravação original está no Lixo.%@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已存储并拷贝。%@"
+            "value" : "已存储并拷贝。原始录制在废纸篓中。%@"
           }
         }
       }

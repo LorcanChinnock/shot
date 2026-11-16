@@ -93,7 +93,7 @@ Cropping looks and works as it does when you [crop a screenshot](#crop). What's 
 
 ## Save
 
-**Save** (<kbd>⌘S</kbd>) replaces the recording with your trimmed version, without re-encoding where it can, and copies it. Under the file name, the title bar shows the recording's length until you change something, then what you've changed, such as "Edited · trimmed" or "Edited · 1 cut · 2 annotations".
+**Save** (<kbd>⌘S</kbd>) replaces the recording with your trimmed version, without re-encoding where it can, and copies it. The original recording goes to the Trash, so the parts you cut are still there if you need them: the message after saving has **Show** to find it in Finder. Under the file name, the title bar shows the recording's length until you change something, then what you've changed, such as "Edited · trimmed" or "Edited · 1 cut · 2 annotations".
 
 Once your edit is more than trims and cuts, the button reads **Save Copy** instead, and writes a new file next to the recording. An import, annotation, keyframe or crop, a moved or styled recording, a changed volume, reordered clips, or a hidden or muted track each switches it to **Save Copy**.
 
