@@ -76,11 +76,13 @@ struct ThemePopUp: View {
     /// The chosen value's title, already localized.
     let value: String
     var maxWidth: CGFloat?
+    /// Where a value too long for `maxWidth` is shortened; device names differ at their ends, so they keep both.
+    var truncation: Text.TruncationMode = .tail
 
     var body: some View {
         ThemeDropdown(title: title, entries: entries) {
             HStack(spacing: 10) {
-                Text(value).lineLimit(1)
+                Text(value).lineLimit(1).truncationMode(truncation)
                     .frame(maxWidth: maxWidth, alignment: .leading)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.scaled(9, weight: .bold))

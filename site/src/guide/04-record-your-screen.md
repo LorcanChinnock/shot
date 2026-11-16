@@ -54,7 +54,7 @@ A window recording captures just that window. It follows the window when you mov
 
 In **Settings › Recording**:
 
-- **Microphone** records your voice. Pick which microphone next to **Input**, and press **Test** to see its level as you speak.
+- **Microphone** records your voice. Pick which microphone next to **Input**, and press **Test** to see its level as you speak. If the one you picked is unplugged, Shot records with the system default and lists it as not connected, then goes back to it when you plug it in again.
 - **Mac sound** records the sound from other apps. Shot's own sounds are left out.
 - **Camera bubble** adds a round webcam view to the recording. Pick the camera and size, and press **Preview** on the dark card above them to check your framing.
 
