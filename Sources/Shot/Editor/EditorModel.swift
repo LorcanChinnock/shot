@@ -183,6 +183,9 @@ final class EditorModel {
     var styleBarMark: CGRect?
     /// True while a drag on the canvas draws, moves, resizes or crops, when the style bar steps out of the way.
     var isCanvasDragging = false
+    /// The tallest the style bar has been in this window. It sits at the canvas's top, so the fitted image keeps clear of
+    /// it, and a zoomed one can scroll its top edge below it (#1377).
+    var styleBarClearance: CGFloat = 0
     /// How much of the canvas's foot the zoom control and hint take, with their inset, which the style bar keeps clear of.
     var canvasFootHeight: CGFloat = 0
     /// The size of the zoom control and Canvas menu at the canvas's bottom left, which the crop bar keeps clear of.

@@ -33,10 +33,11 @@ public struct Viewport: Equatable, Sendable {
         CGRect(origin: viewPoint(rect.origin), size: CGSize(width: rect.width * scale, height: rect.height * scale))
     }
 
-    /// The whole canvas, centred inside the inset and no larger than `maxScale`.
-    public static func fit(_ canvas: CGRect, in size: CGSize, maxScale: CGFloat) -> Viewport {
-        let fit = min((size.width - 2 * inset) / canvas.width, (size.height - 2 * inset) / canvas.height)
-        return Viewport(scale: max(0.01, min(fit, maxScale)), origin: .zero).clamped(to: canvas, in: size)
+    /// The whole canvas, centred inside the inset and no larger than `maxScale`. `top` is room at the top that something
+    /// drawn over the canvas takes, such as the editor's style bar, which the canvas fits below.
+    public static func fit(_ canvas: CGRect, in size: CGSize, maxScale: CGFloat, top: CGFloat = 0) -> Viewport {
+        let fit = min((size.width - 2 * inset) / canvas.width, (size.height - 2 * inset - max(0, top)) / canvas.height)
+        return Viewport(scale: max(0.01, min(fit, maxScale)), origin: .zero).clamped(to: canvas, in: size, top: top)
     }
 
     /// Scaled to `scale`, keeping the image point under `point` where it is.
@@ -52,21 +53,23 @@ public struct Viewport: Equatable, Sendable {
     /// Centres the canvas along an axis where it fits inside the inset; along one where it doesn't,
     /// stops it scrolling more than the inset past either edge. `bottom` is extra room past the bottom edge, used only
     /// when the canvas is taller than the view, so a zoomed picture can scroll clear of the controls along the foot.
-    public func clamped(to canvas: CGRect, in size: CGSize, bottom: CGFloat = 0) -> Viewport {
-        func axis(origin: CGFloat, canvasMin: CGFloat, canvasLength: CGFloat, viewLength: CGFloat, end: CGFloat) -> CGFloat {
+    /// `top` is room at the top that something drawn over the canvas takes: a centred canvas moves down to clear it, and
+    /// a taller one can scroll its top edge below it (#1377).
+    public func clamped(to canvas: CGRect, in size: CGSize, bottom: CGFloat = 0, top: CGFloat = 0) -> Viewport {
+        func axis(origin: CGFloat, canvasMin: CGFloat, canvasLength: CGFloat, viewLength: CGFloat, start head: CGFloat, end: CGFloat) -> CGFloat {
             let length = canvasLength * scale
             let start: CGFloat
-            if length <= viewLength - 2 * Self.inset {
-                // Rounded so the canvas edges sit on whole points.
-                start = ((viewLength - length) / 2).rounded()
+            if length <= viewLength - 2 * Self.inset - head {
+                // Rounded so the canvas edges sit on whole points. Centred in the whole view, unless that leaves it under `head`.
+                start = max(((viewLength - length) / 2).rounded(), Self.inset + head)
             } else {
-                start = min(max(origin + canvasMin * scale, viewLength - Self.inset - end - length), Self.inset)
+                start = min(max(origin + canvasMin * scale, viewLength - Self.inset - end - length), Self.inset + head)
             }
             return start - canvasMin * scale
         }
         return Viewport(scale: scale, origin: CGPoint(
-            x: axis(origin: origin.x, canvasMin: canvas.minX, canvasLength: canvas.width, viewLength: size.width, end: 0),
-            y: axis(origin: origin.y, canvasMin: canvas.minY, canvasLength: canvas.height, viewLength: size.height, end: max(0, bottom))
+            x: axis(origin: origin.x, canvasMin: canvas.minX, canvasLength: canvas.width, viewLength: size.width, start: 0, end: 0),
+            y: axis(origin: origin.y, canvasMin: canvas.minY, canvasLength: canvas.height, viewLength: size.height, start: max(0, top), end: max(0, bottom))
         ))
     }
 
