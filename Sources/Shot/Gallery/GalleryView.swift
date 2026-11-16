@@ -686,7 +686,7 @@ private struct GalleryTileMenu: View {
         Button("Copy") { model.copy(targets) }
         Button("Preview") { model.preview(item) }
         if targets.count == 1, item.kind == .image {
-            Button("Pin") { PinController.shared.pin(item.url) }
+            Button("Pin to Screen") { PinController.shared.pin(item.url) }
         }
         if targets.count == 1 {
             Button("Rename…") { model.rename(item) }

@@ -27,19 +27,19 @@ Drag the card straight into another app to drop the file there, as the **Drag in
 
 Right-click the card for the same actions, plus **Copy Path** and **Show in Finder**.
 
-![The Quick Access card's right-click menu: Copy, Copy Path, Save As…, Annotate, Pin and Show in Finder](../../../docs/media/quick-access-menu.png)
+![The Quick Access card's right-click menu: Copy, Copy Path, Save As…, Annotate, Pin to Screen and Show in Finder](../../../docs/media/quick-access-menu.png)
 
 ## Pin a screenshot
 
-**Pin** floats a screenshot above your other windows, so you can keep it in view while you work.
+**Pin to Screen** floats a screenshot above your other windows, so you can keep it in view while you work.
 
-1. Hover the card and click the pin button in its bottom-right corner, or right-click the card and choose **Pin**.
+1. Hover the card and click the pin button in its bottom-right corner, or right-click the card and choose **Pin to Screen**.
 2. Drag the pin to move it, or drag its edges to resize it.
 3. To close it, hover it and click **✕** at the left of its bar, or click it and press <kbd>Esc</kbd>.
 
 A pin opens in the middle of the screen at its own size, or at half the screen if it's bigger, and the card closes. If the screenshot has a style, the pin shows it the way **Copy** would, shadow and border included. A window captured with its shadow keeps its see-through edge too. You can have several pins open at once.
 
-When you hover a pin, a dark bar appears across its top, with **Pinned** and its opacity, such as 100%, beside the close button:
+When you hover a pin, a dark bar appears across its top. A wide pin shows **Pinned** and its opacity, such as 100%, beside the close button, and a narrow one leaves that out, then the slider, so the two buttons always fit:
 
 - Drag the slider to let the windows behind show through the pin, down to 20%. Once you've clicked the pin, <kbd>↑</kbd> and <kbd>↓</kbd> change it in steps of 10%.
 - Click the pointer button at the right to turn on **Click Through**. Clicks then go to the window under the pin, so you can work in it with the pin still on top. The bar keeps working, so click the same button again to turn it off.

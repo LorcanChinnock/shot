@@ -42,7 +42,7 @@ Shot doesn't ask for Accessibility access up front. Only capturing just the page
 
 ## Where to find Shot
 
-Shot lives in the menu bar, not the Dock. Click its icon for **Screenshot**, **Record**, **Pick Colour** and **Gallery**, which opens your [gallery](#find-your-captures) in its own window. Under **Recent**, the menu shows your four newest captures as thumbnails: click one to open it in the editor, or drag it into another app. **Settings…** and **Quit Shot** are at the bottom. This guide is linked from **User guide** in **Settings › About**.
+Shot lives in the menu bar, not the Dock. Click its icon for **Screenshot**, **Record**, **Pick Colour** and **Gallery**, which opens your [gallery](#find-your-captures) in its own window. Under **Recent**, the menu shows your four newest captures as thumbnails: click one to open it in the editor, or drag it into another app. **Settings…**, **Check for Updates…** and **Quit Shot** are at the bottom. When a new version is waiting, **Check for Updates…** reads **Update to Shot** and the version instead. This guide is linked from **User guide** in **Settings › About**.
 
 After each capture, Shot saves it, copies it, and shows a small [Quick Access](#quick-access) card in the corner of the screen. Paste it anywhere straight away, or hover the card to annotate it.
 

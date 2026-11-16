@@ -1119,7 +1119,8 @@ struct SettingsCard<Content: View>: View {
 }
 
 /// A Settings row: an optional icon, its name and an optional description on the left, its control on the right. It hides
-/// while a search doesn't match its name, description, group or section.
+/// while a search doesn't match its name, description, group or section, or the other `words` someone might search for,
+/// such as "microphone" for the Input row.
 struct SettingRow<Control: View>: View {
     /// A 16 pt line icon before the name, 12 pt from it, as Settings › Shortcuts gives each action.
     struct Icon {
@@ -1130,25 +1131,27 @@ struct SettingRow<Control: View>: View {
     let title: String
     var subtitle: String?
     var icon: Icon?
+    var words: String?
     @ViewBuilder let control: Control
     @Environment(\.settingsQuery) private var query
     @Environment(\.settingsContext) private var context
 
-    init(title: LocalizedStringResource, subtitle: LocalizedStringResource? = nil, @ViewBuilder control: () -> Control) {
-        self.init(title: String(localized: title), subtitle: subtitle.map { String(localized: $0) }, control: control)
+    init(title: LocalizedStringResource, subtitle: LocalizedStringResource? = nil, words: String? = nil, @ViewBuilder control: () -> Control) {
+        self.init(title: String(localized: title), subtitle: subtitle.map { String(localized: $0) }, words: words, control: control)
     }
 
     /// A row whose title is already localized, such as an action's.
     @_disfavoredOverload
-    init<S: StringProtocol>(title: S, subtitle: String? = nil, icon: Icon? = nil, @ViewBuilder control: () -> Control) {
+    init<S: StringProtocol>(title: S, subtitle: String? = nil, icon: Icon? = nil, words: String? = nil, @ViewBuilder control: () -> Control) {
         self.title = String(title)
         self.subtitle = subtitle
         self.icon = icon
+        self.words = words
         self.control = control()
     }
 
     var body: some View {
-        if SettingsSearch.matches(query, in: context + [title, subtitle ?? ""]) {
+        if SettingsSearch.matches(query, in: context + [title, subtitle ?? "", words ?? ""]) {
             SettingRowLayout {
                 HStack(alignment: .center, spacing: 12) {
                     if let icon {

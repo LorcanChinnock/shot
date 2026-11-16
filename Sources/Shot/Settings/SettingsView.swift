@@ -1122,10 +1122,10 @@ private struct SoundSettings: View {
     var body: some View {
         SettingsCard(title: "Sound") {
             ToggleRow(title: "Microphone", isOn: $microphone)
-            SettingRow(title: "Input") {
+            SettingRow(title: "Input", words: String(localized: "microphone", comment: "Search words for the Input row in Settings › Recording › Sound, which picks the microphone, separated by spaces")) {
                 DevicePicker(title: "Microphone", devices: devices, selection: $deviceID, selectionName: $deviceName, maxWidth: 170)
             }
-            SettingRow(title: String(localized: "Level"), subtitle: inputSubtitle) {
+            SettingRow(title: String(localized: "Level"), subtitle: inputSubtitle, words: String(localized: "microphone test", comment: "Search words for the Level row in Settings › Recording › Sound, which tests the microphone, separated by spaces")) {
                 HStack(spacing: 8) {
                     LevelMeter(meter: preview.meter, muted: !preview.isRunning)
                     Button(preview.isRunning ? "Stop" : "Test") {

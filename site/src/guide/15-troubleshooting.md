@@ -44,9 +44,9 @@ Turning on **Leave out browser toolbars** on the capture bar, or pressing <kbd>B
 
 The panel beside the area names the problem and what to do:
 
-- **Scrolled too far:** the content moved so far at once that the new view shares nothing with the last one. Scroll back a little, then carry on more slowly.
-- **Can't line up:** part of the area keeps changing, such as a playing video or an animation. Pause it, or drag the area so it leaves that part out.
-- **Nothing to line up:** the area is blank or the same pattern repeats. Drag out an area that includes some text or an image.
+- **Scrolled too far:** the content moved so far at once that the new view shares nothing with the last one. Scroll back a little and carry on, more slowly.
+- **Can't line up:** part of the area keeps changing, such as a playing video or an animation. Pause it or scroll past it.
+- **Nothing to line up:** the area is blank or the same pattern repeats. Include some text or an image, or pick another area.
 - **Full size:** the picture is as big as Shot can make it: 30,000 pixels on a side, or less for a very wide area. Press <kbd>Return</kbd> to save what you have.
 
 A capture can still have a thin gap or repeat after a fast scroll past the end of a page. Scroll back over that part, or take it again.

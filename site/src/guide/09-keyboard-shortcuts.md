@@ -34,7 +34,7 @@ Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. mac
 > [!NOTE]
 > If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧4 and ⌘⇧5** on again.
 
-## Actions you can give a shortcut
+## Actions without a shortcut
 
 **Pick Colour** is in the menu bar menu only. Every action also has a [`shot://` link](#url-scheme).
 
