@@ -28,12 +28,16 @@ public enum PreferenceKey {
     public static let recordShowsClicks = "recordShowsClicks"
     public static let recordMicrophone = "recordMicrophone"
     public static let microphoneDeviceID = "microphoneDeviceID"
+    /// The picked microphone's name, so Settings can name it while it isn't connected.
+    public static let microphoneDeviceName = "microphoneDeviceName"
     public static let recordSystemAudio = "recordSystemAudio"
     public static let showRecordingBorder = "showRecordingBorder"
     public static let copyAfterRecording = "copyAfterRecording"
     public static let recordCamera = "recordCamera"
     public static let adjustBeforeRecording = "adjustBeforeRecording"
     public static let cameraDeviceID = "cameraDeviceID"
+    /// The picked camera's name, so Settings can name it while it isn't connected.
+    public static let cameraDeviceName = "cameraDeviceName"
     public static let cameraSize = "cameraSize"
     public static let replacesSystemScreenshots = "replacesSystemScreenshots"
     public static let videoExportFormat = "videoExportFormat"
@@ -141,12 +145,14 @@ public struct Preferences {
             PreferenceKey.recordShowsClicks: false,
             PreferenceKey.recordMicrophone: false,
             PreferenceKey.microphoneDeviceID: "",
+            PreferenceKey.microphoneDeviceName: "",
             PreferenceKey.recordSystemAudio: false,
             PreferenceKey.showRecordingBorder: true,
             PreferenceKey.copyAfterRecording: true,
             PreferenceKey.recordCamera: false,
             PreferenceKey.adjustBeforeRecording: false,
             PreferenceKey.cameraDeviceID: "",
+            PreferenceKey.cameraDeviceName: "",
             PreferenceKey.cameraSize: CameraBubbleSize.medium.rawValue,
             PreferenceKey.textSize: TextSize.standard.rawValue,
             PreferenceKey.appearance: AppearanceMode.system.rawValue,

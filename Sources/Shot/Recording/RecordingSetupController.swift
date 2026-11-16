@@ -21,8 +21,12 @@ final class RecordingSetupModel {
     var fps: Int
     /// The rates the screen being recorded can offer.
     var frameRates: [Int] = RecordingFrameRate.all
-    /// The microphone picked in Settings, or the system default's name.
-    let microphoneName: String
+    /// The microphone the recording will open: the one picked in Settings, or the system default when none is or it
+    /// isn't connected. Read live, so a change in Settings while the bar shows is what the bar names and what's recorded.
+    var microphoneName: String {
+        let id = SettingsStore.shared.value(forKey: PreferenceKey.microphoneDeviceID) as? String ?? ""
+        return CaptureDevices.device(id: id, for: .audio)?.localizedName ?? String(localized: "Microphone")
+    }
     /// The size and ratio chip's text above the frame.
     var frameLabel = ""
     /// Set when recording a single window rather than a screen area.
@@ -46,7 +50,6 @@ final class RecordingSetupModel {
         cursorOn = prefs.recordShowsCursor
         systemAudioOn = prefs.recordSystemAudio
         fps = prefs.recordingFPS
-        microphoneName = CaptureDevices.device(id: prefs.microphoneDeviceID, for: .audio)?.localizedName ?? String(localized: "Microphone")
     }
 
     /// Offers the rates `screen` can refresh at, and steps the chosen one down to the fastest of them when it can't.

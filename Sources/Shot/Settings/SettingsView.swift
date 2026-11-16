@@ -1114,6 +1114,7 @@ private struct RecordingSettings: View {
 private struct SoundSettings: View {
     @Setting(PreferenceKey.recordMicrophone) private var microphone: Bool
     @Setting(PreferenceKey.microphoneDeviceID) private var deviceID: String
+    @Setting(PreferenceKey.microphoneDeviceName) private var deviceName: String
     @Setting(PreferenceKey.recordSystemAudio) private var systemAudio: Bool
     @State private var devices: [AVCaptureDevice] = []
     private let preview = DevicePreview.microphone
@@ -1134,7 +1135,7 @@ private struct SoundSettings: View {
                     .buttonStyle(ThemeButtonStyle())
                     .fixedSize()
                     .accessibilityLabel(Text(preview.isRunning ? "Stop the microphone test" : "Test the microphone"))
-                    DevicePicker(title: "Microphone", devices: devices, selection: $deviceID, maxWidth: 120)
+                    DevicePicker(title: "Microphone", devices: devices, selection: $deviceID, selectionName: $deviceName, maxWidth: 120)
                 }
             }
             ToggleRow(title: "Mac sound", subtitle: "Sound from other apps. Shot’s own sounds are left out.", isOn: $systemAudio)
@@ -1235,6 +1236,7 @@ private struct CameraPreviewCard: View {
 private struct CameraSettings: View {
     @Setting(PreferenceKey.recordCamera) private var camera: Bool
     @Setting(PreferenceKey.cameraDeviceID) private var deviceID: String
+    @Setting(PreferenceKey.cameraDeviceName) private var deviceName: String
     @Setting(PreferenceKey.cameraSize) private var size: CameraBubbleSize
     @State private var devices: [AVCaptureDevice] = []
     private let preview = DevicePreview.camera
@@ -1243,7 +1245,7 @@ private struct CameraSettings: View {
         SettingsCard(title: "Camera") {
             ToggleRow(title: "Camera bubble", isOn: $camera)
             SettingRow(title: "Camera") {
-                DevicePicker(title: "Camera", devices: devices, selection: $deviceID)
+                DevicePicker(title: "Camera", devices: devices, selection: $deviceID, selectionName: $deviceName)
             }
             SettingRow(title: "Size") {
                 ThemeSegmented(selection: $size, options: CameraBubbleSize.allCases.map { ($0, $0.title) })
@@ -1271,19 +1273,45 @@ private struct DevicePicker: View {
     let title: LocalizedStringResource
     let devices: [AVCaptureDevice]
     @Binding var selection: String
+    /// The picked device's name, saved with it so it can still be named once it's unplugged.
+    @Binding var selectionName: String
     var maxWidth: CGFloat = 150
 
+    private var choice: DeviceChoice {
+        DeviceChoice(savedID: selection, savedName: selectionName, connectedIDs: devices.map(\.uniqueID))
+    }
+
     var body: some View {
-        ThemePopUp(title: title, entries: [
-            .item("System default", selected: !devices.contains { $0.uniqueID == selection }) { selection = "" },
+        var entries: [ThemeMenuEntry] = [
+            .item("System default", selected: choice == .systemDefault) { pick(id: "", name: "") },
             .divider,
-        ] + devices.map { device in
-            .item(device.localizedName, selected: device.uniqueID == selection) { selection = device.uniqueID }
-        }, value: selectedName, maxWidth: maxWidth)
+        ]
+        if case .missing = choice {
+            entries.append(.item(missingName, selected: true) {})
+        }
+        entries += devices.map { device in
+            .item(device.localizedName, selected: device.uniqueID == selection) { pick(id: device.uniqueID, name: device.localizedName) }
+        }
+        return ThemePopUp(title: title, entries: entries, value: selectedName, maxWidth: maxWidth)
+            .help(selectedName)
+    }
+
+    private func pick(id: String, name: String) {
+        selectionName = name
+        selection = id
+    }
+
+    /// A saved device that's unplugged, which Shot goes back to once it's connected again.
+    private var missingName: String {
+        selectionName.isEmpty ? String(localized: "Saved device (not connected)") : String(localized: "\(selectionName) (not connected)")
     }
 
     private var selectedName: String {
-        devices.first { $0.uniqueID == selection }?.localizedName ?? String(localized: "System default")
+        switch choice {
+        case .systemDefault: String(localized: "System default")
+        case .connected: devices.first { $0.uniqueID == selection }?.localizedName ?? String(localized: "System default")
+        case .missing: missingName
+        }
     }
 }
 
