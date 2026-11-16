@@ -36,6 +36,7 @@ Most recordings start with a few seconds of reaching for the mouse and end with 
 - It's one step, so <kbd>⌘Z</kbd> puts the handles back.
 - It only moves the handles in, so anything you've already trimmed off stays off.
 - It compares frames on your Mac. Nothing is uploaded, and a pointer moving over a still screen counts as idle.
+- If nothing on screen changes and nothing is said, Shot says it "Couldn't find any movement or speech to trim around" and leaves the handles where they are.
 - It works while your edit is only trims and cuts of one recording.
 
 ## Cut out a section

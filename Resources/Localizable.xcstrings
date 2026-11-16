@@ -12778,6 +12778,58 @@
         }
       }
     },
+    "Couldn't find any movement or speech to trim around" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Bewegung oder Sprache gefunden, an der gekürzt werden kann"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha encontrado movimiento ni voz para recortar alrededor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun mouvement ni aucune parole trouvés autour desquels rogner"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun movimento o parlato trovato attorno a cui tagliare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "トリミングの目安になる動きや話し声が見つかりませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다듬을 기준이 되는 움직임이나 말소리를 찾지 못했습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum movimento ou fala encontrado para recortar ao redor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到可作为修剪依据的画面变化或语音"
+          }
+        }
+      }
+    },
     "Couldn't finish writing the GIF" : {
       "localizations" : {
         "de" : {
@@ -29624,58 +29676,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "尚未绘制任何内容"
-          }
-        }
-      }
-    },
-    "Nothing happens in this recording to keep" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In dieser Aufzeichnung passiert nichts, was sich zu behalten lohnt"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En esta grabación no pasa nada que conservar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cet enregistrement ne contient rien à garder"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In questa registrazione non succede nulla da tenere"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "この収録には残す動きがありません"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이 녹화에는 남길 만한 움직임이 없습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nada acontece nesta gravação que valha manter"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此录制中没有可保留的内容"
           }
         }
       }

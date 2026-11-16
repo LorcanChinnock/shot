@@ -580,7 +580,7 @@ final class VideoEditorModel {
             return
         }
         guard let found else {
-            Toast.show("Nothing happens in this recording to keep")
+            Toast.show("Couldn't find any movement or speech to trim around")
             return
         }
         // Only ever inward: what the user trimmed off stays off.
