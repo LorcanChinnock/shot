@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.7.0-beta.90](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.89...v0.7.0-beta.90) (2026-11-16)
+
+
+### Features
+
+* **gallery:** Rename, Pin and Export GIF in the selection bar's More menu ([#1353](https://github.com/LorcanChinnock/shot/issues/1353)) ([1ca9f21](https://github.com/LorcanChinnock/shot/commit/1ca9f218b7de73c3afe549d639880b57ee4385d0))
+* **recording:** mute, camera and discard rows in the menu bar while recording ([#1327](https://github.com/LorcanChinnock/shot/issues/1327)) ([e04ada8](https://github.com/LorcanChinnock/shot/commit/e04ada883cc34ef7aeb673de86876de6938f3050))
+* **video-editor:** select clips, lanes and ranges on the timeline from the keyboard ([#1338](https://github.com/LorcanChinnock/shot/issues/1338)) ([a4e7f13](https://github.com/LorcanChinnock/shot/commit/a4e7f13fe0bb35ca0fa04cbdef806426cc4c9cca))
+
+
+### Bug Fixes
+
+* **app:** give plain-styled buttons the accent focus halo ([#1352](https://github.com/LorcanChinnock/shot/issues/1352)) ([8012608](https://github.com/LorcanChinnock/shot/commit/80126087016e6d10f52535608d5b9d6f1513f0c1))
+* **app:** keep toasts with a button up for 5 seconds and hold them for VoiceOver ([#1328](https://github.com/LorcanChinnock/shot/issues/1328)) ([446d9e0](https://github.com/LorcanChinnock/shot/commit/446d9e0ae77880dfbebc3c6f0f89339d1a270e67))
+* **app:** leave Space and the arrow keys to a focused control ([#1322](https://github.com/LorcanChinnock/shot/issues/1322)) ([b85cbab](https://github.com/LorcanChinnock/shot/commit/b85cbabc9ae7600bf273408781b61ea6ec9b4fd2))
+* **app:** read the highlighted row of Shot's drop-down menus to VoiceOver ([#1355](https://github.com/LorcanChinnock/shot/issues/1355)) ([d37e143](https://github.com/LorcanChinnock/shot/commit/d37e143be672b6d6991dac7091b8ea4e206d419e))
+* **editor:** move and resize the crop from the keyboard and VoiceOver ([#1344](https://github.com/LorcanChinnock/shot/issues/1344)) ([7bff789](https://github.com/LorcanChinnock/shot/commit/7bff789a6bba1ffc241a0fe7f68f84b6530d676a))
+* **editor:** scroll a zoomed picture clear of the zoom control ([#1318](https://github.com/LorcanChinnock/shot/issues/1318)) ([e78479b](https://github.com/LorcanChinnock/shot/commit/e78479b5c5fb05e17df76afe6b0de04b6ec73e5d))
+* **gallery:** move VoiceOver to the capture the arrow keys select ([#1354](https://github.com/LorcanChinnock/shot/issues/1354)) ([e170e85](https://github.com/LorcanChinnock/shot/commit/e170e85530a9e3804ea9ee3a1779d61b3e42ea74))
+* **quick-access:** announce new cards and hold them while VoiceOver is on one ([#1329](https://github.com/LorcanChinnock/shot/issues/1329)) ([b36dbfd](https://github.com/LorcanChinnock/shot/commit/b36dbfdbbb90d657c9dc41bcaf7f358122a23fcb))
+* **recording:** move and resize the frame from the keyboard before recording ([#1345](https://github.com/LorcanChinnock/shot/issues/1345)) ([8ad1c34](https://github.com/LorcanChinnock/shot/commit/8ad1c34ccae591ea7b155d416b4f0ccfe9948efd))
+* **recording:** move the camera bubble from the keyboard and VoiceOver ([#1347](https://github.com/LorcanChinnock/shot/issues/1347)) ([0ad5f0a](https://github.com/LorcanChinnock/shot/commit/0ad5f0ac94f1f78aefcd88c0e8b505bd11e5d48b))
+* **recording:** show the microphone Shot will actually record, and keep the pickers current ([#1363](https://github.com/LorcanChinnock/shot/issues/1363)) ([5e96383](https://github.com/LorcanChinnock/shot/commit/5e96383f19f76e69da674987d442a3ff8db4c62f))
+* **settings:** suggest restarting the Mac when Open Shot at login can't change ([#1320](https://github.com/LorcanChinnock/shot/issues/1320)) ([d9e99ae](https://github.com/LorcanChinnock/shot/commit/d9e99ae65938bf999b503b75c5035411346987c3)), closes [#1319](https://github.com/LorcanChinnock/shot/issues/1319)
+* **video-editor:** list annotations over the video to VoiceOver ([#1337](https://github.com/LorcanChinnock/shot/issues/1337)) ([cf0d704](https://github.com/LorcanChinnock/shot/commit/cf0d70402cf462a74f5185a79c048cf4d53bb209))
+* **video-editor:** move and resize the crop from the keyboard and VoiceOver ([#1346](https://github.com/LorcanChinnock/shot/issues/1346)) ([b600343](https://github.com/LorcanChinnock/shot/commit/b6003430210db48fd23edf7ea96314b814205f38))
+* **video-editor:** reach the lane switches and lane menu by keyboard and VoiceOver ([#1336](https://github.com/LorcanChinnock/shot/issues/1336)) ([a5e27c7](https://github.com/LorcanChinnock/shot/commit/a5e27c7bd06ab1c062bb8e63cee9b40f0e760407))
+* **video-editor:** read the timeline zoom slider's level to VoiceOver ([#1335](https://github.com/LorcanChinnock/shot/issues/1335)) ([96c9156](https://github.com/LorcanChinnock/shot/commit/96c9156007472103e59c23ba1a1a13f9585c3b83))
+* **video-editor:** show the timeline's clips, keyframes and cuts to VoiceOver ([#1339](https://github.com/LorcanChinnock/shot/issues/1339)) ([7330909](https://github.com/LorcanChinnock/shot/commit/73309098745e23f16801922fe37888d1174176cf))
+
 ## [0.7.0-beta.89](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.88...v0.7.0-beta.89) (2026-11-13)
 
 
