@@ -577,7 +577,7 @@ final class EditorModel {
 
     /// Whether the Style panel's target is a window captured with the macOS shadow.
     var targetHasWindowShadow: Bool {
-        styleTarget == .capture && document.hasWindowShadow
+        styleTarget == .capture && document.usesWindowShadow
     }
 
     /// The style the Style panel shows: its target's.

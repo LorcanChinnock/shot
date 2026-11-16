@@ -3,7 +3,9 @@ import Foundation
 import Synchronization
 
 public struct EditorDocument: @unchecked Sendable {
-    public var base: CGImage
+    public var base: CGImage {
+        didSet { findWindowBody() }
+    }
     public var annotations: [Annotation]
     /// Everything the document holds, in image pixels: the image with its shadow and border, and padding that reaches
     /// past it for annotations. It always contains the image, and it's what the frame crop can be adjusted within.
@@ -27,7 +29,34 @@ public struct EditorDocument: @unchecked Sendable {
     /// The image's shadow and border.
     public var captureStyle = ObjectStyle()
     /// Whether the image is a window capture that includes the macOS window shadow, so it takes no shadow of its own.
-    public var hasWindowShadow = false
+    public var hasWindowShadow = false {
+        didSet { findWindowBody() }
+    }
+    /// The window inside a capture with the macOS shadow, in image pixels; `nil` for any other image.
+    public private(set) var windowBody: CGRect?
+    /// Whether the macOS shadow is still whole: true until a crop cuts into the window, which leaves a broken piece of
+    /// shadow at best, so from then on the image takes the Style panel's own shadow, border and corners (#1381).
+    public var usesWindowShadow: Bool {
+        guard hasWindowShadow else {
+            return false
+        }
+        guard let crop = frameCrop, !isFrameCropHidden, let windowBody else {
+            return true
+        }
+        return crop.contains(windowBody)
+    }
+
+    private mutating func findWindowBody() {
+        windowBody = hasWindowShadow ? WindowShadow.body(of: base) : nil
+    }
+
+    /// Once the macOS shadow is whole again, the image's own shadow, border and corners go, so it never has two shadows.
+    private mutating func dropOwnStyleUnderWindowShadow() {
+        if usesWindowShadow {
+            captureStyle = ObjectStyle()
+            captureCornerRadius = 0
+        }
+    }
 
     /// `canvasRect` is the region the document shows: a part of the image becomes the frame crop, and one that holds the
     /// whole image is its padding.
@@ -80,19 +109,26 @@ public struct EditorDocument: @unchecked Sendable {
 
     /// Sets the frame crop to `rect` on whole pixels, which may lie in the padding, within `contentRect`. A crop that
     /// leaves nothing of `contentRect` out is no crop. It's in effect from now on, even if it was hidden.
+    /// On a window captured with the macOS shadow, a crop that cuts into the window keeps none of the shadow either, as
+    /// the piece left would end in a hard edge (#1381).
     public mutating func crop(to rect: CGRect) {
-        let kept = rect.integral.intersection(contentRect)
+        var kept = rect.integral.intersection(contentRect)
+        if hasWindowShadow, let windowBody, !kept.isNull, !kept.contains(windowBody) {
+            kept = kept.intersection(windowBody)
+        }
         guard !kept.isNull, kept.width >= 1, kept.height >= 1 else {
             return
         }
         frameCrop = kept == contentRect ? nil : kept
         isFrameCropHidden = false
+        dropOwnStyleUnderWindowShadow()
     }
 
     /// Removes the frame crop.
     public mutating func resetCrop() {
         frameCrop = nil
         isFrameCropHidden = false
+        dropOwnStyleUnderWindowShadow()
     }
 
     /// Keeps the frame crop within `contentRect` once that has changed, and drops it if nothing is left or it holds all of it.
@@ -342,7 +378,7 @@ extension EditorDocument {
         let style = style.restricted(to: kind, transparent: style.border?.kind == .outline && hasTransparency(of: target))
         switch target {
         case .capture:
-            captureStyle = hasWindowShadow ? ObjectStyle() : style
+            captureStyle = usesWindowShadow ? ObjectStyle() : style
             growToFitCapture()
         case let .annotation(id):
             guard let index = annotations.firstIndex(where: { $0.id == id }), !annotations[index].isLocked else {
@@ -360,7 +396,7 @@ extension EditorDocument {
         let radius = max(0, radius)
         switch target {
         case .capture:
-            captureCornerRadius = hasWindowShadow ? 0 : radius
+            captureCornerRadius = usesWindowShadow ? 0 : radius
         case let .annotation(id):
             guard let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].styleKind?.takesCorners == true, !annotations[index].isLocked else {
                 return
