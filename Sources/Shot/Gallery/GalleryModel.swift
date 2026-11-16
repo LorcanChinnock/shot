@@ -32,6 +32,8 @@ final class GalleryModel {
             readTextIfSearching()
         }
     }
+    /// Whether the search field holds more than spaces, so the grid shows only what matches.
+    var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
     /// Every folder in the save folder at any depth, by path, each before the folders in it.
     private(set) var folders: [String] = []
     /// Whether the sidebar of Library, Folders and Tags is open, which it is until someone hides it.
@@ -213,7 +215,7 @@ final class GalleryModel {
 
     /// Text is read only while there's something in the search field, and stops when it's cleared.
     private func readTextIfSearching() {
-        if query.trimmingCharacters(in: .whitespaces).isEmpty {
+        if !isSearching {
             TextIndexer.shared.stop()
         } else {
             TextIndexer.shared.read(folder: folder)
