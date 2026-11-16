@@ -48,8 +48,8 @@ const modes = [
     id: 'area', label: 'Area', icon: icon.area, image: captureArea, crop: '--iw: 2000; --x: 340; --y: 200; --w: 1320; --h: 1035',
     alt: 'An area being dragged over a support ticket, around the customer\'s message and the order, with handles on its corners and edges',
     title: 'Drag out exactly what matters.',
-    body: 'The screen freezes while you choose, so nothing moves under you. Hold ⇧ for a square, or press R to step through common ratios.',
-    keys: [['⇧', 'Square'], ['R', 'Ratio'], ['Space', 'Move']],
+    body: 'The screen freezes while you choose, so nothing moves under you. Press R to step through common ratios, X to turn one portrait, and hold Space to move the area.',
+    keys: [['R', 'Ratio'], ['X', 'Turn'], ['Space', 'Move']],
   },
   {
     id: 'window', label: 'Window', icon: icon.window, image: captureWindow, crop: '--iw: 2000; --x: 340; --y: 200; --w: 1320; --h: 1035',
@@ -330,7 +330,7 @@ const software = {
       </details>
       <details class="faq">
         <summary>How do I remove it?</summary>
-        <p>One Terminal command removes Shot and everything it keeps. <a href="/docs/removing-shot/">Removing Shot</a> has the command, and the steps to do it by hand.</p>
+        <p>One Terminal command removes Shot and nearly everything it keeps. <a href="/docs/removing-shot/">Removing Shot</a> has the command, and the steps to do it by hand.</p>
       </details>
     </div>
   </section>

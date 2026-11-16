@@ -16,7 +16,7 @@ Use <kbd>↑</kbd> and <kbd>↓</kbd> to move between sections. The foot of the 
 
 ## Find a setting
 
-Type in the **Search** field at the top of the sidebar, or press <kbd>⌘F</kbd>. Shot lists every setting whose name or description has the words you type, from all six sections, under each section's name. Sections with no match fade in the sidebar.
+Type in the **Search** field at the top of the sidebar, or press <kbd>⌘F</kbd>. Shot lists every setting whose name, description or a related word, such as "microphone" for **Input**, has the words you type, from all six sections, under each section's name. Sections with no match fade in the sidebar.
 
 Click **Show All** beside a section, or click a section in the sidebar, to clear the search and see the whole section. <kbd>Esc</kbd> clears the search too.
 

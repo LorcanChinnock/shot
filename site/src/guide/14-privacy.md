@@ -12,7 +12,7 @@ Nothing. Shot collects no analytics, and the only time it connects to the networ
 
 Captures go to the folder you choose in **Settings › General**, `~/Pictures/Shot` by default. When saving is off, they go to a temporary folder, and Shot deletes ones older than a day when it launches.
 
-Text search, editor layers and video projects stay in Shot's own Application Support folder on your Mac, never inside the files you share.
+Text search, editor layers, video projects and the originals of screenshots you saved edits over stay in Shot's own Application Support folder on your Mac, never inside the files you share. A saved image carries only a short ID that lets Shot find its layers on this Mac, and a window capture notes that it has the window's shadow. Shot's settings, its update caches and the change it makes to macOS's own screenshot shortcuts are listed in [Removing Shot](/docs/removing-shot/).
 
 ## Permissions
 
