@@ -43,7 +43,7 @@ While something is selected, a bar floats at the bottom of the gallery. It says 
 | Show the file | Click **Show in Finder**. |
 | Delete | Click the Trash button in the selection bar, choose **Move to Trash** from a capture's menu, or press <kbd>Delete</kbd>. Shot shows the captures and asks first. <kbd>⌘⌫</kbd> moves them straight to the Trash without asking. <kbd>⌘Z</kbd> puts them back, and so can Finder. |
 
-Right-click for the same actions, plus **Preview**. On a single item, right-click also offers **Rename…**, **Export GIF** for a video, and [**Pin**](#pin-a-screenshot) for a screenshot.
+Right-click for the same actions, plus **Preview**. On a single item, right-click also offers **Rename…**, **Export GIF** for a video, and [**Pin to Screen**](#pin-a-screenshot) for a screenshot.
 
 A GIF opens in an editor only if the video editor exported it, and then opens its [project](#reopen-an-edit-later).
 

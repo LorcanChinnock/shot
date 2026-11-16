@@ -355,7 +355,7 @@ final class QuickAccessController {
         if card.isVideo {
             actions.append(QuickAccessCardAction(title: String(localized: "Export GIF")) { self.exportGIF(card) })
         } else {
-            actions.append(QuickAccessCardAction(title: String(localized: "Pin")) { self.pin(card) })
+            actions.append(QuickAccessCardAction(title: String(localized: "Pin to Screen")) { self.pin(card) })
         }
         actions.append(QuickAccessCardAction(title: String(localized: "Show in Finder")) { self.showInFinder(card) })
         return actions
