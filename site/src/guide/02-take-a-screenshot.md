@@ -63,7 +63,7 @@ If the panel says something needs attention, it tells you what to do:
 
 - **Scrolled too far.** The content moved so far in one go that nothing in the new view matches the last one. Scroll back a little and carry on.
 - **Can't line up.** Something in the area keeps changing, such as a video. Pause it or scroll past it.
-- **Nothing to line up.** The area is blank or repeats. Include some text or an image.
+- **Nothing to line up.** The area is blank or repeats. Include some text or an image, or pick another area.
 
 ## Without a mouse
 
