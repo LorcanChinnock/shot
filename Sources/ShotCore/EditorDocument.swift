@@ -50,12 +50,15 @@ public struct EditorDocument: @unchecked Sendable {
         windowBody = hasWindowShadow ? WindowShadow.body(of: base) : nil
     }
 
-    /// Once the macOS shadow is whole again, the image's own shadow, border and corners go, so it never has two shadows.
-    private mutating func dropOwnStyleUnderWindowShadow() {
-        if usesWindowShadow {
-            captureStyle = ObjectStyle()
-            captureCornerRadius = 0
-        }
+    /// The image's own shadow and border as drawn: none while the macOS shadow is whole, so it never has two. The style is
+    /// kept, so it comes back when a crop that cut into the window shows again, after hiding the crop or resetting it.
+    public var drawnCaptureStyle: ObjectStyle {
+        usesWindowShadow ? ObjectStyle() : captureStyle
+    }
+
+    /// The image's corner radius as drawn: none while the macOS shadow is whole, as the window's own corners show.
+    public var drawnCaptureCornerRadius: CGFloat {
+        usesWindowShadow ? 0 : captureCornerRadius
     }
 
     /// `canvasRect` is the region the document shows: a part of the image becomes the frame crop, and one that holds the
@@ -96,7 +99,7 @@ public struct EditorDocument: @unchecked Sendable {
         guard !shown.isEmpty else {
             return frame.framing(crop, image: crop)
         }
-        return frame.framing(crop.union(captureStyle.paintedRect(around: shown)).integral, image: shown)
+        return frame.framing(crop.union(drawnCaptureStyle.paintedRect(around: shown)).integral, image: shown)
     }
     public var exportSize: CGSize { canvasRect.size }
     /// Whether the canvas reaches past the image on any side.
@@ -121,14 +124,12 @@ public struct EditorDocument: @unchecked Sendable {
         }
         frameCrop = kept == contentRect ? nil : kept
         isFrameCropHidden = false
-        dropOwnStyleUnderWindowShadow()
     }
 
     /// Removes the frame crop.
     public mutating func resetCrop() {
         frameCrop = nil
         isFrameCropHidden = false
-        dropOwnStyleUnderWindowShadow()
     }
 
     /// Keeps the frame crop within `contentRect` once that has changed, and drops it if nothing is left or it holds all of it.
@@ -300,12 +301,12 @@ extension EditorDocument {
 
     /// The capture's corner radius, within what the image can take.
     public var clampedCaptureCornerRadius: CGFloat {
-        BoxShape.cornerRadius(captureCornerRadius, in: captureRect)
+        BoxShape.cornerRadius(drawnCaptureCornerRadius, in: captureRect)
     }
 
     /// The image plus how far its shadow and border paint past it.
     public var capturePaintedBounds: CGRect {
-        captureStyle.paintedRect(around: fullRect)
+        drawnCaptureStyle.paintedRect(around: fullRect)
     }
 
     /// The image as the export draws it: all of it, or the part the frame crop leaves, which the style goes around.

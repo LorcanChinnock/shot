@@ -11,7 +11,7 @@ public extension CopiedStyle {
         doc.hasWindowShadow = windowShadow
         doc.desktopPicture = desktopPicture
         doc.applyNewCaptureStyle(self, scale: scale, margin: 0)
-        guard !doc.captureStyle.isEmpty || doc.captureCornerRadius > 0 || canvas != nil else {
+        guard !doc.drawnCaptureStyle.isEmpty || doc.drawnCaptureCornerRadius > 0 || canvas != nil else {
             return nil
         }
         return AnnotationRenderer.flatten(doc)

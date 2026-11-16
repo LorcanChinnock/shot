@@ -56,15 +56,28 @@ private func shadowedDocument() -> EditorDocument {
     #expect(!document.usesWindowShadow)
 }
 
-@Test func aCroppedWindowTakesItsOwnStyleUntilTheCropGoes() {
+@Test func aCroppedWindowDrawsItsOwnStyleOnlyWhileTheCropShows() {
     var document = shadowedDocument()
     document.crop(to: CGRect(x: 120, y: 20, width: 150, height: 170))
     let own = ObjectStyle(shadow: Shadow(elevation: 8, opacity: 0.3))
     document.setStyle(own, of: .capture, margin: 0)
-    #expect(document.captureStyle.shadow != nil)
-    document.resetCrop()
+    document.setCornerRadius(12, of: .capture)
+    #expect(document.drawnCaptureStyle == own)
+    #expect(document.drawnCaptureCornerRadius == 12)
+
+    // Hiding the crop shows the whole window with its macOS shadow, so the own style isn't drawn as well.
+    document.isFrameCropHidden = true
     #expect(document.usesWindowShadow)
-    #expect(document.captureStyle == ObjectStyle())
+    #expect(document.drawnCaptureStyle == ObjectStyle())
+    #expect(document.drawnCaptureCornerRadius == 0)
+    #expect(document.capturePaintedBounds == document.fullRect)
+
+    // It comes back with the crop.
+    document.isFrameCropHidden = false
+    #expect(document.drawnCaptureStyle == own)
+
+    document.resetCrop()
+    #expect(document.drawnCaptureStyle == ObjectStyle())
 }
 
 @Test func otherImagesCropAsDrawn() {

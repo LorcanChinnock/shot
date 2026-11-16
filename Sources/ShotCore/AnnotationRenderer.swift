@@ -44,10 +44,10 @@ public enum AnnotationRenderer {
         if dim != nil {
             ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         }
-        let look = CaptureLook(cornerRadius: doc.captureCornerRadius, style: doc.captureStyle, background: shadowBackground)
+        let look = CaptureLook(cornerRadius: doc.drawnCaptureCornerRadius, style: doc.drawnCaptureStyle, background: shadowBackground)
         // The screenshot's shadow, border and corners go around what the frame crop leaves of it.
         if !doc.captureRect.isEmpty {
-            drawImage(doc.capturePicture, in: doc.captureRect, cornerRadius: doc.clampedCaptureCornerRadius, style: doc.captureStyle, shadowBackground: shadowBackground, ctx: ctx)
+            drawImage(doc.capturePicture, in: doc.captureRect, cornerRadius: doc.clampedCaptureCornerRadius, style: doc.drawnCaptureStyle, shadowBackground: shadowBackground, ctx: ctx)
         }
         // The frame crop hides the annotations outside it, even where the screenshot's shadow widens the canvas past it.
         ctx.saveGState()
