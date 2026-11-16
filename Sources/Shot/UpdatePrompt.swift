@@ -89,7 +89,6 @@ final class UpdatePromptWindow: FloatingPanelWindow {
         level = .normal
         hidesOnDeactivate = false
         isReleasedWhenClosed = false
-        isMovableByWindowBackground = true
         collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         title = String(localized: "Software Update")
         setAccessibilitySubrole(.dialog)
@@ -221,6 +220,19 @@ struct UpdatePromptView: View {
         }
         .frame(width: Self.width(textSize), alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
+        // The panel has no title bar, so a drag anywhere outside the controls moves it; `isMovableByWindowBackground`
+        // never reaches a hosting view's content. SwiftUI gestures, not an AppKit view, so the buttons and the
+        // selectable version line keep their own clicks and drags. This one covers the icon and the title, which sit in
+        // front of the background below and would otherwise take the drag.
+        .gesture(WindowDragGesture())
+        // The gaps between them, with no content shape above, reach this one.
+        .background {
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(WindowDragGesture())
+                // The first click on the panel while it's in the background drags it too.
+                .allowsWindowActivationEvents(true)
+        }
         .background(Theme.group, in: shape)
         .clipShape(shape)
         .inkBorder(shape, width: increased ? 1 : 0.5, color: edge)
