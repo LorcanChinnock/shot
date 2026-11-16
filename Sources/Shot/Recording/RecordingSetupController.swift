@@ -24,8 +24,11 @@ final class RecordingSetupModel {
     /// The microphone the recording will open: the one picked in Settings, or the system default when none is or it
     /// isn't connected. Read live, so a change in Settings while the bar shows is what the bar names and what's recorded.
     var microphoneName: String {
-        let id = SettingsStore.shared.value(forKey: PreferenceKey.microphoneDeviceID) as? String ?? ""
-        return CaptureDevices.device(id: id, for: .audio)?.localizedName ?? String(localized: "Microphone")
+        CaptureDevices.device(id: microphoneID, for: .audio)?.localizedName ?? String(localized: "Microphone")
+    }
+    /// The microphone picked in Settings, empty for the system default.
+    var microphoneID: String {
+        SettingsStore.shared.value(forKey: PreferenceKey.microphoneDeviceID) as? String ?? ""
     }
     /// The size and ratio chip's text above the frame.
     var frameLabel = ""
@@ -286,7 +289,7 @@ final class RecordingSetupController {
     /// or the recording, which opens the microphone itself. Turning it on is also when macOS asks for permission; without
     /// it, the microphone turns off here rather than when the recording starts.
     private func updateMicrophonePreview() async {
-        let preview = DevicePreview.microphone
+        let preview = DevicePreview.setupMicrophone
         guard model.microphoneOn, bar?.isVisible == true else {
             preview.stop()
             return
@@ -316,6 +319,7 @@ final class RecordingSetupController {
             switchMode: { [weak self] mode in Task { await self?.switchMode(mode) } },
             toggleCamera: { [weak self] in Task { await self?.toggleCamera() } },
             toggleMicrophone: { [weak self] in Task { await self?.toggleMicrophone() } },
+            microphoneChanged: { [weak self] in Task { await self?.updateMicrophonePreview() } },
             toggleCursor: { [weak self] in self?.toggleCursor() },
             toggleSystemAudio: { [weak self] in self?.toggleSystemAudio() },
             setFrameRate: { [weak self] in self?.setFrameRate($0) },
@@ -407,7 +411,7 @@ final class RecordingSetupController {
             bar?.makeKey()
             Task { await updateMicrophonePreview() }
         } else {
-            DevicePreview.microphone.stop()
+            DevicePreview.setupMicrophone.stop()
         }
     }
 
@@ -661,6 +665,8 @@ private final class SetupBarPanel: FloatingPanelWindow {
         let switchMode: @MainActor (CaptureTarget) -> Void
         let toggleCamera: @MainActor () -> Void
         let toggleMicrophone: @MainActor () -> Void
+        /// The microphone picked in Settings changed while the bar shows, so the level meter moves to it.
+        let microphoneChanged: @MainActor () -> Void
         let toggleCursor: @MainActor () -> Void
         let toggleSystemAudio: @MainActor () -> Void
         let setFrameRate: @MainActor (Int) -> Void
@@ -690,7 +696,7 @@ private final class SetupBarPanel: FloatingPanelWindow {
         level = .statusBar
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        contentView = NSView(hosting: SetupBarView(model: model, preview: DevicePreview.microphone, actions: actions) { [weak self] size in
+        contentView = NSView(hosting: SetupBarView(model: model, preview: DevicePreview.setupMicrophone, actions: actions) { [weak self] size in
             self?.fit(size)
         })
         contentView?.layoutSubtreeIfNeeded()
@@ -850,6 +856,9 @@ private struct SetupBarView: View {
         .accessibilityLabel(Text("Microphone"))
         .accessibilityValue((on ? Text("On") : Text("Off")) + Text(verbatim: ", \(model.microphoneName)"))
         .accessibilityAddTraits(.isToggle)
+        .onChange(of: model.microphoneID) {
+            actions.microphoneChanged()
+        }
     }
 
     private var frameRate: some View {

@@ -1123,6 +1123,9 @@ private struct SoundSettings: View {
         SettingsCard(title: "Sound") {
             ToggleRow(title: "Microphone", isOn: $microphone)
             SettingRow(title: "Input") {
+                DevicePicker(title: "Microphone", devices: devices, selection: $deviceID, selectionName: $deviceName, maxWidth: 170)
+            }
+            SettingRow(title: String(localized: "Level"), subtitle: inputSubtitle) {
                 HStack(spacing: 8) {
                     LevelMeter(meter: preview.meter, muted: !preview.isRunning)
                     Button(preview.isRunning ? "Stop" : "Test") {
@@ -1135,7 +1138,6 @@ private struct SoundSettings: View {
                     .buttonStyle(ThemeButtonStyle())
                     .fixedSize()
                     .accessibilityLabel(Text(preview.isRunning ? "Stop the microphone test" : "Test the microphone"))
-                    DevicePicker(title: "Microphone", devices: devices, selection: $deviceID, selectionName: $deviceName, maxWidth: 120)
                 }
             }
             ToggleRow(title: "Mac sound", subtitle: "Sound from other apps. Shot’s own sounds are left out.", isOn: $systemAudio)
@@ -1143,11 +1145,27 @@ private struct SoundSettings: View {
         .onAppear {
             devices = CaptureDevices.microphones()
         }
+        .onCaptureDevicesChange {
+            devices = CaptureDevices.microphones()
+        }
         .onChange(of: deviceID) {
             restart(preview, deviceID: deviceID)
         }
         .onDisappear {
             preview.stop()
+        }
+    }
+
+    /// Names the microphone Shot records with when the picker doesn't: System default, or a saved one that's unplugged.
+    private var inputSubtitle: String? {
+        let choice = DeviceChoice(savedID: deviceID, savedName: deviceName, connectedIDs: devices.map(\.uniqueID))
+        guard let fallback = AVCaptureDevice.default(for: .audio)?.localizedName else {
+            return nil
+        }
+        switch choice {
+        case .connected: return nil
+        case .systemDefault: return String(localized: "Records with \(fallback)")
+        case .missing: return String(localized: "Records with \(fallback) for now")
         }
     }
 }
@@ -1201,6 +1219,7 @@ private struct CameraPreviewCard: View {
         }
         .colorScheme(.dark)
         .onAppear(perform: updateName)
+        .onCaptureDevicesChange(updateName)
         .onChange(of: deviceID, updateName)
         .onDisappear {
             preview.stop()
@@ -1254,6 +1273,9 @@ private struct CameraSettings: View {
         .onAppear {
             devices = CaptureDevices.cameras()
         }
+        .onCaptureDevicesChange {
+            devices = CaptureDevices.cameras()
+        }
         .onChange(of: deviceID) {
             restart(preview, deviceID: deviceID)
         }
@@ -1292,7 +1314,7 @@ private struct DevicePicker: View {
         entries += devices.map { device in
             .item(device.localizedName, selected: device.uniqueID == selection) { pick(id: device.uniqueID, name: device.localizedName) }
         }
-        return ThemePopUp(title: title, entries: entries, value: selectedName, maxWidth: maxWidth)
+        return ThemePopUp(title: title, entries: entries, value: selectedName, maxWidth: maxWidth, truncation: .middle)
             .help(selectedName)
     }
 

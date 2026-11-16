@@ -2,12 +2,14 @@ import AVFoundation
 import Observation
 import SwiftUI
 
-/// Runs a camera or microphone from Settings so people can check it before recording.
+/// Runs a camera or microphone so people can check it before recording, from Settings or the check-before-recording bar.
 @MainActor
 @Observable
 final class DevicePreview {
     static let camera = DevicePreview(mediaType: .video)
     static let microphone = DevicePreview(mediaType: .audio)
+    /// The check-before-recording bar's level meter, apart from Settings' Test, so neither shows the other running.
+    static let setupMicrophone = DevicePreview(mediaType: .audio)
 
     let meter = AudioMeter()
     private(set) var session: AVCaptureSession?
