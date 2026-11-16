@@ -133,7 +133,8 @@ jobs:
         run: make bundle && scripts/smoke.sh
 
   # A required check, so main's ruleset needs it by name. It stands for `test` and `smoke`, which it waits on. A PR that
-  # skips them (see the top of this file) passes, since a skipped job counts as a pass; a failed or cancelled one fails it.
+  # skips them (see the top of this file) passes, since a skipped job counts as a pass. Any other result fails it: failed,
+  # cancelled, or abandoned, which is what a job left waiting too long for a macOS runner reports.
   macos:
     needs: [test, smoke]
     if: ${{ always() }}
@@ -145,4 +146,9 @@ jobs:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
           echo "test and smoke: $RESULTS"
-          case " $RESULTS " in *" failure "*|*" cancelled "*) exit 1 ;; esac
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *) echo "::error::test or smoke ended as $result, not success. Re-run it if it was abandoned or cancelled while queued."; exit 1 ;;
+            esac
+          done
