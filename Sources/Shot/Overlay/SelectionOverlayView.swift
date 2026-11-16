@@ -41,6 +41,8 @@ final class SelectionOverlayView: NSView {
     private var barPlacement = OverlayBarPlacement.bottom
     /// Where the bar was last drawn, nil while it's hidden or faded, so the chips and loupe keep off it.
     private var barFrame: CGRect?
+    /// Where the bar was when it faded, so moving the pointer back onto that spot brings it back (#1370).
+    private var fadedBarFrame: CGRect?
     /// The bar's frame in AppKit global space, nil while it's hidden or faded, for the permission card to sit beside.
     var barScreenFrame: CGRect? {
         guard let barFrame, let window else {
@@ -127,7 +129,9 @@ final class SelectionOverlayView: NSView {
         let point = convert(event.locationInWindow, from: nil)
         pointer = point
         let hovered = barHits.first { $0.rect.contains(point) }?.action
-        if hovered != nil {
+        // A faded bar draws nothing and has no buttons to hit, so its last frame stands in for it.
+        let ontoFadedBar = barFrame == nil && dragStart == nil && fadedBarFrame?.contains(point) == true
+        if hovered != nil || ontoFadedBar {
             controller.revealBar()
         }
         if hovered != hoveredChip {
@@ -928,10 +932,14 @@ final class SelectionOverlayView: NSView {
     /// bottom unless what's being picked reaches it, and hides while an area is dragged out.
     private func drawBar(avoiding hole: CGRect?) {
         let previous = barHits.map(\.rect)
+        let previousFrame = barFrame
         barHits = []
         barFrame = nil
         tipFrame = nil
         let opacity = controller.barOpacity
+        if opacity == 0, let previousFrame {
+            fadedBarFrame = previousFrame
+        }
         guard opacity > 0, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false),
               let ctx = NSGraphicsContext.current?.cgContext else {
             return
@@ -995,6 +1003,7 @@ final class SelectionOverlayView: NSView {
             return
         }
         barFrame = frame
+        fadedBarFrame = nil
         // While fading, the bar draws into one layer so its shadow and fill fade together rather than showing through each other.
         if opacity < 1 {
             ctx.saveGState()
