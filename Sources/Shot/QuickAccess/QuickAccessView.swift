@@ -107,7 +107,8 @@ private struct QuickAccessCardView: View {
         return isBehind ? .white.opacity(0.4) : .black.opacity(0.6)
     }
 
-    /// The capture, filling the card and cropped to its middle. A recording with no first frame shows a film symbol.
+    /// The capture, filling the card and cropped to its middle, or whole when it's a strip too wide to crop (`ThumbnailFit`).
+    /// A recording with no first frame shows a film symbol.
     @ViewBuilder
     private var picture: some View {
         let label = Text(card.isVideo ? "Recording \(card.fileURL.lastPathComponent)" : "Screenshot \(card.fileURL.lastPathComponent)")
@@ -121,10 +122,11 @@ private struct QuickAccessCardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityLabel(label)
         } else {
+            let whole = ThumbnailFit.showsWhole(card.thumbnail.size, in: CGSize(width: QuickAccessCard.width, height: height))
             Image(nsImage: card.thumbnail)
                 .resizable()
                 .interpolation(.high)
-                .aspectRatio(contentMode: .fill)
+                .aspectRatio(contentMode: whole ? .fit : .fill)
                 .frame(width: QuickAccessCard.width, height: height)
                 .clipped()
                 .accessibilityLabel(label)

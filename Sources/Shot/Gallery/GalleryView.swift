@@ -522,10 +522,11 @@ private struct GalleryTile: View, Equatable {
         VStack(alignment: .leading, spacing: 7) {
             ZStack {
                 if let thumbnail {
+                    let whole = ThumbnailFit.showsWhole(thumbnail.image.size, in: CGSize(width: width, height: height))
                     Image(nsImage: thumbnail.image)
                         .resizable()
                         .interpolation(.high)
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(contentMode: whole ? .fit : .fill)
                         .frame(width: width, height: height)
                         .clipped()
                 } else {
