@@ -3,7 +3,9 @@ import Foundation
 import Synchronization
 
 public struct EditorDocument: @unchecked Sendable {
-    public var base: CGImage
+    public var base: CGImage {
+        didSet { findWindowBody() }
+    }
     public var annotations: [Annotation]
     /// Everything the document holds, in image pixels: the image with its shadow and border, and padding that reaches
     /// past it for annotations. It always contains the image, and it's what the frame crop can be adjusted within.
@@ -27,7 +29,37 @@ public struct EditorDocument: @unchecked Sendable {
     /// The image's shadow and border.
     public var captureStyle = ObjectStyle()
     /// Whether the image is a window capture that includes the macOS window shadow, so it takes no shadow of its own.
-    public var hasWindowShadow = false
+    public var hasWindowShadow = false {
+        didSet { findWindowBody() }
+    }
+    /// The window inside a capture with the macOS shadow, in image pixels; `nil` for any other image.
+    public private(set) var windowBody: CGRect?
+    /// Whether the macOS shadow is still whole: true until a crop cuts into the window, which leaves a broken piece of
+    /// shadow at best, so from then on the image takes the Style panel's own shadow, border and corners (#1381).
+    public var usesWindowShadow: Bool {
+        guard hasWindowShadow else {
+            return false
+        }
+        guard let crop = frameCrop, !isFrameCropHidden, let windowBody else {
+            return true
+        }
+        return crop.contains(windowBody)
+    }
+
+    private mutating func findWindowBody() {
+        windowBody = hasWindowShadow ? WindowShadow.body(of: base) : nil
+    }
+
+    /// The image's own shadow and border as drawn: none while the macOS shadow is whole, so it never has two. The style is
+    /// kept, so it comes back when a crop that cut into the window shows again, after hiding the crop or resetting it.
+    public var drawnCaptureStyle: ObjectStyle {
+        usesWindowShadow ? ObjectStyle() : captureStyle
+    }
+
+    /// The image's corner radius as drawn: none while the macOS shadow is whole, as the window's own corners show.
+    public var drawnCaptureCornerRadius: CGFloat {
+        usesWindowShadow ? 0 : captureCornerRadius
+    }
 
     /// `canvasRect` is the region the document shows: a part of the image becomes the frame crop, and one that holds the
     /// whole image is its padding.
@@ -67,7 +99,7 @@ public struct EditorDocument: @unchecked Sendable {
         guard !shown.isEmpty else {
             return frame.framing(crop, image: crop)
         }
-        return frame.framing(crop.union(captureStyle.paintedRect(around: shown)).integral, image: shown)
+        return frame.framing(crop.union(drawnCaptureStyle.paintedRect(around: shown)).integral, image: shown)
     }
     public var exportSize: CGSize { canvasRect.size }
     /// Whether the canvas reaches past the image on any side.
@@ -80,8 +112,13 @@ public struct EditorDocument: @unchecked Sendable {
 
     /// Sets the frame crop to `rect` on whole pixels, which may lie in the padding, within `contentRect`. A crop that
     /// leaves nothing of `contentRect` out is no crop. It's in effect from now on, even if it was hidden.
+    /// On a window captured with the macOS shadow, a crop that cuts into the window keeps none of the shadow either, as
+    /// the piece left would end in a hard edge (#1381).
     public mutating func crop(to rect: CGRect) {
-        let kept = rect.integral.intersection(contentRect)
+        var kept = rect.integral.intersection(contentRect)
+        if hasWindowShadow, let windowBody, !kept.isNull, !kept.contains(windowBody) {
+            kept = kept.intersection(windowBody)
+        }
         guard !kept.isNull, kept.width >= 1, kept.height >= 1 else {
             return
         }
@@ -264,12 +301,12 @@ extension EditorDocument {
 
     /// The capture's corner radius, within what the image can take.
     public var clampedCaptureCornerRadius: CGFloat {
-        BoxShape.cornerRadius(captureCornerRadius, in: captureRect)
+        BoxShape.cornerRadius(drawnCaptureCornerRadius, in: captureRect)
     }
 
     /// The image plus how far its shadow and border paint past it.
     public var capturePaintedBounds: CGRect {
-        captureStyle.paintedRect(around: fullRect)
+        drawnCaptureStyle.paintedRect(around: fullRect)
     }
 
     /// The image as the export draws it: all of it, or the part the frame crop leaves, which the style goes around.
@@ -342,7 +379,7 @@ extension EditorDocument {
         let style = style.restricted(to: kind, transparent: style.border?.kind == .outline && hasTransparency(of: target))
         switch target {
         case .capture:
-            captureStyle = hasWindowShadow ? ObjectStyle() : style
+            captureStyle = usesWindowShadow ? ObjectStyle() : style
             growToFitCapture()
         case let .annotation(id):
             guard let index = annotations.firstIndex(where: { $0.id == id }), !annotations[index].isLocked else {
@@ -360,7 +397,7 @@ extension EditorDocument {
         let radius = max(0, radius)
         switch target {
         case .capture:
-            captureCornerRadius = hasWindowShadow ? 0 : radius
+            captureCornerRadius = usesWindowShadow ? 0 : radius
         case let .annotation(id):
             guard let index = annotations.firstIndex(where: { $0.id == id }), annotations[index].styleKind?.takesCorners == true, !annotations[index].isLocked else {
                 return

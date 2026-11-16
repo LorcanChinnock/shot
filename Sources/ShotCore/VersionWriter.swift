@@ -54,8 +54,8 @@ public enum VersionWriter {
         if atOneX {
             image = ImageCodec.downscaled(image, scale: scale)
         }
-        // A window with the macOS shadow still has it once saved, so the file keeps saying so.
-        guard let file = ImageCodec.data(from: image, scale: atOneX ? 1 : scale, format: format, windowShadow: document.hasWindowShadow, projectID: projectID) else {
+        // A window with the macOS shadow still has it once saved, so the file keeps saying so, unless a crop cut it off.
+        guard let file = ImageCodec.data(from: image, scale: atOneX ? 1 : scale, format: format, windowShadow: document.usesWindowShadow, projectID: projectID) else {
             throw .encode
         }
         return RenderedImage(image: image, file: file)
@@ -86,7 +86,7 @@ public enum VersionWriter {
         if format == .png {
             png = rendered.file
         } else {
-            guard let data = ImageCodec.data(from: rendered.image, scale: scale, format: .png, windowShadow: document.hasWindowShadow) else {
+            guard let data = ImageCodec.data(from: rendered.image, scale: scale, format: .png, windowShadow: document.usesWindowShadow) else {
                 throw .encode
             }
             png = data
