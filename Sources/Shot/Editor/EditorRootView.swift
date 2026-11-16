@@ -105,7 +105,7 @@ private struct EditorTitleBar: View {
                 Text(model.fileURL.lastPathComponent)
                     .font(Theme.label)
                     .foregroundStyle(Theme.ink)
-                    .truncationMode(.middle)
+                    .truncationMode(FileNaming.endsWithTimestamp(model.fileURL.lastPathComponent) ? .head : .middle)
                 subtitle
                     .font(Theme.caption)
                     .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))

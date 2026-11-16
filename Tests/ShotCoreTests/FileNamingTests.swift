@@ -13,6 +13,16 @@ private let date: Date = {
     #expect(FileNaming.baseName(for: date) == "Shot 2026-10-02 at 14.03.11")
 }
 
+@Test func timestampedNamesAreRecognised() {
+    #expect(FileNaming.endsWithTimestamp("Shot 2026-10-02 at 14.03.11.png"))
+    #expect(FileNaming.endsWithTimestamp("Shot 2026-10-02 at 14.03.11 (3).png"))
+    #expect(FileNaming.endsWithTimestamp("Shot 2026-10-02 at 14.03.11 (recovered, part 2).mp4"))
+    #expect(FileNaming.endsWithTimestamp("Capture 2026-10-02 at 14.03.11"))
+    #expect(!FileNaming.endsWithTimestamp("Login bug.png"))
+    #expect(!FileNaming.endsWithTimestamp("Shot 2026-10-02 at 14.03.11 edited by Sam.png"))
+    #expect(!FileNaming.endsWithTimestamp("Screenshot 2026-10-02 at 2.03.11 PM.png"))
+}
+
 @Test func uniqueURLAddsCollisionSuffixes() {
     let folder = URL(fileURLWithPath: "/tmp/shots")
     let taken: Set<String> = ["Shot 2026-10-02 at 14.03.11.png", "Shot 2026-10-02 at 14.03.11 (2).png"]
