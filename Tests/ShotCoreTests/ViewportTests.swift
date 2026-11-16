@@ -155,3 +155,27 @@ private func isRed(_ p: [UInt8]) -> Bool { p[0] > 225 && p[1] < 30 && p[2] < 30 
         #expect(isRed(try pixelBytes(image, 77, y)))
     }
 }
+
+@Test func aFittedCanvasStaysCentredWhenTheTopBarClearsIt() {
+    let canvas = CGRect(x: 0, y: 0, width: 200, height: 100)
+    let view = CGSize(width: 600, height: 600)
+    #expect(Viewport.fit(canvas, in: view, maxScale: 1, top: 52) == Viewport.fit(canvas, in: view, maxScale: 1))
+}
+
+@Test func aFittedCanvasMovesDownAndShrinksToClearTheTopBar() {
+    // #1377: a tall capture in a short editor window, with a two-row style bar 52 pt high.
+    let canvas = CGRect(x: 0, y: 0, width: 494, height: 666)
+    let view = CGSize(width: 740, height: 300)
+    let fit = Viewport.fit(canvas, in: view, maxScale: 1, top: 52)
+    let shown = fit.viewRect(canvas)
+    #expect(shown.minY >= Viewport.inset + 52)
+    #expect(shown.maxY <= view.height - Viewport.inset)
+}
+
+@Test func aZoomedCanvasScrollsItsTopEdgeBelowTheTopBar() {
+    let canvas = CGRect(x: 0, y: 0, width: 494, height: 666)
+    let view = CGSize(width: 740, height: 480)
+    let actualSize = Viewport(scale: 1, origin: CGPoint(x: 0, y: 500))
+    #expect(actualSize.clamped(to: canvas, in: view, top: 52).viewRect(canvas).minY == Viewport.inset + 52)
+    #expect(actualSize.clamped(to: canvas, in: view).viewRect(canvas).minY == Viewport.inset)
+}

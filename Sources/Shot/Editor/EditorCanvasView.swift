@@ -89,6 +89,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.document.background
             _ = model.cropDraft
             _ = model.cropBarClearance
+            _ = model.styleBarClearance
             _ = model.stylePreview
             _ = model.selectedIDs
             _ = model.tool
@@ -137,7 +138,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// The whole canvas, no larger than actual size.
     private var fitViewport: Viewport {
-        .fit(canvasRect, in: viewportSize, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale))
+        .fit(canvasRect, in: viewportSize, maxScale: Viewport.scale(forZoom: 1, pixelsPerPoint: model.scale), top: styleBarTop)
     }
 
     /// Clamped on every read, so a crop or a window resize never leaves the canvas scrolled away.
@@ -148,7 +149,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     /// Kept within the canvas, with room to scroll the picture's bottom edge above the zoom control and hint. Crop
     /// mode's viewport already ends above the crop bar, so it needs none.
     private func clamped(_ viewport: Viewport) -> Viewport {
-        viewport.clamped(to: canvasRect, in: viewportSize, bottom: model.tool == .crop ? 0 : model.canvasFootHeight)
+        viewport.clamped(to: canvasRect, in: viewportSize, bottom: model.tool == .crop ? 0 : model.canvasFootHeight, top: styleBarTop)
+    }
+
+    /// The room the style bar takes at the canvas's top, which the image keeps below. Crop mode shows no style bar.
+    private var styleBarTop: CGFloat {
+        model.tool == .crop ? 0 : model.styleBarClearance
     }
 
     /// The room the image fits and scrolls in: the view above the crop bar in crop mode, so the crop's bottom handles

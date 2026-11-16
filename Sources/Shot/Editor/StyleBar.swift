@@ -19,6 +19,8 @@ struct StyleBarOverlay: View {
                 StyleBar(model: model, content: content)
                     .fixedSize()
                     .onGeometryChange(for: CGSize.self, of: \.size) { barSize = $0 }
+                    // Only ever grows, so the image doesn't move when the bar steps aside for a drag or changes with the tool.
+                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { model.styleBarClearance = max(model.styleBarClearance, $0) }
                     // Hidden for the one layout before its size is known, so it never shows in the wrong place.
                     .opacity(barSize == .zero ? 0 : 1)
                     .offset(x: origin.x, y: origin.y)
