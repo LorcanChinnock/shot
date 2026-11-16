@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0-beta.91](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.90...v0.7.0-beta.91) (2026-11-16)
+
+
+### Bug Fixes
+
+* **capture:** bring the capture bar back when the pointer moves onto it after it fades ([#1386](https://github.com/LorcanChinnock/shot/issues/1386)) ([b3008ad](https://github.com/LorcanChinnock/shot/commit/b3008adc1bbe3c62929bfb400206d3032a7d9f7b))
+* **editor:** crop a window capture to the window when the crop cuts into it ([#1389](https://github.com/LorcanChinnock/shot/issues/1389)) ([965689a](https://github.com/LorcanChinnock/shot/commit/965689a2e9286985ab58e911abf7faa04bfc831f))
+* **editor:** keep the fitted image clear of the style bar ([#1388](https://github.com/LorcanChinnock/shot/issues/1388)) ([a34f079](https://github.com/LorcanChinnock/shot/commit/a34f0790a0da6d3ef2678a14ceeb4942e7b7950b))
+* **editor:** say "Your edits are lost" when closing with unsaved changes ([#1394](https://github.com/LorcanChinnock/shot/issues/1394)) ([beb7b24](https://github.com/LorcanChinnock/shot/commit/beb7b24f2cedb5237fc7d75fe6cab33b5873819a)), closes [#1380](https://github.com/LorcanChinnock/shot/issues/1380)
+* **gallery:** cut long capture names from the front so the time stays visible ([#1391](https://github.com/LorcanChinnock/shot/issues/1391)) ([5f23ec5](https://github.com/LorcanChinnock/shot/commit/5f23ec5e50d062a5bcc6259428a64481230f0774)), closes [#1373](https://github.com/LorcanChinnock/shot/issues/1373)
+* **gallery:** let the toolbar's search field, Sort menu and size slider take clicks ([#1383](https://github.com/LorcanChinnock/shot/issues/1383)) ([6821183](https://github.com/LorcanChinnock/shot/commit/682118377b8458ebbb60ec125097ec3d09a4f12d))
+* **gallery:** say "1 capture" in the sidebar's VoiceOver value ([#1393](https://github.com/LorcanChinnock/shot/issues/1393)) ([d9e4c70](https://github.com/LorcanChinnock/shot/commit/d9e4c707a09ed6caf08e9f8267c79de5e04fdf5b)), closes [#1378](https://github.com/LorcanChinnock/shot/issues/1378)
+* **gallery:** show how many captures match while searching ([#1395](https://github.com/LorcanChinnock/shot/issues/1395)) ([db7c2f0](https://github.com/LorcanChinnock/shot/commit/db7c2f05bb3371db68d0af5a004d56758dd730a8)), closes [#1379](https://github.com/LorcanChinnock/shot/issues/1379)
+* **gallery:** show wide captures whole in thumbnails instead of a blank middle ([#1387](https://github.com/LorcanChinnock/shot/issues/1387)) ([3ccca3a](https://github.com/LorcanChinnock/shot/commit/3ccca3ae0142c9287bf71f25c2e35d820c16fb42))
+* **quick-access:** keep the pin bar's opacity label in place as the opacity changes ([#1390](https://github.com/LorcanChinnock/shot/issues/1390)) ([6e418f0](https://github.com/LorcanChinnock/shot/commit/6e418f02ae0ffd591e743cdbaa6091b6c2a1c862)), closes [#1371](https://github.com/LorcanChinnock/shot/issues/1371)
+* **video-editor:** say the original recording is in the Trash after Save ([#1384](https://github.com/LorcanChinnock/shot/issues/1384)) ([182655b](https://github.com/LorcanChinnock/shot/commit/182655be175df15924d858a8cc20426239d798e0))
+* **video-editor:** say Trim idle found no movement or speech instead of "nothing to keep" ([#1392](https://github.com/LorcanChinnock/shot/issues/1392)) ([9c41a29](https://github.com/LorcanChinnock/shot/commit/9c41a29e20dbdfa863e084af0acf84228beac88e)), closes [#1374](https://github.com/LorcanChinnock/shot/issues/1374)
+
 ## [0.7.0-beta.90](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.89...v0.7.0-beta.90) (2026-11-16)
 
 
