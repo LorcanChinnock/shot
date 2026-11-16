@@ -132,6 +132,23 @@ jobs:
         run: make dist
         env:
           SHOT_SIGN_IDENTITY: Shot Release
+      # A release can have a written summary in docs/releases/<version>.md. It goes under the version heading, above
+      # release-please's list, before the feed embeds the notes, so the update window shows it as well as the release page.
+      - name: Add the release summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          summary="docs/releases/${TAG#v}.md"
+          if [ -f "$summary" ]; then
+            gh release view "$TAG" --json body --jq .body > "$RUNNER_TEMP/body.md"
+            {
+              head -n 1 "$RUNNER_TEMP/body.md"
+              printf '\n'
+              cat "$summary"
+              tail -n +2 "$RUNNER_TEMP/body.md"
+            } > "$RUNNER_TEMP/notes.md"
+            gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
       - name: Build the update feed
         env:
           GH_TOKEN: ${{ github.token }}
