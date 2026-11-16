@@ -288,20 +288,25 @@ private struct GalleryGrid: View {
     }
 }
 
-/// The name of the sidebar row picked and how many captures it holds. It's its own view, so only it re-evaluates when they
-/// change.
+/// The name of the sidebar row picked and how many captures it holds, or how many match a search. It's its own view, so
+/// only it re-evaluates when they change.
 private struct GalleryHeading: View {
     let model: GalleryModel
 
-    var body: some View {
+    /// How many captures the row holds, or while searching how many of them match, such as "1 of 11".
+    private var countText: Text {
         let count = model.counts.count(of: model.source)
+        return model.isSearching ? Text("\(model.visible.count) of \(count)") : Text("\(count) items")
+    }
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(verbatim: title)
                 .font(.scaled(15, weight: .bold))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .truncationMode(.middle)
-            Text("\(count) items")
+            countText
                 .font(.scaled(11, tabular: true))
                 .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
         }
