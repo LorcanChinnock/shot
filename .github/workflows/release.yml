@@ -189,8 +189,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" "build/release/Shot-${TAG}.zip" build/release/appcast.xml build/release/SHA256SUMS --clobber
-      # Tags are -beta.N, but the release is published as stable and latest, because installed copies read the
-      # update feed from releases/latest/download/appcast.xml and `latest` never points at a prerelease.
+      # Published as stable and latest, never as a prerelease: installed copies read the update feed from
+      # releases/latest/download/appcast.xml, and `latest` never points at a prerelease.
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
