@@ -53344,58 +53344,6 @@
         }
       }
     },
-    "Your annotations are lost if you discard them." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine Markierungen gehen verloren, wenn du sie verwirfst."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Si las descartas, perderás tus anotaciones."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vos annotations seront perdues si vous ne les enregistrez pas."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se le scarti, le annotazioni andranno perse."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "破棄すると注釈は失われます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "버리면 주석이 사라집니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suas anotações serão perdidas se você descartá-las."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "如果丢弃，你的标注将会丢失。"
-          }
-        }
-      }
-    },
     "Your edits are lost if you discard them." : {
       "localizations" : {
         "de" : {

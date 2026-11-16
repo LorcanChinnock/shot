@@ -266,7 +266,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSMenuItemValida
         }
         let alert = NSAlert()
         alert.messageText = String(localized: "Save changes to \(model.fileURL.lastPathComponent)?")
-        alert.informativeText = String(localized: "Your annotations are lost if you discard them.")
+        alert.informativeText = String(localized: "Your edits are lost if you discard them.")
         alert.addButton(withTitle: String(localized: "Save"))
         alert.addButton(withTitle: String(localized: "Discard"))
         alert.addButton(withTitle: String(localized: "Cancel"))
