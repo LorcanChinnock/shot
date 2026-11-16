@@ -90,9 +90,31 @@ struct ThemeSearchField: View {
     let prompt: LocalizedStringResource
     @Binding var text: String
     var focus: FocusState<Bool>.Binding
+    /// A tip for the field. It covers the field but not its clear button: the tip tracks focus for the views it wraps,
+    /// and around the button that swallowed the click, so the search never cleared (#1375).
+    var tip: LocalizedStringResource?
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
+        HStack(spacing: 6) {
+            field
+                .modifier(OptionalTip(tip: tip))
+            if !text.isEmpty {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.scaled(12))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                .buttonStyle(.halo(radius: 7))
+                .accessibilityLabel(Text("Clear search"))
+            }
+        }
+        .themeField(.search, focused: focus.wrappedValue)
+    }
+
+    private var field: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .font(.scaled(12, weight: .medium))
@@ -116,19 +138,20 @@ struct ThemeSearchField: View {
                 }
             }
             .focused(focus)
-            if !text.isEmpty {
-                Button {
-                    text = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.scaled(12))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                .buttonStyle(.halo(radius: 7))
-                .accessibilityLabel(Text("Clear search"))
-            }
         }
-        .themeField(.search, focused: focus.wrappedValue)
+    }
+}
+
+/// `themeTip(tip)` when there is one.
+private struct OptionalTip: ViewModifier {
+    let tip: LocalizedStringResource?
+
+    func body(content: Content) -> some View {
+        if let tip {
+            content.themeTip(tip)
+        } else {
+            content
+        }
     }
 }
 

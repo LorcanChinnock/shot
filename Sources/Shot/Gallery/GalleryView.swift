@@ -126,9 +126,9 @@ struct GalleryRootView: View {
     }
 
     private var searchField: some View {
-        ThemeSearchField(prompt: "Search names and text in screenshots", text: Bindable(model).query, focus: $searchFocused)
+        ThemeSearchField(prompt: "Search names and text in screenshots", text: Bindable(model).query, focus: $searchFocused,
+                         tip: "Search by file name or by text in screenshots (⌘F)")
             .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
-            .themeTip("Search by file name or by text in screenshots (⌘F)")
     }
 
     private var sortMenu: some View {

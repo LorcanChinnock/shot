@@ -39,8 +39,11 @@ enum GlassWindow {
     }
 
     static func setContent<Content: View>(of window: NSWindow, @ViewBuilder content: () -> Content) {
-        // Only the title strip moves the window, so a click on a button in the title bar presses it.
-        window.contentView = NSView(hosting: GlassChrome(content: content()), movesWindow: false)
+        // Only the title strip moves the window, so a click on a button in the title bar presses it. The chrome lays out
+        // under the title bar itself, so the hosting view applies no safe area: with one, a scroll view below the toolbar
+        // reaches up under it to scroll there, and its frame takes the clicks meant for the controls drawn in the title bar,
+        // such as the gallery's search field and Sort menu (#1375).
+        window.contentView = NSView(hosting: GlassChrome(content: content()), movesWindow: false, safeArea: false)
     }
 
     static func present(_ window: NSWindow) {
@@ -93,11 +96,15 @@ extension NSView {
     /// A window's content view hosting SwiftUI one level down. A hosting view that is itself the content view resizes the
     /// window and sets its size limits from inside AppKit's layout pass, which throws once content changes under a visible window.
     /// `movesWindow` false keeps AppKit from dragging the window from anywhere in the content, so only a view that drags
-    /// it itself, such as a glass window's title strip, does.
-    convenience init(hosting rootView: some View, movesWindow: Bool = true) {
+    /// it itself, such as a glass window's title strip, does. `safeArea` false gives the content no safe area at all, for
+    /// content that lays out under a transparent title bar on its own.
+    convenience init(hosting rootView: some View, movesWindow: Bool = true, safeArea: Bool = true) {
         self.init()
         let content = rootView.modifier(TextSizeRoot())
         let hosting = movesWindow ? NSHostingView(rootView: content) : StillHostingView(rootView: content) as NSHostingView
+        if !safeArea {
+            hosting.safeAreaRegions = []
+        }
         hosting.sizingOptions = []
         hosting.autoresizingMask = [.width, .height]
         addSubview(hosting)
