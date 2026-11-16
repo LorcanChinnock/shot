@@ -268,7 +268,12 @@ private struct PinBar: View {
             .themeTip("Close")
             .accessibilityLabel(Text("Close"))
             if label {
-                Text("Pinned · \(PinOpacity.percent(state.opacity))%")
+                // As wide as the widest value, 100%, so dragging the slider never moves the label in or out of the bar.
+                Text("Pinned · \(PinOpacity.percent(PinOpacity.full))%")
+                    .hidden()
+                    .overlay(alignment: .leading) {
+                        Text("Pinned · \(PinOpacity.percent(state.opacity))%")
+                    }
                     .font(.scaled(10.5, tabular: true))
                     .foregroundStyle(FloatingPanel.secondaryText)
                     .lineLimit(1)
