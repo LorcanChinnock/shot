@@ -4,7 +4,7 @@ summary: "Put the screenshot on a background with padding, round its corners, ad
 group: Edit and share
 ---
 
-![The Style panel beside a screenshot of a window on a pastel gradient background, with background swatches, a Padding slider at 41 pt, the Size choices and Use for new captures turned off](../../../docs/media/editor-style.png)
+![The Style panel beside a screenshot of a window on a pastel gradient background, with background swatches, a Padding slider at 43 pt, the Size choices and Use for new captures turned off](../../../docs/media/editor-style.png)
 
 ## Open the Style panel
 
