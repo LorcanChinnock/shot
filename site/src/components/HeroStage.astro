@@ -22,7 +22,7 @@ import quickAccess from '../../../docs/media/quick-access.png';
 
     <div class="bar-anchor">
       <div class="bar-crop">
-        <Image src={captureBar} class="bar" alt="" widths={[640, 1206]} sizes="(min-width: 900px) 640px, 80vw" loading="eager" />
+        <Image src={captureBar} class="bar" alt="" widths={[640, 1118]} sizes="(min-width: 900px) 640px, 80vw" loading="eager" />
       </div>
       <span class="mark-bar pop deco"><span class="counter pulse">1</span></span>
     </div>
@@ -63,15 +63,15 @@ import quickAccess from '../../../docs/media/quick-access.png';
   }
   .editor-crop :global(img) { width: calc(1600 / 1160 * 100%); left: calc(-220 / 1160 * 100%); top: calc(-39 / 821 * 100%); }
 
-  /* capture-bar.png is 1206 × 148; the bar is 1146 × 92 from (30, 28). It straddles the editor's bottom edge. */
+  /* capture-bar.png is 1118 × 150; the bar is 1058 × 90 from (30, 30). It straddles the editor's bottom edge. */
   .bar-anchor { position: absolute; left: 50%; bottom: 0; width: 74%; translate: -50% 50%; }
-  .bar-crop { aspect-ratio: 1146 / 92; border-radius: 2.6% / 32%; box-shadow: 0 14px 30px rgb(0 0 0 / 0.3); }
-  .bar-crop :global(img) { width: calc(1206 / 1146 * 100%); left: calc(-30 / 1146 * 100%); top: calc(-28 / 92 * 100%); }
-  /* On the Area button, which runs from 19% to 32% of the bar. */
-  .mark-bar { position: absolute; left: 19.5%; top: 0; display: flex; margin: -16px 0 0 -16px; --delay: 1500ms; }
+  .bar-crop { aspect-ratio: 1058 / 90; border-radius: 2.8% / 33%; box-shadow: 0 14px 30px rgb(0 0 0 / 0.3); }
+  .bar-crop :global(img) { width: calc(1118 / 1058 * 100%); left: calc(-30 / 1058 * 100%); top: calc(-30 / 90 * 100%); }
+  /* On the Area button, which runs from 21% to 35% of the bar. */
+  .mark-bar { position: absolute; left: 21.5%; top: 0; display: flex; margin: -16px 0 0 -16px; --delay: 1500ms; }
   .mark-bar .counter { width: 34px; height: 34px; font-size: 17px; }
 
-  /* quick-access.png is 648 × 400; the card is 558 × 315 from (45, 42). It hangs off the left into the panel's margin,
+  /* quick-access.png is 648 × 400; the card is 558 × 316 from (46, 45). It hangs off the left into the panel's margin,
      by as much as the margin allows. */
   .quick-anchor {
     position: absolute; top: 30%; width: 25%;
@@ -79,18 +79,18 @@ import quickAccess from '../../../docs/media/quick-access.png';
   }
   .quick-crop {
     --r: -4deg;
-    aspect-ratio: 558 / 315;
+    aspect-ratio: 558 / 316;
     border-radius: 5% / 8.9%;
     box-shadow: 0 24px 50px rgb(0 0 0 / 0.3);
     transform: rotate(var(--r));
   }
-  .quick-crop :global(img) { width: calc(648 / 558 * 100%); left: calc(-45 / 558 * 100%); top: calc(-42 / 315 * 100%); }
+  .quick-crop :global(img) { width: calc(648 / 558 * 100%); left: calc(-46 / 558 * 100%); top: calc(-45 / 316 * 100%); }
 
   /* A badge with a dark label, as the board draws them. */
   .mark { position: absolute; display: flex; align-items: center; gap: 6px; }
   .label { padding: 3px 9px; border-radius: 8px; background: #16161a; color: #fff; font: 700 13px/1.4 var(--font); white-space: nowrap; }
-  /* Below and left of the arrow's middle, which crosses (69.6%, 69.4%) of the crop. */
-  .mark-arrow { right: 31%; top: 71%; --delay: 1400ms; }
+  /* Below and left of the arrow's middle, which crosses (67.9%, 76%) of the crop. */
+  .mark-arrow { right: 33%; top: 77.5%; --delay: 1400ms; }
   /* Above Copy, whose centre is 96.2% across the crop. */
   .mark-copy { right: calc(3.8% - 22px); bottom: calc(100% + 8px); flex-direction: column; width: 44px; --delay: 1700ms; }
   .mark .counter { --delay: 2000ms; }

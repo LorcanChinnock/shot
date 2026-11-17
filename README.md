@@ -43,7 +43,7 @@
 
 ### Capture and Quick Access
 
-<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture from a window to the full screen and on to an area, turning on the magnifier, dragging out an area around a support ticket, then the Quick Access card sliding into the corner">
+<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture bar from Area to Window and Full Screen and back to Area, then dragging out an area around a support ticket, then the Quick Access card sliding into the corner">
 
 ### Annotate anything
 
