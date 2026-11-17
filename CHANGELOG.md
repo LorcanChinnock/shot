@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-beta.93](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.92...v0.7.0-beta.93) (2026-11-17)
+
+
+### Bug Fixes
+
+* **quick-access:** call Pin "Pin to Screen" everywhere ([#1406](https://github.com/LorcanChinnock/shot/issues/1406)) ([e757a1c](https://github.com/LorcanChinnock/shot/commit/e757a1c10785acb9a93c1f4f4b395328a230098b)), closes [#1405](https://github.com/LorcanChinnock/shot/issues/1405)
+* **settings:** find the microphone picker when searching for "microphone" ([#1403](https://github.com/LorcanChinnock/shot/issues/1403)) ([d05785c](https://github.com/LorcanChinnock/shot/commit/d05785c11b98a7b7eba0605bb8cc1c154ed0952d)), closes [#1376](https://github.com/LorcanChinnock/shot/issues/1376)
+
 ## [0.7.0-beta.92](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.91...v0.7.0-beta.92) (2026-11-16)
 
 
