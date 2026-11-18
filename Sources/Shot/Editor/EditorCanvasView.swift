@@ -251,15 +251,20 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             doc.annotations.append(draft)
         }
         let rect = imageRect
-        if doc.background == nil, doc.hasPadding {
-            let padding = NSBezierPath(rect: rect)
-            let image = doc.fullRect.intersection(doc.canvasRect)
-            if !image.isNull {
-                padding.append(NSBezierPath(rect: viewRect(image)))
+        // Without a background, the padding and what the screenshot's rounded corners cut away are transparent.
+        let cornerRadius = doc.clampedCaptureCornerRadius
+        if doc.background == nil, doc.hasPadding || cornerRadius > 0 {
+            ctx.saveGState()
+            ctx.clip(to: rect)
+            let transparent = NSBezierPath(rect: rect)
+            if !doc.captureRect.isEmpty {
+                let radius = cornerRadius * viewScale
+                transparent.append(NSBezierPath(roundedRect: viewRect(doc.captureRect), xRadius: radius, yRadius: radius))
             }
-            padding.windingRule = .evenOdd
+            transparent.windingRule = .evenOdd
             Self.checkerboard.setFill()
-            padding.fill()
+            transparent.fill()
+            ctx.restoreGState()
         }
         ctx.saveGState()
         ctx.translateBy(x: rect.minX, y: rect.maxY)
