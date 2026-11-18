@@ -229,6 +229,11 @@ enum Toast {
         settle()
     }
 
+    /// Takes the toast away now, such as "Exporting…" once a button says the export is done.
+    static func dismiss() {
+        hide()
+    }
+
     private static func hide() {
         panel?.orderOut(nil)
         panel?.alphaValue = 1
@@ -290,7 +295,7 @@ private struct ToastView: View {
 
     static let leading: CGFloat = 14
     static let tickLeading: CGFloat = 9
-    static let tickSize: CGFloat = 20
+    static let tickSize = TickMark.size
     static let trailingWithAction: CGFloat = 6
     static let spacing: CGFloat = 10
     static let actionPadding: CGFloat = 10
@@ -313,7 +318,7 @@ private struct ToastView: View {
         HStack(spacing: Self.spacing) {
             HStack(spacing: Self.spacing) {
                 if let tick {
-                    ToastTickMark(draws: tick == .draws)
+                    TickMark(draws: tick == .draws)
                 }
                 Text(text.message)
                     .font(Toast.font)
@@ -367,53 +372,5 @@ private struct ToastButtonStyle: ButtonStyle {
             .padding(.vertical, 4)
             .background(.white.opacity(configuration.isPressed ? 0.26 : 0.16), in: Capsule())
             .contentShape(Capsule())
-    }
-}
-
-/// A 20 pt accent disc whose ink tick draws itself over 240 ms, or shows drawn with Reduce Motion. The tick is the
-/// board's 24-unit path drawn 11 pt square, so its 3.4-unit stroke is about 1.6 pt.
-private struct ToastTickMark: View {
-    static let tickBox: CGFloat = 11
-
-    let draws: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var progress: CGFloat = 0
-
-    var body: some View {
-        Circle()
-            .fill(Theme.accent)
-            .frame(width: ToastView.tickSize, height: ToastView.tickSize)
-            .overlay {
-                TickShape()
-                    .trim(from: 0, to: progress)
-                    .stroke(Color(hex: 0x16161A), style: StrokeStyle(lineWidth: TickShape.lineWidth * Self.tickBox / TickShape.units, lineCap: .round, lineJoin: .round))
-                    .frame(width: Self.tickBox, height: Self.tickBox)
-            }
-            .accessibilityHidden(true)
-            .onAppear {
-                guard draws, let animation = Motion.animation(.tick, reduceMotion: reduceMotion) else {
-                    progress = 1
-                    return
-                }
-                withAnimation(animation) { progress = 1 }
-            }
-    }
-}
-
-/// The board's tick, `M5 12l5 5 9-10` in a 24-unit box, drawn from its short stroke to its long one, so trimming it draws
-/// it as a pen would.
-private struct TickShape: Shape {
-    static let units: CGFloat = 24
-    static let lineWidth: CGFloat = 3.4
-
-    func path(in rect: CGRect) -> Path {
-        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: rect.minX + rect.width * x / Self.units, y: rect.minY + rect.height * y / Self.units)
-        }
-        var path = Path()
-        path.move(to: point(5, 12))
-        path.addLine(to: point(10, 17))
-        path.addLine(to: point(19, 7))
-        return path
     }
 }

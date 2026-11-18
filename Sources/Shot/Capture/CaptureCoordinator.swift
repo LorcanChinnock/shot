@@ -382,7 +382,7 @@ final class CaptureCoordinator {
                 generator.appliesPreferredTrackTransform = true
                 generator.maximumSize = CGSize(width: 480, height: 480)
                 let thumbnail = try? await generator.image(at: .zero).image
-                QuickAccessController.shared.add(videoURL: url, thumbnail: thumbnail)
+                QuickAccessController.shared.add(videoURL: url, thumbnail: thumbnail, copied: plan.copies)
             }
         case let .toast(message):
             Toast.done(message)
@@ -468,7 +468,7 @@ final class CaptureCoordinator {
         case .quickAccess:
             if let savedURL {
                 let size = NSSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
-                QuickAccessController.shared.add(fileURL: savedURL, thumbnail: thumbnail ?? image, size: size)
+                QuickAccessController.shared.add(fileURL: savedURL, thumbnail: thumbnail ?? image, size: size, copied: copies)
                 card = savedURL
             }
         case let .toast(message):

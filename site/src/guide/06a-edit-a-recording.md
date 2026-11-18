@@ -98,6 +98,6 @@ Cropping looks and works as it does when you [crop a screenshot](#crop). What's 
 
 Once your edit is more than trims and cuts, the button reads **Save Copy** instead, and writes a new file next to the recording. An import, annotation, keyframe or crop, a moved or styled recording, a changed volume, reordered clips, or a hidden or muted track each switches it to **Save Copy**.
 
-**Save** and **Save Copy** each copy the file they write. **Export**, the yellow button at the right of the title bar, opens the Export panel, whose own button writes and copies the export. To copy the edited video without saving it, press <kbd>⌘C</kbd>; it includes everything you've added. To make an MP4 or GIF with other settings, see [Export a video or GIF](#export-a-video-or-gif).
+**Save** and **Save Copy** each copy the file they write, and once it's done the button shows a tick, with **Saved** just under it, for a moment. **Export**, the yellow button at the right of the title bar, opens the Export panel, whose own button writes and copies the export. To copy the edited video without saving it, press <kbd>⌘C</kbd>; it includes everything you've added. To make an MP4 or GIF with other settings, see [Export a video or GIF](#export-a-video-or-gif).
 
 Closing the window asks whether to save, or to save a copy, when you've changed anything since you last saved, saved a copy or exported.

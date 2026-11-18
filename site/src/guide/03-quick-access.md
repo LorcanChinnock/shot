@@ -52,4 +52,6 @@ In **Settings › Quick Access**, set **Screen corner** to **Bottom left** or **
 
 ## Messages after you copy or save
 
-When you copy or save from a card, a small dark message such as **Copied** or **Saved Shot 2026-11-07 at 10.42.15.png** confirms it, with a yellow tick. It sits in the same corner as the cards, just above them while they're showing, and a click dismisses it. The same message shows how far a GIF export has got, with **Cancel**, and offers **Undo** after you discard a recording.
+When a capture is copied, the card says so: **Copied** pops up over it with a yellow tick for a moment. That happens when a new card arrives with **Copy to clipboard** on, in **Settings › Capture** for a screenshot or **Settings › Recording** for a recording, and when you click **Copy** or choose **Copy Path** on a card.
+
+Other news, such as **Saved Shot 2026-11-07 at 10.42.15.png** after **Save As…**, comes as a small dark message in the same corner as the cards, just above them while they're showing. A click dismisses it. The same message shows how far a GIF export has got, with **Cancel**, and offers **Undo** after you discard a recording.

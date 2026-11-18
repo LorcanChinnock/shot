@@ -197,7 +197,7 @@ SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still sc
 | --- | --- | --- | --- |
 | Press | 80 ms | Ink buttons drop 2 pt into their shadow | No movement |
 | Viewfinder snap | 180 ms, soft flash | Area, window and full-screen capture, after the image is copied | 120 ms fade |
-| Copied tick | 240 ms | The toast springs up and its tick draws itself | 120 ms fade |
+| Copied tick | 240 ms | The tick draws itself: on a Quick Access card as "Copied" pops in, on an editor button as it bounces, or in a toast as it springs up | 120 ms fade |
 | Marks land | 200 ms | A new arrow draws its last few points; counters pop in with a small overshoot | Appear at once |
 | Panel arrive | 240 ms spring | Panels and popovers; Quick Access slides in from its corner | 120 ms fade |
 | Countdown | 1 s tick | Menu bar digits flip; the countdown ring empties | Number changes, no flip or ring animation |
@@ -211,7 +211,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | --- | --- | --- |
 | Press | `ThemeButtonStyle` | Built by #1070, now timed by `Motion` |
 | Viewfinder snap | `Capture/ViewfinderSnap.swift` | 4 pt ink brackets with a white edge fly in 14 pt from outside each corner, overshoot 2 pt and settle, with a 30% white flash. They hold for 180 ms, then fade. Shape layers, so a full-screen capture adds no memory |
-| Copied tick | `Toast.done(_:drawsTick:)` | A 20 pt accent disc with an ink tick, for every copy and save. The toast rises 8 pt as it fades in. After a capture the snap is that action's moment, so the toast shows its tick already drawn |
+| Copied tick | `Design/ActionConfirmation.swift`, `Toast.done(_:drawsTick:)` | Every copy and save confirms where it was done. A Quick Access card shows "Copied" over its scrim on a dark pill led by a 20 pt accent disc and ink tick (`TickMark`), which pops in once the card has slid in. An editor's Copy, Save, Share or Export button squashes, overshoots and settles as its label becomes a bare ink tick (`DrawnTick`) at the same size, and "Copied", "Saved" or "Exported" pops up under it in a small dark bubble, for 1.4 s (`ActionConfirmations`, `confirmationFeedback`). Anything else gets a done toast, led by the disc, which rises 8 pt as it fades in. After a capture with no card the snap is that action's moment, so the toast shows its tick already drawn |
 | Marks land | `Editor/EditorCanvasView.swift` | A new counter grows to 122% and settles. An arrow is already whole when you let go of the drag, so it doesn't draw again |
 | Countdown, recording pulse | `Design/BrandMark.swift` (`MenuBarAnimation`) | The digit folds flat and the next unfolds over 160 ms. While recording, the menu bar shows the time instead, and a ring breathes out of its stop square. A frame loop runs only while one plays. The countdown panel's ring is #1078 (see Countdown), and the recording controls' dot and the menu bar time are #1089 (see Recording controls) |
 | Click ring | `Recording/ClickRings.swift` | Not on the Moments board. A click's ring holds for 0.4 s, then fades over 240 ms; Reduce Motion drops the fade (see Recording border and clicks) |
@@ -393,8 +393,10 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Corner buttons | 26 pt circles at the corner-button opacity (0.78) with the floating-panel edge, 8 pt in from the card's edges. Close top left, Annotate top right, Pin to Screen bottom right. A recording has Edit Video and Export GIF top right instead, and no Pin |
 | Drag chip | "Drag into any app" in 10.5 pt at 85% white after a 10 pt move symbol, on a capsule at the corner-button opacity, bottom left |
 | Length | A recording's length as a strong badge in tabular figures, bottom right, shown at rest and on hover |
+| Copied | For 1.4 s after the card is copied: the scrim, and a 36 pt toast pill in the middle with the accent tick and "Copied" or "Copied path" in 14 pt semibold white. It pops from 50% with a small overshoot, takes the hover buttons' place and lets clicks through |
 
 - **The resting card is just the capture.** The scrim, buttons and drag chip show on hover only, as before, so the quick sharer sees the picture and nothing else until they reach for it. A recording's length is the one exception, since it's what tells a recording from a screenshot now the play disc is gone.
+- **The card confirms its own copy.** With Copy to clipboard on, a new card shows "Copied" once it has slid in, and its Copy and Copy Path show it again, so the confirmation is on the card the person is looking at rather than in a toast above it. Save As… still uses a toast.
 - **Pin replaces Show in Finder.** The board puts Pin to Screen in the bottom-right corner, so Show in Finder moves to the right-click menu, which keeps every action: Copy, Copy Path, Save As…, Annotate (or Edit Video and Export GIF), Pin and Show in Finder.
 - **Save As… is the light secondary button.** The board draws it white at 94% with a soft shadow and group corners. It uses `ThemeButtonStyle()` in the light appearance instead, white with the Rest edge and control corners, so it keeps the focus halo and matches secondary buttons elsewhere. The floating secondary button, white at 12%, would be too faint over a bright capture.
 - **Corner buttons keep the floating-panel edge.** The board draws their edge at 20% white. They use `floatingPanel`'s 14%, so they match every other floating panel.
@@ -486,7 +488,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Toast
 
-#1085 builds the toast on Capture › Quick Access, pin, menu and toasts: the dark pill that confirms a copy or save, offers Undo after a discarded recording, and shows how far a GIF export has got. Every toast reuses one SwiftUI `FloatingPanelWindow` sized to the pill, with the system shadow, so no margin catches clicks.
+#1085 builds the toast on Capture › Quick Access, pin, menu and toasts: the dark pill that confirms a copy or save made away from a card or editor button, offers Undo after a discarded recording, and shows how far a GIF export has got. Every toast reuses one SwiftUI `FloatingPanelWindow` sized to the pill, with the system shadow, so no margin catches clicks.
 
 | Part | Look |
 | --- | --- |

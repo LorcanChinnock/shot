@@ -19,6 +19,8 @@ struct QuickAccessCard: Identifiable {
     var styledURL: URL?
     /// A recording's length in seconds, once it's read; `nil` before then and for a screenshot.
     var duration: Double?
+    /// "Copied" over the card, for a moment after it's copied.
+    var confirmation: ActionConfirmation?
 
     var height: CGFloat { QuickAccessLayout.cardHeight(for: thumbnail.size) }
 }
@@ -62,8 +64,9 @@ final class QuickAccessController {
     /// How long a card's exit takes; the panel keeps its size until then so the card isn't clipped mid-slide.
     private static let exitDuration: Duration = .milliseconds(350)
 
-    func add(fileURL: URL, thumbnail: CGImage, size: NSSize) {
-        add(QuickAccessCard(fileURL: fileURL, thumbnail: NSImage(cgImage: thumbnail, size: size), isVideo: false))
+    /// `copied` says the capture went to the clipboard too, which the card confirms once it has slid in.
+    func add(fileURL: URL, thumbnail: CGImage, size: NSSize, copied: Bool) {
+        add(QuickAccessCard(fileURL: fileURL, thumbnail: NSImage(cgImage: thumbnail, size: size), isVideo: false), copied: copied)
     }
 
     /// Gives the card for the capture at `fileURL` the look Use this style for new captures gives it: `png` for its Copy and
@@ -101,10 +104,10 @@ final class QuickAccessController {
         try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
     }
 
-    func add(videoURL: URL, thumbnail: CGImage?) {
+    func add(videoURL: URL, thumbnail: CGImage?, copied: Bool) {
         let image = thumbnail.map { NSImage(cgImage: $0, size: .zero) } ?? NSImage(systemSymbolName: "film", accessibilityDescription: nil) ?? NSImage()
         let card = QuickAccessCard(fileURL: videoURL, thumbnail: image, isVideo: true)
-        add(card)
+        add(card, copied: copied)
         // The length badge comes a moment after the card, so reading the file never holds the card up.
         Task { @MainActor [weak self] in
             guard let seconds = try? await AVURLAsset(url: videoURL).load(.duration).seconds, seconds.isFinite,
@@ -115,7 +118,7 @@ final class QuickAccessController {
         }
     }
 
-    private func add(_ card: QuickAccessCard) {
+    private func add(_ card: QuickAccessCard, copied: Bool) {
         let opening = Perf.begin("Quick Access open")
         settleTask?.cancel()
         ensurePanel()
@@ -137,6 +140,11 @@ final class QuickAccessController {
             }
             self.startTimer(for: card.id)
             self.settle()
+            if copied {
+                // Once the card has arrived, so its slide and the confirmation's pop play one after the other.
+                try? await Task.sleep(for: .seconds(Moment.panelArrive.duration))
+                self.confirm("Copied", on: card.id)
+            }
         }
         announce(card)
     }
@@ -370,13 +378,31 @@ final class QuickAccessController {
             Toast.error("Couldn't read \(card.fileURL.lastPathComponent)")
             return
         }
-        Toast.done("Copied")
+        confirm("Copied", on: card.id)
     }
 
     /// Copies the file's path as text.
     func copyPath(_ card: QuickAccessCard) {
         Clipboard.copy(string: card.fileURL.path)
-        Toast.done("Copied path")
+        confirm("Copied path", on: card.id)
+    }
+
+    /// Shows `message` over the card for `ActionConfirmation.duration`, where the person is looking, rather than as a toast.
+    private func confirm(_ message: LocalizedStringResource, on id: UUID) {
+        guard let index = model.cards.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        let confirmation = ActionConfirmation(message)
+        model.cards[index].confirmation = confirmation
+        confirmation.announce()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: ActionConfirmation.duration)
+            guard let self, let index = self.model.cards.firstIndex(where: { $0.id == id }),
+                  self.model.cards[index].confirmation?.id == confirmation.id else {
+                return
+            }
+            self.model.cards[index].confirmation = nil
+        }
     }
 
     func saveAs(_ card: QuickAccessCard) {

@@ -188,12 +188,13 @@ private struct SummaryCard: View {
     private var exportButton: some View {
         VStack(spacing: 10) {
             Button { Task { await model.export() } } label: {
-                Text(title)
+                ConfirmableLabel(confirmation: model.confirmations.on(.export)) { Text(title) }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 2)
             }
             // The panel's button is the next step once it's open; in crop mode the crop bar's Apply is (rule 1).
             .buttonStyle(ThemeButtonStyle(model.isCropping ? .secondary : .main))
+            .confirmationFeedback(model.confirmations.on(.export))
             .themeTip(title, detail: detail)
             Text("Saved beside the recording and copied")
                 .font(Theme.caption)

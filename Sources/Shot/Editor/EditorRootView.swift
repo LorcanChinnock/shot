@@ -14,6 +14,8 @@ struct EditorRootView: View {
                 .padding(.leading, GlassWindow.trafficLightsWidth)
                 .padding(.trailing, 12)
                 .frame(height: GlassWindow.titlebarHeight)
+                // Above the canvas, so a button's confirmation bubble shows over it.
+                .zIndex(1)
             Rectangle()
                 .fill(ContrastAware(standard: Theme.hairline, increased: Theme.ink.opacity(0.6)))
                 .frame(height: 1)
@@ -159,15 +161,21 @@ private struct EditorTitleBar: View {
                 .padding(.horizontal, 6)
                 .accessibilityHidden(true)
             ShareMenu(model: model)
-            Button("Save") { Task { await model.save() } }
-                .buttonStyle(ThemeButtonStyle())
-                .themeTip("Save", key: "⌘S", detail: "Saves your changes and copies the image.")
-                .padding(.leading, 4)
-            Button("Copy") { Task { await model.copy() } }
-                // In crop mode the crop bar's Crop is the next step, so Copy steps back to keep one main button (rule 1).
-                .buttonStyle(ThemeButtonStyle(model.tool == .crop ? .secondary : .main))
-                .themeTip("Copy", key: "⌘C", detail: "Copies the image with your changes, ready to paste.")
-                .padding(.leading, 4)
+            Button { Task { await model.save() } } label: {
+                ConfirmableLabel(confirmation: model.confirmations.on(.save)) { Text("Save") }
+            }
+            .buttonStyle(ThemeButtonStyle())
+            .confirmationFeedback(model.confirmations.on(.save))
+            .themeTip("Save", key: "⌘S", detail: "Saves your changes and copies the image.")
+            .padding(.leading, 4)
+            Button { Task { await model.copy() } } label: {
+                ConfirmableLabel(confirmation: model.confirmations.on(.copy)) { Text("Copy") }
+            }
+            // In crop mode the crop bar's Crop is the next step, so Copy steps back to keep one main button (rule 1).
+            .buttonStyle(ThemeButtonStyle(model.tool == .crop ? .secondary : .main))
+            .confirmationFeedback(model.confirmations.on(.copy))
+            .themeTip("Copy", key: "⌘C", detail: "Copies the image with your changes, ready to paste.")
+            .padding(.leading, 4)
         }
         .fixedSize()
     }
@@ -215,14 +223,17 @@ private struct ShareMenu: View {
 
     var body: some View {
         ThemeDropdown(title: "Share", entries: entries) {
-            HStack(spacing: 6) {
-                Text("Share")
-                Image(systemName: "chevron.down")
-                    .font(.scaled(9, weight: .bold))
-                    .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
+            ConfirmableLabel(confirmation: model.confirmations.on(.share)) {
+                HStack(spacing: 6) {
+                    Text("Share")
+                    Image(systemName: "chevron.down")
+                        .font(.scaled(9, weight: .bold))
+                        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
+                }
             }
         }
         .buttonStyle(ThemeButtonStyle())
+        .confirmationFeedback(model.confirmations.on(.share))
         .fixedSize()
         .themeTip("Share", detail: "Copy the file's path for an AI assistant or a chat, save a copy somewhere else, show it in Finder or pin it to your screen.")
     }
