@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0-beta.94](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.93...v0.7.0-beta.94) (2026-11-18)
+
+
+### Features
+
+* confirm copies on the Quick Access card and editor buttons ([#1419](https://github.com/LorcanChinnock/shot/issues/1419)) ([4a62841](https://github.com/LorcanChinnock/shot/commit/4a62841cee534bccebd0317f0c284b6554c13380))
+
+
+### Bug Fixes
+
+* **editor:** show transparent rounded corners as transparent ([#1416](https://github.com/LorcanChinnock/shot/issues/1416)) ([84c41b3](https://github.com/LorcanChinnock/shot/commit/84c41b37a794c571b1f8bb1e23afec0b90b83e11))
+
 ## [0.7.0-beta.93](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.92...v0.7.0-beta.93) (2026-11-17)
 
 
