@@ -110,6 +110,8 @@ Pinch, press <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, or click **−** and **+** i
 - **Copy**, the yellow button at the right end of the title bar, after **Share** and **Save**, copies the annotated image. With nothing or several things selected, <kbd>⌘C</kbd> does the same.
 - **Save** (<kbd>⌘S</kbd>) replaces the screenshot with your edited one and copies it. Shot keeps the original, so you can reopen the screenshot and undo your edits, or choose **Edit › Revert to Original**. This applies to screenshots Shot took. A picture from anywhere else saves as a new copy beside it, `name (2).png` (or `.jpg`), then `name (3).png` and so on, and the original never changes. To always save a new copy, turn off **Settings › General › Save edits over the original**.
 
+The button you clicked confirms it: it bounces and shows a tick, with **Copied** or **Saved** just under it, for a moment. **Copy Image** and **Copy Path** in the Share menu do the same on **Share**.
+
 Under the file name, the title bar shows the size the image saves at, such as "1,040 × 600", with **Edited** before it while you have unsaved changes. Closing the window asks whether to save them.
 
 ## Share

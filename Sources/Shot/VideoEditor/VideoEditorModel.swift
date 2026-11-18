@@ -6,10 +6,17 @@ import ShotCore
 
 private let log = Logger.shot("video-editor")
 
+/// The buttons that confirm what they did in place of a toast.
+enum VideoEditorButton {
+    case save, export
+}
+
 @MainActor
 @Observable
 final class VideoEditorModel {
     let fileURL: URL
+    /// "Saved" or "Exported" on the button that did it, where the person is looking, rather than a toast in the screen's corner.
+    let confirmations = ActionConfirmations<VideoEditorButton>()
     /// The file whose project the editor shows, the one it opened or last wrote with Save Copy or Export, which
     /// Flatten opens as itself; `nil` until there is one.
     private(set) var version: URL?
@@ -889,6 +896,7 @@ final class VideoEditorModel {
         version = nil
         log.notice("Saved edited video: \(self.fileURL.path)")
         Clipboard.copy(fileURL: fileURL)
+        confirmations.show("Saved", on: .save)
         // Says where the cut footage went, with Show to find it, since nothing else in Shot leads back to it (#1382).
         Toast.show("Saved and copied. The original recording is in the Trash.\(TemporaryCaptures.toastNote(for: fileURL))",
                    duration: .seconds(5), reveal: trashed as URL?)
@@ -912,7 +920,8 @@ final class VideoEditorModel {
         }
         log.notice("Saved a copy of the edited video: \(output.path)")
         Clipboard.copy(fileURL: output)
-        Toast.done("Saved a copy and copied \(output.lastPathComponent).\(TemporaryCaptures.toastNote(for: output))", duration: .seconds(3))
+        Toast.dismiss()
+        confirmations.show("Saved", on: .save)
         return true
     }
 
@@ -947,7 +956,12 @@ final class VideoEditorModel {
         }
         wrote(project, to: output)
         Clipboard.copy(fileURL: output)
-        Toast.show(truncated ? "Exported and copied \(output.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only)" : "Exported and copied \(output.lastPathComponent)", duration: .seconds(3))
+        confirmations.show("Exported", on: .export)
+        if truncated {
+            Toast.show("Exported and copied \(output.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only)", duration: .seconds(3))
+        } else {
+            Toast.dismiss()
+        }
     }
 
     /// Works out `estimatedSize` for the current trim, cuts and options; call again when any change.

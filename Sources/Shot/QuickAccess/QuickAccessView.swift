@@ -68,9 +68,12 @@ private struct QuickAccessCardView: View {
                 FloatingPanel.cardBehind
                     .transition(.opacity)
                     .accessibilityHidden(true)
-            } else if hovering {
+            } else if hovering, card.confirmation == nil {
                 hoverActions
                     .transition(.opacity)
+            }
+            if !isBehind {
+                CardConfirmation(confirmation: card.confirmation)
             }
             if !isBehind, card.isVideo, let duration = card.duration {
                 ThemeBadge(text: Gallery.duration(duration), style: .strong)
@@ -80,6 +83,7 @@ private struct QuickAccessCardView: View {
                     .accessibilityHidden(true)
             }
         }
+        .animation(reduceMotion ? Motion.fade : .spring(duration: Moment.panelArrive.duration, bounce: 0.35), value: card.confirmation?.id)
         .frame(width: QuickAccessCard.width, height: height)
         .background(Color.white)
         .clipShape(shape)
@@ -208,6 +212,42 @@ private struct QuickAccessCardView: View {
             }
             .padding(8)
         }
+    }
+}
+
+/// "Copied" over the card for a moment: the scrim, and a dark pill led by the accent tick that pops in and draws itself.
+/// It takes the hover buttons' place while it shows, and lets clicks through to the card.
+private struct CardConfirmation: View {
+    let confirmation: ActionConfirmation?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            if let confirmation {
+                FloatingPanel.scrim
+                    .transition(.opacity)
+                pill(confirmation)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func pill(_ confirmation: ActionConfirmation) -> some View {
+        HStack(spacing: 8) {
+            TickMark(draws: true)
+            Text(confirmation.message)
+                .font(.scaled(14, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 14)
+        .frame(height: 36)
+        .floatingPanel(Capsule(), opacity: FloatingPanel.Opacity.toast)
+        .id(confirmation.id)
+        .transition(reduceMotion ? .opacity : .asymmetric(insertion: .scale(scale: 0.5).combined(with: .opacity), removal: .scale(scale: 0.9).combined(with: .opacity)))
     }
 }
 

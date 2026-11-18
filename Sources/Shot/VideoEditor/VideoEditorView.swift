@@ -22,6 +22,8 @@ struct VideoEditorRootView: View {
                 .padding(.leading, GlassWindow.trafficLightsWidth)
                 .padding(.trailing, 12)
                 .frame(height: GlassWindow.titlebarHeight)
+                // Above the video, so a button's confirmation bubble shows over it.
+                .zIndex(1)
             Rectangle()
                 .fill(ContrastAware(standard: Theme.hairline, increased: Theme.ink.opacity(0.6)))
                 .frame(height: 1)
@@ -221,13 +223,19 @@ private struct VideoEditorTitleBar: View {
 
     @ViewBuilder private var saveButton: some View {
         if model.isComposite {
-            Button("Save Copy") { Task { await model.save() } }
-                .buttonStyle(ThemeButtonStyle())
-                .themeTip("Save Copy", key: "⌘S", detail: "Writes the edit as a new video next to the recording and copies it.")
+            Button { Task { await model.save() } } label: {
+                ConfirmableLabel(confirmation: model.confirmations.on(.save)) { Text("Save Copy") }
+            }
+            .buttonStyle(ThemeButtonStyle())
+            .confirmationFeedback(model.confirmations.on(.save))
+            .themeTip("Save Copy", key: "⌘S", detail: "Writes the edit as a new video next to the recording and copies it.")
         } else {
-            Button("Save") { Task { await model.save() } }
-                .buttonStyle(ThemeButtonStyle())
-                .themeTip("Save", key: "⌘S", detail: "Saves the trimmed video and copies it. The original goes to the Trash.")
+            Button { Task { await model.save() } } label: {
+                ConfirmableLabel(confirmation: model.confirmations.on(.save)) { Text("Save") }
+            }
+            .buttonStyle(ThemeButtonStyle())
+            .confirmationFeedback(model.confirmations.on(.save))
+            .themeTip("Save", key: "⌘S", detail: "Saves the trimmed video and copies it. The original goes to the Trash.")
         }
     }
 

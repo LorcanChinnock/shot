@@ -41,6 +41,11 @@ extension EditorTool {
     }
 }
 
+/// The title bar buttons that confirm what they did in place of a toast.
+enum EditorButton {
+    case copy, save, share
+}
+
 @MainActor
 @Observable
 final class EditorModel {
@@ -173,6 +178,8 @@ final class EditorModel {
     var editingSelection: Range<Int>?
     var isDirty: Bool { history.isDirty }
     @ObservationIgnored private var isSaving = false
+    /// "Copied" or "Saved" on the button that did it, where the person is looking, rather than a toast in the screen's corner.
+    let confirmations = ActionConfirmations<EditorButton>()
     /// Set by the canvas: turns the text or note still being typed into an annotation.
     var commitPendingText: (() -> Void)?
     /// The canvas's zoom, where 1 is actual size, for the zoom control; the canvas view keeps it current.
@@ -1310,8 +1317,8 @@ final class EditorModel {
         return true
     }
 
-    /// Copies the flattened image.
-    func copy() async {
+    /// Copies the flattened image, and says so on `button`.
+    func copy(confirmingOn button: EditorButton = .copy) async {
         commitPendingText?()
         applyCropIfCropping()
         guard let png = await renderedPNG() else {
@@ -1319,11 +1326,11 @@ final class EditorModel {
             return
         }
         Clipboard.copy(png: png)
-        Toast.done("Copied")
+        confirmations.show("Copied", on: button)
     }
 
-    /// Returns false if the save failed or another is still running. Without `announce`, it shows no toast of its own,
-    /// for a Share action that says what it did.
+    /// Returns false if the save failed or another is still running. Without `announce`, Save doesn't say it saved, for
+    /// a Share action that says what it did.
     @discardableResult
     func save(announce: Bool = true) async -> Bool {
         guard !isSaving else {
@@ -1350,11 +1357,9 @@ final class EditorModel {
             self.pristine = version.original
             canRevert = overwrote
             history.didSave(snapshot, document: self.document)
-            guard announce else {
-                return true
+            if announce {
+                confirmations.show("Saved", on: .save)
             }
-            let note = TemporaryCaptures.toastNote(for: version.url)
-            Toast.show(overwrote ? "Saved over \(version.url.lastPathComponent) and copied.\(note)" : "Saved as \(version.url.lastPathComponent) and copied.\(note)", duration: .seconds(3))
             return true
         case .failure(.draw), .failure(.encode):
             Toast.error("Couldn't save the image")
@@ -1381,14 +1386,10 @@ final class EditorModel {
         }
         switch action {
         case .copyImage:
-            await copy()
+            await copy(confirmingOn: .share)
         case .copyPath:
             Clipboard.copy(string: savedFile.path)
-            if saved {
-                Toast.done("Saved as \(savedFile.lastPathComponent) and copied its path", duration: .seconds(3))
-            } else {
-                Toast.done("Copied path")
-            }
+            confirmations.show("Copied path", on: .share)
         case .saveAs:
             await saveAs()
         case .showInFinder:

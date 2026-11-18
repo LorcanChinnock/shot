@@ -19,7 +19,7 @@ Click **Reset** at the top of the panel to put all of these back to how new expo
 
 Annotations show in both. A text box's fill is solid, so in a GIF it adds to the size only when its words change.
 
-The card at the foot of the panel shows the estimated file size and how long the export plays for. Click **Export GIF** or **Export MP4** under them to write a new file next to the recording and copy it. While it exports, the card shows how far it's got, and **Cancel**, or <kbd>Esc</kbd>, stops it.
+The card at the foot of the panel shows the estimated file size and how long the export plays for. Click **Export GIF** or **Export MP4** under them to write a new file next to the recording and copy it. While it exports, the card shows how far it's got, and **Cancel**, or <kbd>Esc</kbd>, stops it. When it's done, the button shows a tick, with **Exported** just under it, for a moment.
 
 > [!NOTE]
 > A GIF keeps the first 60 seconds of what plays, so 120 seconds of video at 2×. An MP4 that's re-encoded is H.264, or HEVC when H.264 would drop frames: a 120 fps recording, or one above 30 fps that's larger than 2560 × 1600, such as a full Retina screen.
