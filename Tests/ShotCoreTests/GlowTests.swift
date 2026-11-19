@@ -156,3 +156,12 @@ private func blueBelowTheStroke(of mark: Annotation) throws -> UInt8 {
     #expect(style.objectStyles[.mark]?.shadow == nil)
     #expect(style.objectStyles[.mark]?.border == border.border)
 }
+
+@Test func aTunedGlowIsStillTheGlowNewMarksStartWith() {
+    // A glow made stronger in the Style panel still counts as glowing, and new marks start with it, not the preset.
+    let tuned = Shadow(elevation: 18, opacity: 0.6, tint: .object, isOffset: false)
+    let style = EditorStyle(objectStyles: [.mark: ObjectStyle(shadow: tuned)])
+    #expect(style.glow)
+    #expect(style.editorObjectStyle(for: .mark, scale: 2).shadow == ObjectStyle(shadow: tuned).scaled(by: 2).shadow)
+    #expect(style.objectStyle(for: .mark, scale: 2).shadow == ObjectStyle(shadow: tuned).scaled(by: 2).shadow)
+}

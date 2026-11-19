@@ -1138,7 +1138,7 @@ extension VideoEditorModel {
             color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
             redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment, noteAlignment: style.noteAlignment,
             verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor, lineDash: style.lineDash, penLine: style.penLine,
-            glow: style.glow ? ShadowPreset.glow.shadow(scale: styleScale) : nil
+            glow: style.glow ? style.objectStyle(for: .mark, scale: styleScale).shadow : nil
         )
     }
 

@@ -920,7 +920,7 @@ final class EditorModel {
             color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
             redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment, noteAlignment: noteAlignment,
             verticalAlignment: verticalAlignment, noteTextColor: noteTextColor, lineDash: lineDash, penLine: penLine,
-            glow: glow ? ShadowPreset.glow.shadow(scale: scale) : nil
+            glow: glow ? startingStyle(for: .mark).shadow : nil
         )
     }
     /// Space kept between an annotation and a canvas edge that grew to hold it.
