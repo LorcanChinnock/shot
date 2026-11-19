@@ -49,6 +49,8 @@ public enum PreferenceKey {
     public static let editorHighlightColor = "editorHighlightColor"
     public static let editorFill = "editorFill"
     public static let editorCustomColors = "editorCustomColors"
+    /// The custom colours picked lately in any colour editor, newest first, as JSON (`RecentColors`).
+    public static let recentCustomColors = "recentCustomColors"
     /// An index into the three widths, 2, 4 and 8 points, that versions before the width stepper offered. Read only, to
     /// carry a width chosen then over to `editorLineWidth`.
     public static let editorWidth = "editorWidth"
@@ -168,6 +170,7 @@ public struct Preferences {
             PreferenceKey.editorHighlightColor: Data(),
             PreferenceKey.editorFill: Data(),
             PreferenceKey.editorCustomColors: Data(),
+            PreferenceKey.recentCustomColors: Data(),
             PreferenceKey.editorNoteTextColor: Data(),
             PreferenceKey.editorShape: EditorStyle().shape.rawValue,
             PreferenceKey.editorLineDash: EditorStyle().lineDash.rawValue,
