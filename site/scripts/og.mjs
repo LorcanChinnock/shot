@@ -123,7 +123,7 @@ const page = ({ chip, chipColor, tone, headline, size, keys, scene }) => `<!doct
 <div class="brand"><img src="${url('../public/icon-256.png')}"><span>Shot</span></div>
 <div class="intro">
   <span class="chip" style="--chip: var(--${chipColor})">${chip}</span>
-  <h1>${headline}${keys ? '<span class="keys"><kbd class="key">⌘</kbd><kbd class="key accent">⇧</kbd><kbd class="key">4</kbd></span>' : ''}</h1>
+  <h1>${headline}${keys ? '<span class="keys"><kbd class="key accent">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">4</kbd></span>' : ''}</h1>
   ${keys ? '<p class="lede">A screenshot app that lives in your menu bar.</p>' : ''}
 </div>
 ${scene ? `<figure class="shot-panel panel ${tone}"><div class="shot-anchor"><div class="shot-frame"><div class="sc">${scene}</div></div></div></figure>` : stage}`;
