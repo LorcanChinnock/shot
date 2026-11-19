@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.95](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.94...v0.7.0-beta.95) (2026-11-19)
+
+
+### Features
+
+* **editor:** picking a layer takes up its tool ([#1421](https://github.com/LorcanChinnock/shot/issues/1421)) ([e00c6ea](https://github.com/LorcanChinnock/shot/commit/e00c6ea20ff401f054e57be000c77de7a3246ce5))
+
 ## [0.7.0-beta.94](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.93...v0.7.0-beta.94) (2026-11-18)
 
 
