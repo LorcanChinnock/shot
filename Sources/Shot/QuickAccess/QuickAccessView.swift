@@ -20,6 +20,15 @@ struct QuickAccessView: View {
         )
     }
 
+    /// The card's part of fanning out or folding, or nothing with Reduce Motion, which puts it in place at once.
+    private func stackAnimation(forCardAt index: Int) -> Animation? {
+        let fanningOut = model.isFannedOut
+        guard let animation = Motion.animation(fanningOut ? .stackFan : .stackFold) else {
+            return nil
+        }
+        return animation.delay(QuickAccessLayout.moveDelay(forCardAt: index, of: model.cards.count, fanningOut: fanningOut))
+    }
+
     var body: some View {
         let layout = model.layout
         ZStack(alignment: .bottom) {
@@ -28,6 +37,9 @@ struct QuickAccessView: View {
                 QuickAccessCardView(card: card, height: placement.height, isBehind: placement.isBehind, controller: controller)
                     .scaleEffect(placement.scale, anchor: .bottom)
                     .offset(y: QuickAccessLayout.padding - placement.frame.minY)
+                    // Fanning out deals the older cards up one after another, and folding drops them back top first,
+                    // each on its own delay. Adding or closing a card moves them together, on the controller's animation.
+                    .animation(stackAnimation(forCardAt: index), value: model.isFannedOut)
                     // Cards move with the change that moved them. Reduce Motion puts them in place at once.
                     .transaction(value: placement) { transaction in
                         if Motion.reduced {
@@ -57,6 +69,19 @@ private struct QuickAccessCardView: View {
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// The dark cover lifts off quickly as a card rises out of the stack, so the capture shows while it moves, and
+    /// settles back on only as the card lands behind the front one.
+    private var coverTransition: AnyTransition {
+        let fade = Motion.animation(.stackCover, reduceMotion: reduceMotion)
+        guard !reduceMotion, let fade else {
+            return .opacity.animation(fade)
+        }
+        return .asymmetric(
+            insertion: .opacity.animation(fade.delay(QuickAccessLayout.coverDelay)),
+            removal: .opacity.animation(fade)
+        )
+    }
+
     private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: Theme.Radius.panel, style: .circular) }
 
     var body: some View {
@@ -66,7 +91,7 @@ private struct QuickAccessCardView: View {
                 .accessibilityFocused($voiceOverFocused)
             if isBehind {
                 FloatingPanel.cardBehind
-                    .transition(.opacity)
+                    .transition(coverTransition)
                     .accessibilityHidden(true)
             } else if hovering, card.confirmation == nil {
                 hoverActions
