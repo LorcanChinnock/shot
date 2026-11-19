@@ -72,7 +72,7 @@ struct CustomColorButton: View {
         .accessibilityAddTraits(custom != nil ? .isSelected : [])
         .animation(reduceMotion || compact ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            ColorEditor(initial: lastCustom ?? fallback, pick: pick)
+            ColorEditor(initial: lastCustom ?? fallback, pick: pick) { isOpen = false }
         }
         .onChange(of: isOpen) { editorShown(isOpen) }
     }
@@ -136,17 +136,25 @@ struct CustomColorButton: View {
     }
 }
 
+/// Picks a custom colour. Letting go of the saturation and brightness field, or sampling a colour on screen, picks it and
+/// calls `done`, so its popover closes without a click outside. The hue and opacity sliders leave it open, as they're
+/// usually set before the field.
 struct ColorEditor: View {
     let pick: (RGBA) -> Void
+    let done: () -> Void
     @State private var hue: Double
     @State private var saturation: Double
     @State private var brightness: Double
     @State private var opacity: Double
     /// The colour sampled last and the values it set, so committing those values applies it exactly, not its HSB round trip.
     @State private var sampled: (color: RGBA, values: [Double])?
+    /// The colour applied last, which joins the recent colours as the editor closes rather than at every step of a drag.
+    @State private var applied: RGBA?
+    @Setting(PreferenceKey.recentCustomColors) private var recentData: Data
 
-    init(initial: RGBA, pick: @escaping (RGBA) -> Void) {
+    init(initial: RGBA, pick: @escaping (RGBA) -> Void, done: @escaping () -> Void) {
         self.pick = pick
+        self.done = done
         let c = NSColor(srgbRed: initial.r, green: initial.g, blue: initial.b, alpha: initial.a)
         _hue = State(initialValue: Double(c.hueComponent))
         _saturation = State(initialValue: Double(c.saturationComponent))
@@ -158,7 +166,7 @@ struct ColorEditor: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            SaturationBrightnessField(hue: hue, saturation: $saturation, brightness: $brightness)
+            SaturationBrightnessField(hue: hue, saturation: $saturation, brightness: $brightness, released: done)
                 .frame(width: 200, height: 140)
             ThemeSlider(
                 value: $hue,
@@ -183,8 +191,30 @@ struct ColorEditor: View {
                     .inkBorder(Circle(), width: 2)
             }
             .frame(width: 200)
+            let recent = RecentColors.decode(recentData)
+            if !recent.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Recent colours")
+                        .font(.scaled(11, weight: .medium))
+                        .foregroundStyle(Theme.secondaryText)
+                    HStack(spacing: 0) {
+                        ForEach(recent, id: \.hex) { swatch in
+                            Swatch(color: swatch, isSelected: swatch.hex == current.hex, name: swatch.hex) {
+                                move(to: swatch)
+                                done()
+                            }
+                        }
+                    }
+                }
+                .frame(width: 200, alignment: .leading)
+            }
         }
         .padding(16)
+        .onDisappear {
+            if let applied {
+                recentData = RecentColors.encode(RecentColors.adding(applied, to: RecentColors.decode(recentData)))
+            }
+        }
         .onChange(of: hue) { commit() }
         .onChange(of: saturation) { commit() }
         .onChange(of: brightness) { commit() }
@@ -193,12 +223,30 @@ struct ColorEditor: View {
 
     private var values: [Double] { [hue, saturation, brightness, opacity] }
 
-    private func commit() {
+    /// The colour the editor shows, exact when it was sampled or picked from the recent colours.
+    private var current: RGBA {
         if let sampled, sampled.values == values {
-            pick(sampled.color)
-        } else {
-            pick(RGBA(NSColor(hue: hue, saturation: saturation, brightness: brightness, alpha: opacity)))
+            return sampled.color
         }
+        return RGBA(NSColor(hue: hue, saturation: saturation, brightness: brightness, alpha: opacity))
+    }
+
+    private func commit() {
+        applied = current
+        pick(current)
+    }
+
+    /// Moves the editor to `color` and applies it exactly, not its HSB round trip.
+    private func move(to color: RGBA) {
+        let c = NSColor(srgbRed: color.r, green: color.g, blue: color.b, alpha: color.a)
+        sampled = (color, [Double(c.hueComponent), Double(c.saturationComponent), Double(c.brightnessComponent), Double(color.a)])
+        hue = Double(c.hueComponent)
+        saturation = Double(c.saturationComponent)
+        brightness = Double(c.brightnessComponent)
+        opacity = Double(color.a)
+        // The values may not have changed, which commits nothing, so apply it here too.
+        applied = color
+        pick(color)
     }
 
     /// Moves the editor to the colour sampled and applies it exactly, in the same undo step as the editor's other picks.
@@ -207,14 +255,8 @@ struct ColorEditor: View {
             guard let picked = await ColorSampler.sample(for: .pick) else {
                 return
             }
-            let c = NSColor(srgbRed: picked.r, green: picked.g, blue: picked.b, alpha: picked.a)
-            sampled = (picked, [Double(c.hueComponent), Double(c.saturationComponent), Double(c.brightnessComponent), Double(picked.a)])
-            hue = Double(c.hueComponent)
-            saturation = Double(c.saturationComponent)
-            brightness = Double(c.brightnessComponent)
-            opacity = Double(picked.a)
-            // The values may not have changed, which commits nothing, so apply it here too.
-            pick(picked)
+            move(to: picked)
+            done()
         }
     }
 }
@@ -224,6 +266,8 @@ private struct SaturationBrightnessField: View {
     let hue: Double
     @Binding var saturation: Double
     @Binding var brightness: Double
+    /// Called as a drag or click on the field ends, but not after the arrow keys.
+    let released: () -> Void
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -248,7 +292,8 @@ private struct SaturationBrightnessField: View {
             .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
                 saturation = min(max(drag.location.x / size.width, 0), 1)
                 brightness = 1 - min(max(drag.location.y / size.height, 0), 1)
-            })
+            }
+            .onEnded { _ in released() })
         }
         .focusable(interactions: .activate)
         .focused($isFocused)

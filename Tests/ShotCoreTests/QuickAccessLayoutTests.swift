@@ -82,3 +82,28 @@ import Testing
 @Test func aPictureWithNoSizeGetsTheTallestCard() {
     #expect(QuickAccessLayout.cardHeight(for: .zero) == 210)
 }
+
+@Test func fanningOutDealsTheOlderCardsUpFromTheFront() {
+    let delays = (0..<5).map { QuickAccessLayout.moveDelay(forCardAt: $0, of: 5, fanningOut: true) }
+    // Oldest first: the oldest rises last, the card just behind the front first, and the front card doesn't wait.
+    let step = QuickAccessLayout.fanStagger
+    for (delay, expected) in zip(delays, [3 * step, 2 * step, step, 0, 0]) {
+        #expect(abs(delay - expected) < 1e-9)
+    }
+}
+
+@Test func foldingDropsTheTopCardFirst() {
+    let delays = (0..<5).map { QuickAccessLayout.moveDelay(forCardAt: $0, of: 5, fanningOut: false) }
+    #expect(delays[0] == 0)
+    #expect(delays[0] < delays[1] && delays[1] < delays[2] && delays[2] < delays[3])
+    #expect(delays[4] == 0)
+}
+
+@Test func theWholeStackFinishesMovingBeforeThePanelShrinks() {
+    // The panel shrinks 400 ms after a fold starts (`QuickAccessController.exitDuration`), so the last card must have
+    // landed by then, and a fan-out with five cards stays under 400 ms too.
+    let lastFold = QuickAccessLayout.moveDelay(forCardAt: 3, of: 5, fanningOut: false) + Moment.stackFold.duration
+    let lastFan = QuickAccessLayout.moveDelay(forCardAt: 0, of: 5, fanningOut: true) + Moment.stackFan.duration
+    #expect(lastFold < 0.4)
+    #expect(lastFan < 0.4)
+}

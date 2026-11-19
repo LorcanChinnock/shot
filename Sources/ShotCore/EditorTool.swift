@@ -81,6 +81,20 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         return selection.handle(at: point, tolerance: tolerance)
     }
 
+    /// True for spotlight and redact, whose mark just drawn also drags by its middle while its handles show, as a box
+    /// you'd rarely draw another inside. A shape is hit only on its outline, so pressing inside it still draws.
+    public var movesSelectionFromInside: Bool { self == .spotlight || self == .redact }
+
+    /// Whether a press at `point` that `pressedHandle` didn't take moves `selection` rather than drawing: with spotlight
+    /// or redact, inside an unlocked mark whose handles show.
+    public func pressMoves(
+        _ selection: Annotation, at point: CGPoint, hoveredAt hover: CGPoint?, tolerance: CGFloat, revealed: Bool = false
+    ) -> Bool {
+        movesSelectionFromInside && !selection.isLocked
+            && showsHandles(of: selection, hoveredAt: hover, tolerance: tolerance, revealed: revealed)
+            && selection.hitTest(point, tolerance: 0)
+    }
+
     /// The tool that draws marks of `kind`: picking one in the Layers panel takes it up, so its style bar shows. A
     /// blur or pixelate is the redact tool's, and an old highlight box the highlighter's. A placed image has no tool of
     /// its own, so it's the select tool's.

@@ -174,6 +174,32 @@ private let shapeFrame = CGRect(x: 20, y: 20, width: 100, height: 60)
     #expect(EditorTool.select.pressedHandle(of: arrow, at: end, hoveredAt: nil, tolerance: 6) == .end)
 }
 
+@Test func spotlightAndRedactMoveTheMarkJustDrawnFromInside() {
+    let rect = CGRect(x: 0, y: 0, width: 200, height: 100)
+    let inside = CGPoint(x: 100, y: 50)
+    let spotlight = annotation(.spotlight(rect, style: SpotlightStyle()))
+    let blur = annotation(.blur(rect))
+    let pixelate = annotation(.pixelate(rect))
+    #expect(EditorTool.allCases.filter(\.movesSelectionFromInside) == [.spotlight, .redact])
+    #expect(EditorTool.spotlight.pressMoves(spotlight, at: inside, hoveredAt: inside, tolerance: 6))
+    for mark in [blur, pixelate] {
+        #expect(EditorTool.redact.pressMoves(mark, at: inside, hoveredAt: inside, tolerance: 6))
+        // Handles hidden, as the pointer never hovered the mark: the press draws.
+        #expect(!EditorTool.redact.pressMoves(mark, at: inside, hoveredAt: nil, tolerance: 6))
+        #expect(!EditorTool.redact.pressMoves(mark, at: inside, hoveredAt: CGPoint(x: 400, y: 400), tolerance: 6))
+        // Picked in the Layers panel, its handles show wherever the pointer is.
+        #expect(EditorTool.redact.pressMoves(mark, at: inside, hoveredAt: nil, tolerance: 6, revealed: true))
+        // Outside the mark: the press draws.
+        #expect(!EditorTool.redact.pressMoves(mark, at: CGPoint(x: 300, y: 50), hoveredAt: inside, tolerance: 6))
+    }
+    var locked = blur
+    locked.isLocked = true
+    #expect(!EditorTool.redact.pressMoves(locked, at: inside, hoveredAt: inside, tolerance: 6))
+    // A shape is hit on its outline only, so pressing inside it still draws.
+    let box = annotation(.shape(.rectangle, rect: rect))
+    #expect(!EditorTool.shape.pressMoves(box, at: inside, hoveredAt: inside, tolerance: 6))
+}
+
 @Test func hoveringAShapeShowsItsCornerRadiusHandles() {
     var box = annotation(.shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 200, height: 100)))
     box.cornerRadius = 10
