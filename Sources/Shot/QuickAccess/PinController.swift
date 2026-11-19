@@ -14,7 +14,8 @@ final class PinController {
     /// Pins the image at `url`, read off the main actor. `whenRead` runs once the file has been read, or failed to be,
     /// so a caller can delete a temporary file only after the pin no longer needs it. A `styled` image already has its
     /// own shadow, border and corners on a transparent margin, so it floats as it is, with no frame of the pin's own.
-    func pin(_ url: URL, styled: Bool = false, whenRead: (@MainActor () -> Void)? = nil) {
+    /// `origin`, in screen coordinates, is the Quick Access card it came from, which it springs out of.
+    func pin(_ url: URL, styled: Bool = false, from origin: CGRect? = nil, whenRead: (@MainActor () -> Void)? = nil) {
         Task { [weak self] in
             // Decoded now, from the file's bytes: an image read lazily from `url` decodes when it's first drawn, after
             // `whenRead` may have deleted the file, and draws black.
@@ -34,11 +35,11 @@ final class PinController {
                 Toast.error("Couldn't read \(url.lastPathComponent)")
                 return
             }
-            self.show(image.image, scale: scale, name: url.lastPathComponent, frameless: frameless)
+            self.show(image.image, scale: scale, name: url.lastPathComponent, frameless: frameless, from: origin)
         }
     }
 
-    private func show(_ image: CGImage, scale: CGFloat, name: String, frameless: Bool) {
+    private func show(_ image: CGImage, scale: CGFloat, name: String, frameless: Bool, from origin: CGRect?) {
         let size = CGSize(width: CGFloat(image.width) / max(scale, 1), height: CGFloat(image.height) / max(scale, 1))
         let screen = NSScreen.underPointer ?? NSScreen.screens[0]
         let frame = PinLayout.initialFrame(for: size, in: screen.visibleFrame, index: panels.count)
@@ -54,7 +55,26 @@ final class PinController {
         }
         panels.append(panel)
         // Not made key, so pinning never takes typing away from the app in front; clicking the pin focuses it for Esc.
+        guard let origin else {
+            panel.orderFrontRegardless()
+            return
+        }
+        // From a card, the pin grows out of it to its place on the arrive spring, as the card leaves, so the card
+        // reads as becoming the pin. Reduce Motion fades it in where it ends up.
+        let reduced = Motion.reduced
+        if !reduced {
+            panel.setFrame(PinLayout.launchFrame(for: frame, from: origin), display: false)
+        }
+        panel.alphaValue = 0
         panel.orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = reduced ? Moment.reducedFade : Moment.panelArrive.duration
+            context.timingFunction = reduced ? CAMediaTimingFunction(name: .easeOut) : Motion.arriveCurve
+            panel.animator().alphaValue = 1
+            if !reduced {
+                panel.animator().setFrame(frame, display: true)
+            }
+        }
     }
 }
 
