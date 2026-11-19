@@ -28,6 +28,7 @@ final class SelectionOverlayView: NSView {
     private enum BarAction: Equatable {
         case mode(CaptureTarget)
         case pageOnly
+        case windowShadow
         case scrolling
         case delay
         case magnifier
@@ -212,6 +213,7 @@ final class SelectionOverlayView: NSView {
         switch action {
         case let .mode(target): controller.setTarget(target)
         case .pageOnly: controller.setPageOnly(!controller.browserMode)
+        case .windowShadow: controller.toggleWindowShadow()
         case .scrolling: controller.toggleScrolling()
         case .delay: controller.cycleDelay()
         case .magnifier: controller.toggleMagnifier()
@@ -320,7 +322,7 @@ final class SelectionOverlayView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
-        if [49, 48, 1, 2, 46, 8, 34, 11, 15, 7].contains(event.keyCode), !event.isARepeat {
+        if [49, 48, 1, 2, 46, 8, 34, 11, 13, 15, 7].contains(event.keyCode), !event.isARepeat {
             controller.revealBar()
         }
         switch event.keyCode {
@@ -346,6 +348,8 @@ final class SelectionOverlayView: NSView {
             controller.toggleSizeLabel()
         case 11:
             controller.togglePageOnly()
+        case 13:
+            controller.toggleWindowShadow()
         case 123...126 where controller.target == .window:
             controller.stepWindow(backward: event.keyCode == 123 || event.keyCode == 126)
         case 123...126 where controller.target == .area && dragStart == nil:
@@ -558,7 +562,7 @@ final class SelectionOverlayView: NSView {
         }
         let page = controller.hoveredPageFrame
         let frame = page ?? controller.appKitFrame(of: window)
-        return (window.pickName ?? String(localized: "Window"), sizeText(of: frame), page == nil && Preferences().windowShadow)
+        return (window.pickName ?? String(localized: "Window"), sizeText(of: frame), page == nil && controller.windowShadow)
     }
 
     /// The board's label in the middle of what's highlighted: a camera on a dark disc, the name and size on a dark panel, and
@@ -907,6 +911,10 @@ final class SelectionOverlayView: NSView {
         if controller.windowMode {
             let page = String(localized: "Leave out browser toolbars")
             options.append(BarButton(symbol: "globe", label: nil, on: controller.browserMode, look: .plain, name: page, key: "B", action: .pageOnly))
+            if !controller.browserMode {
+                let shadow = String(localized: "Window shadow")
+                options.append(BarButton(symbol: "macwindow", label: nil, on: controller.windowShadow, look: .plain, name: shadow, key: "W", action: .windowShadow))
+            }
         }
         if controller.target == .area {
             let shape = controller.areaShape
@@ -968,6 +976,9 @@ final class SelectionOverlayView: NSView {
             if let shape = button.shape {
                 return Self.ratioIcon(shape, side: symbolSize, color: color)
             }
+            if button.action == .windowShadow {
+                return Self.windowShadowIcon(side: symbolSize, color: color)
+            }
             let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: button.look == .picked ? .semibold : .medium)
                 .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
             return NSImage(systemSymbolName: button.symbol, accessibilityDescription: nil)?.withSymbolConfiguration(config)
@@ -977,8 +988,8 @@ final class SelectionOverlayView: NSView {
         }
         func width(_ button: BarButton) -> CGFloat {
             guard let label = button.label else {
-                // Icon only: a mode is a little wider than tall, and a toggle, Delay, Scroll, Ratio or Page is square.
-                return button.look == .toggle || [.delay, .ratio, .pageOnly, .scrolling].contains(button.action) ? height : textSize.points(38).rounded()
+                // Icon only: a mode is a little wider than tall, and a toggle, Delay, Scroll, Ratio, Page or Shadow is square.
+                return button.look == .toggle || [.delay, .ratio, .pageOnly, .windowShadow, .scrolling].contains(button.action) ? height : textSize.points(38).rounded()
             }
             let iconWidth = icon(button, .white)?.size.width.rounded(.up) ?? 0
             let labelWidth = (label as NSString).size(withAttributes: [.font: font(button)]).width.rounded(.up)
@@ -1192,6 +1203,29 @@ final class SelectionOverlayView: NSView {
         }
     }
 
+    /// The Window shadow button's icon: the window symbol with a faint copy behind it, down and to the right, as its
+    /// drop shadow. SF Symbols' own `shadow` is a letter's text shadow, which doesn't read as a window's.
+    private static func windowShadowIcon(side: CGFloat, color: NSColor) -> NSImage? {
+        let config = NSImage.SymbolConfiguration(pointSize: side, weight: .medium).applying(NSImage.SymbolConfiguration(paletteColors: [color]))
+        guard let window = NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)?.withSymbolConfiguration(config) else {
+            return nil
+        }
+        let offset = (side * 0.25).rounded()
+        let radius = side * 0.18
+        let front = NSRect(origin: CGPoint(x: 0, y: offset), size: window.size)
+        return NSImage(size: NSSize(width: window.size.width + offset, height: window.size.height + offset), flipped: false) { _ in
+            color.withAlphaComponent(color.alphaComponent * 0.35).setFill()
+            let body = front.offsetBy(dx: offset, dy: -offset).insetBy(dx: side * 0.08, dy: side * 0.1)
+            NSBezierPath(roundedRect: body, xRadius: radius, yRadius: radius).fill()
+            // Clear behind the window, so the shadow shows only where it sticks out.
+            NSGraphicsContext.current?.compositingOperation = .clear
+            NSBezierPath(roundedRect: front.insetBy(dx: side * 0.08, dy: side * 0.1), xRadius: radius, yRadius: radius).fill()
+            NSGraphicsContext.current?.compositingOperation = .sourceOver
+            window.draw(in: front)
+            return true
+        }
+    }
+
     /// The Ratio button's icon: a rounded rectangle of the ratio's shape, wide or tall as it's turned, in a square of `side`.
     private static func ratioIcon(_ widthOverHeight: CGFloat, side: CGFloat, color: NSColor) -> NSImage {
         let line: CGFloat = 1.5
@@ -1289,7 +1323,7 @@ final class SelectionOverlayView: NSView {
                 element.setAccessibilityValue(button.on ? 1 : 0)
             } else if action == .ratio {
                 element.setAccessibilityRole(.popUpButton)
-            } else if button.look == .toggle || action == .scrolling || action == .pageOnly {
+            } else if button.look == .toggle || action == .scrolling || action == .pageOnly || action == .windowShadow {
                 element.setAccessibilityRole(.checkBox)
                 element.setAccessibilitySubrole(.toggle)
                 element.setAccessibilityValue(button.on ? 1 : 0)

@@ -140,7 +140,7 @@ public struct Preferences {
             PreferenceKey.showCrosshair: false,
             PreferenceKey.browserPageOnly: false,
             PreferenceKey.showSizeLabel: false,
-            PreferenceKey.windowShadow: true,
+            PreferenceKey.windowShadow: false,
             PreferenceKey.quickAccessPosition: QuickAccessPosition.left.rawValue,
             PreferenceKey.quickAccessDuration: 8.0,
             PreferenceKey.recordingFPS: RecordingFrameRate.default,

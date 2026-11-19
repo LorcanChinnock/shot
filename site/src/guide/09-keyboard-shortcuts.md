@@ -58,6 +58,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | R | Step the area's ratio. |
 | X | Turn the area's ratio between landscape and portrait. |
 | B | Turn **Leave out browser toolbars** on or off for this capture. While it's on, clicking a browser window captures just its page, and any other window is captured whole. From Area or Full Screen it switches to Window with it on. |
+| W | In Window, keep or leave out the window's macOS shadow for this capture. It starts as **Settings › Capture › Window shadow** has it, off unless you turn it on. |
 | M | Turn the magnifier on or off for this capture. |
 | C | Turn the crosshair guide lines on or off for this capture. |
 | I | Turn the size label (the area's width and height in pixels) on or off for this capture. |

@@ -54,7 +54,7 @@ import Testing
         #expect(prefs.editorSavesOverOriginal)
         #expect(prefs.quickAccessAfterCapture)
         #expect(prefs.quickAccessDuration == 8)
-        #expect(prefs.windowShadow)
+        #expect(!prefs.windowShadow)
         #expect(prefs.recordingFPS == 60)
         #expect(!prefs.recordMicrophone)
         #expect(prefs.recordShowsCursor)
