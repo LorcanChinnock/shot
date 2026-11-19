@@ -314,7 +314,8 @@ final class EditorModel {
     }
 
     /// Picks layers from the panel. One layer takes up the tool that draws it, so the style bar shows that tool's options
-    /// and the canvas outlines it with its handles; several, or a placed image or locked layer, take the select tool.
+    /// and the canvas outlines it with its handles, and the next mark takes its style; several, or a placed image or
+    /// locked layer, take the select tool.
     func selectLayers(_ ids: Set<UUID>) {
         let picked = document.annotations.filter { ids.contains($0.id) }
         let pickedTool = EditorTool.picking(picked)
@@ -323,6 +324,11 @@ final class EditorModel {
         }
         selectedIDs = Set(picked.map(\.id))
         revealedID = pickedTool == .select ? nil : selectedID
+        if revealedID != nil {
+            var changed = palette
+            changed.takeStyleOfSelection()
+            adopt(changed)
+        }
     }
 
     func moveSelectedLayers(_ move: LayerMove) {
