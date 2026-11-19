@@ -112,6 +112,18 @@ final class QuickAccessController {
         try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
     }
 
+    /// How long a styled file dropped in another app outlives its card, long enough for a slow copy or upload to read it.
+    private static let droppedStyledLifetime: Duration = .seconds(600)
+
+    /// Deletes a styled capture's temporary file and its folder once `delay` has passed. If Shot quits first, the
+    /// system clears the temporary folder later.
+    private static func removeStyled(_ url: URL, after delay: Duration) {
+        Task {
+            try? await Task.sleep(for: delay)
+            removeStyled(url)
+        }
+    }
+
     func add(videoURL: URL, thumbnail: CGImage?, copied: Bool) {
         let image = thumbnail.map { NSImage(cgImage: $0, size: .zero) } ?? NSImage(systemSymbolName: "film", accessibilityDescription: nil) ?? NSImage()
         let card = QuickAccessCard(fileURL: videoURL, thumbnail: image, isVideo: true)
@@ -174,8 +186,14 @@ final class QuickAccessController {
     func remove(_ id: UUID) {
         timers.removeValue(forKey: id)?.cancel()
         voiceOverFocus.remove(id)
-        if let styled = model.cards.first(where: { $0.id == id })?.styledURL {
-            Self.removeStyled(styled)
+        if let card = model.cards.first(where: { $0.id == id }), let styled = card.styledURL {
+            if card.wasDropped {
+                // A drop hands the other app only the path, and Finder, Mail and Slack read the file after the drop
+                // ends, so it stays a while rather than going with the card.
+                Self.removeStyled(styled, after: Self.droppedStyledLifetime)
+            } else {
+                Self.removeStyled(styled)
+            }
         }
         withAnimation(Motion.leave) {
             model.cards.removeAll { $0.id == id }
