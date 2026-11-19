@@ -31,7 +31,7 @@ public enum ShotAction: String, CaseIterable, Sendable {
         }
     }
 
-    /// The default once Shot takes over ⌘⇧4 and ⌘⇧5 from macOS.
+    /// The default once Shot takes over ⇧⌘4 and ⇧⌘5 from macOS.
     public func defaultCombo(replacingSystemScreenshots: Bool) -> KeyCombo? {
         guard replacingSystemScreenshots else {
             return defaultCombo

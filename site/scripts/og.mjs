@@ -36,7 +36,7 @@ const code = (lines) => `<div class="sc-code">${lines.map((l) => `<p>${l}</p>`).
 
 // What each guide page's card shows beside its title: the page's own screenshot where the guide has one, otherwise a drawing of
 // what the page is about. Anything not listed shows the hero scene.
-const shortcuts = [['⌘⇧4', 'Area'], ['⌘⇧3', 'Whole screen'], ['⌘⇧5', 'Record'], ['A', 'Arrow'], ['B', 'Blur'], ['T', 'Text'], ['M', 'Highlight'], ['⌘C', 'Copy'], ['⌘Z', 'Undo']];
+const shortcuts = [['⇧⌘4', 'Area'], ['⇧⌘3', 'Whole screen'], ['⇧⌘5', 'Record'], ['A', 'Arrow'], ['B', 'Blur'], ['T', 'Text'], ['M', 'Highlight'], ['⌘C', 'Copy'], ['⌘Z', 'Undo']];
 const languages = ['English', 'Deutsch', 'Français', 'Español', 'Italiano', 'Português', '日本語', '한국어', '简体中文'];
 const scenes = {
   'get-started': shot('welcome.png', [1240, 940], [190, 150, 860, 583]),
@@ -58,7 +58,7 @@ const scenes = {
   languages: `<div class="sc-langs">${languages.map((l, i) => `<span style="--fill: var(--${['accent', 'og-pink', 'og-sky', 'og-mint', 'og-violet', 'og-orange'][i % 6]})">${l}</span>`).join('')}</div>`,
   updates: `<div class="sc-list"><p><span>Check for updates</span><i class="on"></i></p><p><span>Ask me before going online</span><i class="on"></i></p><p class="btn"><b>Check Now</b></p></div>`,
   privacy: `<div class="sc-list"><p class="no"><b>✕</b><span>No account</span></p><p class="no"><b>✕</b><span>No cloud</span></p><p class="no"><b>✕</b><span>No analytics</span></p><p class="fine">Goes online only to check for updates.</p></div>`,
-  troubleshooting: `<div class="sc-list"><p class="q"><b>?</b><span>Captures fail after I turned on Screen Recording</span></p><p class="q"><b>?</b><span>Microphone says NOT ASKED</span></p><p class="q"><b>?</b><span>⌘⇧4 still opens the macOS tool</span></p></div>`,
+  troubleshooting: `<div class="sc-list"><p class="q"><b>?</b><span>Captures fail after I turned on Screen Recording</span></p><p class="q"><b>?</b><span>Microphone says NOT ASKED</span></p><p class="q"><b>?</b><span>⇧⌘4 still opens the macOS tool</span></p></div>`,
   'removing-shot': code(['<b>$</b> curl -fsSL \\', '  shot.lorcanchinnock.com/uninstall.sh \\', '  | bash']),
   // A chat with a general assistant: the marked-up order from editor.png pasted in with a question.
   'share-a-capture-with-an-ai-assistant': `<div class="sc-chat"><div class="msg">${shot('editor.png', wide, [784, 498, 460, 280])}<p>The code is valid, so why is the total the same?</p></div><p class="ask">Reply…</p></div>`,
@@ -123,7 +123,7 @@ const page = ({ chip, chipColor, tone, headline, size, keys, scene }) => `<!doct
 <div class="brand"><img src="${url('../public/icon-256.png')}"><span>Shot</span></div>
 <div class="intro">
   <span class="chip" style="--chip: var(--${chipColor})">${chip}</span>
-  <h1>${headline}${keys ? '<span class="keys"><kbd class="key">⌘</kbd><kbd class="key accent">⇧</kbd><kbd class="key">4</kbd></span>' : ''}</h1>
+  <h1>${headline}${keys ? '<span class="keys"><kbd class="key accent">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">4</kbd></span>' : ''}</h1>
   ${keys ? '<p class="lede">A screenshot app that lives in your menu bar.</p>' : ''}
 </div>
 ${scene ? `<figure class="shot-panel panel ${tone}"><div class="shot-anchor"><div class="shot-frame"><div class="sc">${scene}</div></div></div></figure>` : stage}`;

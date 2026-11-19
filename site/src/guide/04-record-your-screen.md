@@ -8,7 +8,7 @@ group: Capture
 
 ## Start a recording
 
-1. Press <kbd>⌘⇧5</kbd>, or choose **Record** in the menu bar menu.
+1. Press <kbd>⇧⌘5</kbd>, or choose **Record** in the menu bar menu.
 2. Pick what to record. Press <kbd>Tab</kbd> or click an icon on the bar at the bottom of the screen to move between them:
    - **Area:** drag across it. The magnifier helps here too, if you turn it on in **Settings › Capture**.
    - **Window:** click the window.

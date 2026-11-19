@@ -397,7 +397,7 @@ private struct SetupStep: View {
     var body: some View {
         StepPage(model: model, title: "Make it yours", subtitle: "Two choices. You can change both later in Settings.") {
             SettingsCard {
-                ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: keysSubtitle, isOn: $model.usesSystemKeys)
+                ToggleRow(title: "Use Shot for ⇧⌘4 and ⇧⌘5", subtitle: keysSubtitle, isOn: $model.usesSystemKeys)
                 ToggleRow(title: "Open Shot at login", subtitle: "So your shortcuts work after a restart.", isOn: $model.opensAtLogin)
             }
         } picture: {

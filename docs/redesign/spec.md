@@ -221,7 +221,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Capture bar
 
-#1075 builds Foundations › Capture bar, the strip on the selection overlay after ⌘⇧4 or ⌘⇧5. AppKit draws it into the overlay, so it uses `FloatingPanel`'s AppKit values and draws its own shadow outside the bar only.
+#1075 builds Foundations › Capture bar, the strip on the selection overlay after ⇧⌘4 or ⇧⌘5. AppKit draws it into the overlay, so it uses `FloatingPanel`'s AppKit values and draws its own shadow outside the bar only.
 
 | Part | Look |
 | --- | --- |
@@ -246,7 +246,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Area capture
 
-#1076 builds Capture › Area capture: what you see while dragging out an area after ⌘⇧4. AppKit draws all of it into the overlay view, so nothing adds a screen-sized layer.
+#1076 builds Capture › Area capture: what you see while dragging out an area after ⇧⌘4. AppKit draws all of it into the overlay view, so nothing adds a screen-sized layer.
 
 | Part | Look |
 | --- | --- |
@@ -1272,7 +1272,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 | Group | Row | Control | Description |
 | --- | --- | --- | --- |
-| None | Use Shot for ⌘⇧4 and ⌘⇧5 | Switch | "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5." |
+| None | Use Shot for ⇧⌘4 and ⇧⌘5 | Switch | "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5." |
 | None | macOS still uses these keys, only while the switch is on and the macOS shortcuts are too | Open, a secondary button | "Turn off the Screenshots shortcuts under Keyboard Shortcuts." |
 | Global | Screenshot, with `viewfinder` | The recorder | None |
 | Global | Record, with `record.circle` in record red | The recorder | None |

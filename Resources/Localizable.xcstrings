@@ -51477,54 +51477,54 @@
         }
       }
     },
-    "Use Shot for ⌘⇧4 and ⌘⇧5" : {
+    "Use Shot for ⇧⌘4 and ⇧⌘5" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shot für ⌘⇧4 und ⌘⇧5 verwenden"
+            "value" : "Shot für ⇧⌘4 und ⇧⌘5 verwenden"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usar Shot para ⌘⇧4 y ⌘⇧5"
+            "value" : "Usar Shot para ⇧⌘4 y ⇧⌘5"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utiliser Shot pour ⌘⇧4 et ⌘⇧5"
+            "value" : "Utiliser Shot pour ⇧⌘4 et ⇧⌘5"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usa Shot per ⌘⇧4 e ⌘⇧5"
+            "value" : "Usa Shot per ⇧⌘4 e ⇧⌘5"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⌘⇧4と⌘⇧5にShotを使用"
+            "value" : "⇧⌘4と⇧⌘5にShotを使用"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⌘⇧4 및 ⌘⇧5에 Shot 사용"
+            "value" : "⇧⌘4 및 ⇧⌘5에 Shot 사용"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usar o Shot para ⌘⇧4 e ⌘⇧5"
+            "value" : "Usar o Shot para ⇧⌘4 e ⇧⌘5"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将 Shot 用于 ⌘⇧4 和 ⌘⇧5"
+            "value" : "将 Shot 用于 ⇧⌘4 和 ⇧⌘5"
           }
         }
       }

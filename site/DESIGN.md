@@ -44,7 +44,7 @@ All of them are classes in `src/styles/global.css`, so each page uses them witho
 - **Guide** (`layouts/Prose.astro` and `pages/docs/[page].astro`, from the board **Site · guide page**): three columns in the 1360px container.
   - Left: the pages under their groups, each group with a colour marker (Get started the accent, Capture `--tag-capture`, Edit and share `--tag-editor`, Reference `--tag-release`, Help `--tag-gallery`). The current page is a yellow ink chip.
   - Middle: the group and reading time, the title with the highlighter under its last word, and the lede. Screenshots sit on the group's pastel panel (sand, blush, sky, lilac, sage, as on the social cards). Steps are white cards on red counter badges. The Tip is a tilted sticky note, the Note a blue callout and Watch out a red one. Tables are quiet cards, with an ink outline when the first column holds key caps. The page ends with a GitHub link for reporting a gap, an edit link, and the previous and next pages, where Next is the yellow ink card.
-  - Right: "On this page", with the section you're reading marked in red, and a dark "Try it now" card with ⌘⇧4 or ⌘⇧5 on pages about screenshots or recordings.
+  - Right: "On this page", with the section you're reading marked in red, and a dark "Try it now" card with ⇧⌘4 or ⇧⌘5 on pages about screenshots or recordings.
   - The search is in the header, opens its results under the field, and takes `/` to focus. Code blocks have a Copy button that says Copied ✓ in green, or "Press ⌘C" with the code selected.
   - Between 1000 and 1280px "On this page" moves under the page list. Under 1000px both lists become cards that open, above the article, and the "Try it now" card is hidden.
 
@@ -74,7 +74,7 @@ The page needs no animation script, and a browser without scroll timelines or vi
 
 ## Social cards
 
-`npm run og` renders each card from the site itself: the home card is the hero (`A better ⌘⇧4` beside the hero scene, as Reduce Motion shows it). A guide page's card swaps the headline for the page's title, with its group as a chip, and shows what the page is about in the window: the guide's own screenshot where it has one, otherwise a drawing in the site's style (keycaps for the shortcuts page, a command for removing Shot). The scenes are listed in `scripts/og.mjs`, each on its group's pastel panel; a page without one shows the hero scene. Cards reuse `global.css` and `HeroStage.astro`, so a change to either shows up the next time the cards are rendered.
+`npm run og` renders each card from the site itself: the home card is the hero (`A better ⇧⌘4` beside the hero scene, as Reduce Motion shows it). A guide page's card swaps the headline for the page's title, with its group as a chip, and shows what the page is about in the window: the guide's own screenshot where it has one, otherwise a drawing in the site's style (keycaps for the shortcuts page, a command for removing Shot). The scenes are listed in `scripts/og.mjs`, each on its group's pastel panel; a page without one shows the hero scene. Cards reuse `global.css` and `HeroStage.astro`, so a change to either shows up the next time the cards are rendered.
 
 ## Rules
 

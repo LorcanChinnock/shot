@@ -16,7 +16,7 @@ Open Terminal and run:
 open "shot://capture-area"
 ```
 
-Shot starts an area screenshot, just as <kbd>⌘⇧4</kbd> does.
+Shot starts an area screenshot, just as <kbd>⇧⌘4</kbd> does.
 
 ### Every link
 
