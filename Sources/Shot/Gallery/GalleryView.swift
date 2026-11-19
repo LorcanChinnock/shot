@@ -225,6 +225,7 @@ private struct GalleryGrid: View {
                                         tagging: model.taggingItem == item.url, tag: model.tags[item.url]?.first,
                                         detail: Gallery.tileDetail(for: item, sort: model.sort))
                                 .equatable()
+                                .modifier(ArrivalPop(arrives: model.arrivals.contains(item.url)))
                                 .accessibilityFocused($voiceOverTile, equals: item.url)
                                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { captionHeight = $0 - GalleryTile.thumbnailHeight(width: cell) }
                                 .offset(x: x, y: y)
@@ -285,6 +286,30 @@ private struct GalleryGrid: View {
             case let .tile(item, _, _): item.url.path
             }
         }
+    }
+}
+
+/// A capture that arrives while the gallery is open grows from 60% with a small overshoot, around its own middle,
+/// while the tiles around it slide aside. Every other tile, and every tile with Reduce Motion, shows at once.
+private struct ArrivalPop: ViewModifier {
+    let arrives: Bool
+    @State private var landed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var popping: Bool { arrives && !landed && !reduceMotion }
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(popping ? 0.6 : 1)
+            .opacity(popping ? 0 : 1)
+            .onAppear {
+                guard arrives, !landed else {
+                    return
+                }
+                withAnimation(Motion.animation(.gridShuffle, reduceMotion: reduceMotion)) {
+                    landed = true
+                }
+            }
     }
 }
 

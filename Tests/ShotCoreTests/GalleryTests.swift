@@ -260,3 +260,22 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     #expect(summary().singleItemActions.isEmpty)
 }
 
+
+@Test func aNewCaptureInTheOpenGalleryPopsIn() {
+    let old = [item("a.png", now), item("b.png", now)]
+    let new = [item("c.png", now)] + old
+    #expect(Gallery.animatedArrivals(from: old, to: new) == [URL(fileURLWithPath: "/shots/c.png")])
+}
+
+@Test func aTrashedCaptureAnimatesWithNothingToPopIn() {
+    let old = [item("a.png", now), item("b.png", now)]
+    #expect(Gallery.animatedArrivals(from: old, to: [old[0]]) == [])
+}
+
+@Test func theFirstLoadABigChangeOrAFileThatGrewDoesNotAnimate() {
+    let old = [item("a.png", now)]
+    #expect(Gallery.animatedArrivals(from: [], to: old) == nil)
+    #expect(Gallery.animatedArrivals(from: old, to: [item("a.png", now, bytes: 2)]) == nil)
+    let many = (0...Gallery.animatedChangeLimit).map { item("\($0).png", now) }
+    #expect(Gallery.animatedArrivals(from: old, to: old + many) == nil)
+}

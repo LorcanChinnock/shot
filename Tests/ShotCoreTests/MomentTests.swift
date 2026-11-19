@@ -25,6 +25,7 @@ struct MomentTests {
         #expect(Moment.stackFan.duration == 0.28)
         #expect(Moment.stackFold.duration == 0.22)
         #expect(Moment.stackCover.duration == 0.12)
+        #expect(Moment.gridShuffle.duration == 0.26)
     }
 
     @Test func onlyTheLoopsThatTickWithRealTimeRunLonger() {
