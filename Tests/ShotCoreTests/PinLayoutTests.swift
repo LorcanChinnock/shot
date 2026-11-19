@@ -41,3 +41,20 @@ private let screen = CGRect(x: 0, y: 0, width: 1600, height: 1000)
 @Test func anEmptyImageGetsAMinimumSquare() {
     #expect(PinLayout.size(for: .zero, in: screen) == CGSize(width: 80, height: 80))
 }
+
+@Test func aPinFromACardStartsInsideTheCardAtThePinsShape() {
+    let card = CGRect(x: 1000, y: 30, width: 280, height: 175)
+    // A wide pin takes the card's width and is centred up and down.
+    let wide = PinLayout.launchFrame(for: CGRect(x: 400, y: 300, width: 800, height: 400), from: card)
+    #expect(wide == CGRect(x: 1000, y: 48, width: 280, height: 140))
+    // A tall pin takes the card's height and is centred across.
+    let tall = PinLayout.launchFrame(for: CGRect(x: 0, y: 0, width: 300, height: 600), from: card)
+    #expect(tall.height == 175)
+    #expect(abs(tall.midX - card.midX) <= 0.5)
+    #expect(card.contains(tall))
+}
+
+@Test func aPinWithNoSizeStartsAsTheCard() {
+    let card = CGRect(x: 10, y: 10, width: 280, height: 158)
+    #expect(PinLayout.launchFrame(for: .zero, from: card) == card)
+}
