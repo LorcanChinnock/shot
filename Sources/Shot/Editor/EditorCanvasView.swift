@@ -92,6 +92,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.styleBarClearance
             _ = model.stylePreview
             _ = model.selectedIDs
+            _ = model.revealedID
             _ = model.tool
             _ = model.editingText
         } onChange: { [weak self] in
@@ -172,7 +173,12 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private static let dragThreshold: CGFloat = 4
 
     private func selectionShowsHandles(hoveredAt hover: CGPoint?) -> Bool {
-        model.selection.map { model.tool.showsHandles(of: $0, hoveredAt: hover, tolerance: handleTolerance) } ?? false
+        model.selection.map { model.tool.showsHandles(of: $0, hoveredAt: hover, tolerance: handleTolerance, revealed: isRevealed($0)) } ?? false
+    }
+
+    /// Whether `selection` was picked in the Layers panel, so it shows its handles whatever the tool.
+    private func isRevealed(_ selection: Annotation) -> Bool {
+        selection.id == model.revealedID
     }
 
     /// The topmost text or note under `point`.
@@ -655,7 +661,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         // The annotation just drawn stays selected for the style bar until the next press. Text and note resize from its
         // handles; other tools only from a handle the pointer had already revealed by hovering, and otherwise draw anew.
         if model.tool != .select, let selected = model.selection {
-            if let handle = model.tool.pressedHandle(of: selected, at: point, hoveredAt: hoverPoint, tolerance: handleTolerance) {
+            if let handle = model.tool.pressedHandle(
+                of: selected, at: point, hoveredAt: hoverPoint, tolerance: handleTolerance, revealed: isRevealed(selected)
+            ) {
                 resizeHandle = handle
                 resizeStart = selected
                 return

@@ -405,3 +405,37 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
     drawing.style.color = blue
     #expect(drawing.canReset)
 }
+
+@Test func aLayerPickedWithItsToolGivesTheNextMarkItsStyle() {
+    var dashed = arrow
+    dashed.lineDash = .dashed
+    var picked = palette(tool: .arrow, selection: dashed)
+    picked.style.color = blue
+    picked.takeStyleOfSelection()
+    #expect(picked.style.color == red)
+    #expect(picked.style.width == 4)
+    #expect(picked.style.lineDash == .dashed)
+    #expect(picked.selection == dashed)
+
+    var ellipse = box
+    ellipse.kind = .shape(.ellipse, rect: CGRect(x: 0, y: 0, width: 50, height: 50))
+    ellipse.fill = blue
+    var shaped = palette(tool: .shape, selection: ellipse)
+    shaped.takeStyleOfSelection()
+    #expect(shaped.style.shape == .ellipse)
+    #expect(shaped.style.fill == blue)
+
+    // A note keeps its colour in the note slot, and the stroke colour stays.
+    var noted = palette(tool: .note, selection: note)
+    noted.takeStyleOfSelection()
+    #expect(noted.style.noteColor == note.color)
+    #expect(noted.style.color == EditorStyle().color)
+
+    // With the select tool, or while text is being typed, nothing changes.
+    var selecting = palette(tool: .select, selection: dashed)
+    selecting.takeStyleOfSelection()
+    #expect(selecting.style == EditorStyle(tool: .select))
+    var typing = palette(tool: .arrow, selection: dashed, editing: note)
+    typing.takeStyleOfSelection()
+    #expect(typing.style == EditorStyle(tool: .arrow))
+}

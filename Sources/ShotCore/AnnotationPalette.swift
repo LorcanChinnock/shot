@@ -573,6 +573,49 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
     }
 
+    // MARK: Picking a layer
+
+    /// Makes the next annotation's style the selection's, as a layer picked in the Layers panel with the tool that draws
+    /// it does, so the style bar and the next mark agree. Each option the selection has is set as picking it would, then
+    /// the selection is put back, so it never changes (text in several sizes stays in several sizes). Does nothing while
+    /// text is being typed, or when the toolbar styles only the selection, as the select tool's does.
+    public mutating func takeStyleOfSelection() {
+        guard editingText == nil, let picked = selection, stylesNextAnnotation else {
+            return
+        }
+        setColor(picked.color)
+        if picked.supportsFill {
+            setFill(picked.fill)
+        }
+        if case .note = picked.kind {
+            setNoteTextColor(picked.noteTextColor)
+        }
+        if picked.takesColorAndWidth {
+            setLineWidth(points: picked.lineWidth / scale)
+        }
+        if let lineDash {
+            setLineDash(lineDash)
+        }
+        if let shape {
+            setShape(shape)
+        }
+        if let redaction {
+            setRedaction(redaction)
+            setRedactionAmount(redactionAmount)
+        }
+        if let spotlight {
+            setSpotlightShape(spotlight.shape)
+            setSpotlightSoftEdge(spotlight.softEdge)
+        }
+        if let alignment {
+            setAlignment(alignment)
+        }
+        if let verticalAlignment {
+            setVerticalAlignment(verticalAlignment)
+        }
+        selection = picked
+    }
+
     // MARK: Reset
 
     /// True when the toolbar has options to reset, which it offers for drawing tools, redaction and spotlight.

@@ -509,3 +509,41 @@ private func mixedProject() throws -> (project: Project, below: UUID, picture: U
     #expect(FrameRowDetail.label(for: CGSize(width: 300, height: 200), locale: english) == "300 × 200")
     #expect(FrameRowDetail.label(for: .zero) == "")
 }
+
+@Test func pickingALayerTakesUpTheToolThatDrawsIt() {
+    let rect = CGRect(x: 0, y: 0, width: 40, height: 20)
+    let line = annotation(.line(from: .zero, to: CGPoint(x: 40, y: 0)))
+    #expect(EditorTool.picking([line]) == .line)
+    #expect(EditorTool.picking([annotation(.arrow(from: .zero, to: CGPoint(x: 40, y: 0)))]) == .arrow)
+    #expect(EditorTool.picking([annotation(.shape(.ellipse, rect: rect))]) == .shape)
+    #expect(EditorTool.picking([annotation(.freehand([.zero, CGPoint(x: 40, y: 20)]))]) == .pen)
+    #expect(EditorTool.picking([annotation(.marker([.zero, CGPoint(x: 40, y: 0)]))]) == .highlight)
+    #expect(EditorTool.picking([annotation(.highlight(rect))]) == .highlight)
+    #expect(EditorTool.picking([annotation(.blur(rect))]) == .redact)
+    #expect(EditorTool.picking([annotation(.pixelate(rect))]) == .redact)
+    #expect(EditorTool.picking([annotation(.spotlight(rect, style: SpotlightStyle()))]) == .spotlight)
+    #expect(EditorTool.picking([annotation(.text("Hi", origin: .zero, fontSize: 24))]) == .text)
+    #expect(EditorTool.picking([annotation(.note("Hi", rect: rect))]) == .note)
+    #expect(EditorTool.picking([annotation(.counter(1, center: .zero))]) == .counter)
+    // A placed image has no tool of its own.
+    #expect(EditorTool.picking([annotation(.image(AnnotationImage(solid(width: 40, height: 20)), rect: rect))]) == .select)
+    // Several layers, none, or a locked one: the select tool.
+    #expect(EditorTool.picking([line, line]) == .select)
+    #expect(EditorTool.picking([]) == .select)
+    var locked = line
+    locked.isLocked = true
+    #expect(EditorTool.picking([locked]) == .select)
+}
+
+@Test func aLayerPickedInThePanelShowsItsHandlesWithItsDrawingTool() {
+    let line = annotation(.line(from: .zero, to: CGPoint(x: 100, y: 0)))
+    let end = CGPoint(x: 100, y: 0)
+    // Without the pointer over it, a drawing tool hides the line's handles, unless it was picked in the panel.
+    #expect(!EditorTool.line.showsHandles(of: line, hoveredAt: nil, tolerance: 6))
+    #expect(EditorTool.line.showsHandles(of: line, hoveredAt: nil, tolerance: 6, revealed: true))
+    #expect(EditorTool.line.pressedHandle(of: line, at: end, hoveredAt: nil, tolerance: 6) == nil)
+    #expect(EditorTool.line.pressedHandle(of: line, at: end, hoveredAt: nil, tolerance: 6, revealed: true) == .end)
+    // Pen marks show theirs too, though they never do on hover.
+    let stroke = annotation(.freehand([.zero, CGPoint(x: 50, y: 50), CGPoint(x: 100, y: 0)]))
+    #expect(EditorTool.pen.showsHandles(of: stroke, hoveredAt: nil, tolerance: 6, revealed: true))
+}
