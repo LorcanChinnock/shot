@@ -54,6 +54,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | Key | Action |
 |---|---|
 | Tab | Switch between picking an area, a window and the full screen. <kbd>⇧Tab</kbd> goes back. |
+| V | Switch from a screenshot to a recording, or back, keeping Area, Window or Full Screen. Pressing the other capture shortcut does the same, so if you pressed the wrong one, press the right one. |
 | D | Step the delay through Off, 3, 5 and 10 seconds. |
 | R | Step the area's ratio. |
 | X | Turn the area's ratio between landscape and portrait. |

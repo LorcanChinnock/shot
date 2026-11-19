@@ -34,6 +34,7 @@ final class SelectionOverlayView: NSView {
         case crosshair
         case resolution
         case ratio
+        case switchKind
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
     /// A press that landed on a button of the bar: its release clicks it, unless it turns into dragging out an area first.
@@ -218,6 +219,7 @@ final class SelectionOverlayView: NSView {
         case .crosshair: controller.toggleCrosshair()
         case .resolution: controller.toggleSizeLabel()
         case .ratio: showRatioMenu()
+        case .switchKind: controller.switchKind()
         }
     }
 
@@ -346,6 +348,8 @@ final class SelectionOverlayView: NSView {
             controller.toggleSizeLabel()
         case 11:
             controller.togglePageOnly()
+        case 9 where !event.isARepeat:
+            controller.switchKind()
         case 123...126 where controller.target == .window:
             controller.stepWindow(backward: event.keyCode == 123 || event.keyCode == 126)
         case 123...126 where controller.target == .area && dragStart == nil:
@@ -857,6 +861,9 @@ final class SelectionOverlayView: NSView {
         if controller.offersDelay {
             parts.append(String(localized: "D: delay"))
         }
+        if controller.offersKindSwitch {
+            parts.append(controller.recording ? String(localized: "V: switch to screenshot") : String(localized: "V: switch to record"))
+        }
         parts.append(String(localized: "Esc: cancel"))
         return parts.joined(separator: "   ·   ")
     }
@@ -881,6 +888,8 @@ final class SelectionOverlayView: NSView {
         let name: String
         let key: String
         let action: BarAction
+        /// A second key that does the same, shown in its own keycap: the other kind's shortcut, for the kind switch.
+        var altKey: String?
     }
 
     /// The bar's buttons in their three groups: the modes, then Delay, Scroll and the mode's own option, then the toggles.
@@ -924,6 +933,19 @@ final class SelectionOverlayView: NSView {
             toggle("ruler", String(localized: "Size"), "I", on: controller.showSizeLabel, .resolution),
         ]
         return [modes, options, aids]
+    }
+
+    /// The other kind, as an icon beside the kind's name, when the overlay offers switching to it.
+    private var kindSwitch: BarButton? {
+        guard controller.offersKindSwitch else {
+            return nil
+        }
+        let toRecord = !controller.recording
+        return BarButton(
+            symbol: toRecord ? "record.circle" : "camera", label: nil, on: false, look: .plain,
+            name: toRecord ? String(localized: "Switch to Record") : String(localized: "Switch to Screenshot"), key: "V", action: .switchKind,
+            altKey: Preferences().hotkey(for: toRecord ? .record : .screenshot)?.displayString
+        )
     }
 
     private static func symbol(of mode: CaptureTarget) -> String {
@@ -978,7 +1000,7 @@ final class SelectionOverlayView: NSView {
         func width(_ button: BarButton) -> CGFloat {
             guard let label = button.label else {
                 // Icon only: a mode is a little wider than tall, and a toggle, Delay, Scroll, Ratio or Page is square.
-                return button.look == .toggle || [.delay, .ratio, .pageOnly, .scrolling].contains(button.action) ? height : textSize.points(38).rounded()
+                return button.look == .toggle || [.delay, .ratio, .pageOnly, .scrolling, .switchKind].contains(button.action) ? height : textSize.points(38).rounded()
             }
             let iconWidth = icon(button, .white)?.size.width.rounded(.up) ?? 0
             let labelWidth = (label as NSString).size(withAttributes: [.font: font(button)]).width.rounded(.up)
@@ -995,7 +1017,11 @@ final class SelectionOverlayView: NSView {
         let dot: CGFloat = 8
         let kindWidth = 8 + dot + 7 + kindText.size().width.rounded(.up) + 10
         let widths = groups.map { $0.map(width) }
-        let layout = CaptureBarLayout(groups: [[kindWidth] + widths[0]] + widths.dropFirst(), height: height)
+        // With the switch, the kind and the other kind's icon are a group of their own, so the icon doesn't read as a mode.
+        let kindSwitch = kindSwitch
+        let layout = CaptureBarLayout(
+            groups: kindSwitch.map { [[kindWidth, width($0)]] + widths } ?? [[kindWidth] + widths[0]] + widths.dropFirst(), height: height
+        )
         let size = layout.size
 
         let dragging = dragStart != nil && pressedChip == nil && !isKeyboardSelection && selection != nil
@@ -1038,14 +1064,26 @@ final class SelectionOverlayView: NSView {
         kindText.draw(at: CGPoint(x: kindBox.minX + 8 + dot + 7, y: (kindBox.midY - kindText.size().height / 2).rounded()))
 
         var tip: (button: BarButton, box: CGRect)?
-        let modeRects = Array(layout.frames[0].dropFirst())
+        var drawn: [BarButton] = []
+        if let kindSwitch {
+            let box = placed(layout.frames[0][1])
+            let hovered = hoveredChip == .switchKind
+            drawButton(kindSwitch, in: box, hovered: hovered, increased: increased, scale: scale, font: font(kindSwitch), icon: icon)
+            barHits.append((box, .switchKind))
+            drawn.append(kindSwitch)
+            if hovered {
+                tip = (kindSwitch, box)
+            }
+        }
+        let modeRects = kindSwitch == nil ? Array(layout.frames[0].dropFirst()) : layout.frames[1]
         let slidingInk = slidingModeInk(picked: groups[0].firstIndex { $0.look == .picked }.map { modeRects[$0] }).map(placed)
-        let rows = [modeRects] + layout.frames.dropFirst()
+        let rows = [modeRects] + layout.frames.dropFirst(kindSwitch == nil ? 1 : 2)
         for (buttons, rects) in zip(groups.filter { !$0.isEmpty }, rows) {
             for (button, rect) in zip(buttons, rects) {
                 let box = placed(rect)
                 drawButton(button, in: box, hovered: hoveredChip == button.action, increased: increased, scale: scale, font: font(button), icon: icon, drawsPickedInk: slidingInk == nil)
                 barHits.append((box, button.action))
+                drawn.append(button)
                 if hoveredChip == button.action {
                     tip = (button, box)
                 }
@@ -1071,7 +1109,7 @@ final class SelectionOverlayView: NSView {
         if let tip {
             drawTip(tip.button, over: tip.box, bar: frame, textSize: textSize, increased: increased)
         }
-        updateBarElements(groups.flatMap { $0 }, frames: barHits.map(\.rect))
+        updateBarElements(drawn, frames: barHits.map(\.rect))
     }
 
     /// Where the picked mode's ink is drawn, in the bar's coordinates, while it slides from the last pick to `picked`;
@@ -1245,10 +1283,12 @@ final class SelectionOverlayView: NSView {
         let key = NSAttributedString(string: button.key, attributes: [
             .font: NSFont.monospacedSystemFont(ofSize: textSize.points(10.5), weight: .bold), .foregroundColor: NSColor.white,
         ])
+        let alt = button.altKey.map { NSAttributedString(string: $0, attributes: key.attributes(at: 0, effectiveRange: nil)) }
         let nameSize = name.size()
         let keySize = key.size()
         let capWidth = keySize.width.rounded(.up) + 10
-        let width = 9 + nameSize.width.rounded(.up) + 8 + capWidth + 9
+        let altWidth = alt.map { $0.size().width.rounded(.up) + 10 }
+        let width = 9 + nameSize.width.rounded(.up) + 8 + capWidth + (altWidth.map { $0 + 4 } ?? 0) + 9
         let height = max(nameSize.height, keySize.height).rounded(.up) + 8
         let x = min(max(box.midX - width / 2, 8), bounds.width - width - 8).rounded()
         let y = barPlacement == .top ? bar.minY - 8 - height : bar.maxY + 8
@@ -1256,10 +1296,16 @@ final class SelectionOverlayView: NSView {
         tipFrame = tip
         drawPanel(tip, radius: 8, opacity: Self.tipOpacity, shadow: false, increased: increased, in: ctx)
         name.draw(at: CGPoint(x: tip.minX + 9, y: (tip.midY - nameSize.height / 2).rounded()))
-        let cap = CGRect(x: tip.maxX - 9 - capWidth, y: (tip.midY - keySize.height / 2).rounded(), width: capWidth, height: keySize.height.rounded(.up))
+        let capY = (tip.midY - keySize.height / 2).rounded()
+        let cap = CGRect(x: tip.minX + 9 + nameSize.width.rounded(.up) + 8, y: capY, width: capWidth, height: keySize.height.rounded(.up))
         NSColor.white.withAlphaComponent(0.16).setFill()
         NSBezierPath(roundedRect: cap, xRadius: 4, yRadius: 4).fill()
         key.draw(at: CGPoint(x: cap.minX + 5, y: cap.minY))
+        if let alt, let altWidth {
+            let altCap = CGRect(x: cap.maxX + 4, y: capY, width: altWidth, height: cap.height)
+            NSBezierPath(roundedRect: altCap, xRadius: 4, yRadius: 4).fill()
+            alt.draw(at: CGPoint(x: altCap.minX + 5, y: altCap.minY))
+        }
     }
 
     /// The bar's tooltip is a touch more solid than the bar, as the board draws it.
@@ -1297,7 +1343,11 @@ final class SelectionOverlayView: NSView {
                 element.setAccessibilityRole(.button)
             }
             element.setAccessibilityLabel(button.name)
-            element.setAccessibilityHelp(String(localized: "Key: \(button.key)"))
+            if let altKey = button.altKey {
+                element.setAccessibilityHelp(String(localized: "Key: \(button.key) or \(altKey)"))
+            } else {
+                element.setAccessibilityHelp(String(localized: "Key: \(button.key)"))
+            }
             element.setAccessibilityFrameInParentSpace(frame)
             element.setAccessibilityParent(self)
             return element

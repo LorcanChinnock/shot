@@ -2,7 +2,7 @@ import Testing
 @testable import ShotCore
 
 @Test func pickingKeysListTheOverlaysKeysInOrder() {
-    #expect(PickingKey.all.map(\.key) == ["Tab", "B", "D", "S", "R", "M", "C", "I", "⌥", "Esc"])
+    #expect(PickingKey.all.map(\.key) == ["Tab", "V", "B", "D", "S", "R", "M", "C", "I", "⌥", "Esc"])
     #expect(Set(PickingKey.all.map(\.key)).count == PickingKey.all.count)
 }
 

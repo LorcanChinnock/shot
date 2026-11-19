@@ -29,6 +29,9 @@ struct OverlayResult {
     let delay: Int
     let scrolling: Bool
     let target: CaptureTarget
+    /// The person asked for the other kind instead, a recording rather than a screenshot or the other way round, by the
+    /// bar's switch, V or the other kind's shortcut. `selection` is nil, and `target` is what to open the other on.
+    var switchesKind = false
 }
 
 final class OverlayPanel: NSPanel {
@@ -47,6 +50,12 @@ final class SelectionOverlayController {
     var screenMode: Bool { target == .screen }
     /// Whether the pick is for a recording rather than a screenshot, which the bar names.
     let recording: Bool
+    /// Whether the bar offers switching to the other kind. Off where the other kind can't start, such as while recording.
+    let offersKindSwitch: Bool
+    /// Set by `switchKind()` as the overlay closes.
+    private var switchesKind = false
+    /// The overlay that's open, so the other kind's shortcut can switch it rather than being ignored.
+    private(set) static weak var current: SelectionOverlayController?
     /// Seconds to wait after the pick before capturing; 0 is off. `offersDelay` is false where waiting makes no sense.
     private(set) var delay = 0
     let offersDelay: Bool
@@ -91,9 +100,10 @@ final class SelectionOverlayController {
     /// The modifier keys held by the event that ended the selection.
     private var endModifiers: NSEvent.ModifierFlags = []
 
-    private init(target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool, recording: Bool, windows: [WindowInfo], isLive: Bool) {
+    private init(target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool, recording: Bool, offersKindSwitch: Bool, windows: [WindowInfo], isLive: Bool) {
         self.target = target
         self.recording = recording
+        self.offersKindSwitch = offersKindSwitch
         self.offersDelay = offersDelay
         self.offersScrolling = offersScrolling
         self.windows = windows
@@ -108,11 +118,19 @@ final class SelectionOverlayController {
     /// Like the above, also returning the modifier keys held as the selection ended, read from that event rather than
     /// later, and the delay chosen when `offersDelay`.
     static func select(
-        displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool = false, recording: Bool = false, windows: [WindowInfo], isLive: Bool = false
+        displays: [OverlayDisplay], target: CaptureTarget, offersDelay: Bool, offersScrolling: Bool = false, recording: Bool = false,
+        offersKindSwitch: Bool = false, windows: [WindowInfo], isLive: Bool = false
     ) async -> OverlayResult {
         let controller = SelectionOverlayController(
-            target: target, offersDelay: offersDelay, offersScrolling: offersScrolling, recording: recording, windows: windows, isLive: isLive
+            target: target, offersDelay: offersDelay, offersScrolling: offersScrolling, recording: recording, offersKindSwitch: offersKindSwitch,
+            windows: windows, isLive: isLive
         )
+        current = controller
+        defer {
+            if current === controller {
+                current = nil
+            }
+        }
         // The overlay views hold the controller unowned; keep it alive until the user finishes.
         let selection = await withCheckedContinuation { continuation in
             controller.continuation = continuation
@@ -124,7 +142,10 @@ final class SelectionOverlayController {
         controller.magnifierTask?.cancel()
         controller.barTimer?.cancel()
         withExtendedLifetime(controller) {}
-        return OverlayResult(selection: selection, modifiers: controller.endModifiers, delay: controller.delay, scrolling: controller.scrolling, target: controller.target)
+        return OverlayResult(
+            selection: selection, modifiers: controller.endModifiers, delay: controller.delay, scrolling: controller.scrolling, target: controller.target,
+            switchesKind: controller.switchesKind
+        )
     }
 
     private func show(_ displays: [OverlayDisplay]) {
@@ -465,6 +486,15 @@ final class SelectionOverlayController {
     /// AppKit global frame of a window.
     func appKitFrame(of window: WindowInfo) -> CGRect {
         Geometry.flip(window.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
+    }
+
+    /// V, the bar's switch or the other kind's shortcut: closes the overlay so the other kind opens on the same target.
+    func switchKind() {
+        guard offersKindSwitch, continuation != nil else {
+            return
+        }
+        switchesKind = true
+        finish(nil)
     }
 
     func finish(_ selection: OverlaySelection?, modifiers: NSEvent.ModifierFlags = []) {
