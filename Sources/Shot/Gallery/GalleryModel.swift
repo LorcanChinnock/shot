@@ -2,6 +2,7 @@ import AppKit
 import Observation
 import os
 import ShotCore
+import SwiftUI
 
 private let log = Logger.shot("gallery")
 
@@ -9,6 +10,9 @@ private let log = Logger.shot("gallery")
 @Observable
 final class GalleryModel {
     private(set) var items: [GalleryItem] = [] { didSet { recount(); refilter() } }
+    /// The captures that just arrived while the gallery was open, which pop into the grid. Cleared once they've landed.
+    private(set) var arrivals: Set<URL> = []
+    @ObservationIgnored private var arrivalsTask: Task<Void, Never>?
     /// The text read from the screenshots so far, folded for search, which `TextIndexer` hands over as it reads more.
     /// Only a search uses it, and more text usually finds nothing new, so the grid redraws only when the matches change.
     @ObservationIgnored private var texts: [URL: String] = [:] {
@@ -224,7 +228,8 @@ final class GalleryModel {
 
     func reload() {
         let root = Preferences().saveFolder
-        if root != folder {
+        let switchedFolder = root != folder
+        if switchedFolder {
             folder = root
             source = .all
         }
@@ -248,12 +253,36 @@ final class GalleryModel {
                 source = .all
             }
             if found != items {
-                items = found
+                // A capture arriving or one trashed in Finder animates; the first load or a new save folder doesn't.
+                let arrivals = switchedFolder || !hasLoaded ? nil : Gallery.animatedArrivals(from: items, to: found)
+                if let arrivals, let shuffle = Motion.animation(.gridShuffle) {
+                    land(arrivals)
+                    withAnimation(shuffle) {
+                        items = found
+                    }
+                } else {
+                    items = found
+                }
                 readTextIfSearching()
             }
             hasLoaded = true
             selection.formIntersection(Set(found.map(\.url)))
             readTags()
+        }
+    }
+
+    /// Marks `urls` as just arrived, so their tiles pop in, until well after they've landed.
+    private func land(_ urls: Set<URL>) {
+        arrivalsTask?.cancel()
+        arrivals = urls
+        guard !urls.isEmpty else {
+            return
+        }
+        arrivalsTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            if !Task.isCancelled {
+                self?.arrivals = []
+            }
         }
     }
 
@@ -881,7 +910,10 @@ final class GalleryModel {
                 log.error("Could not trash \(item.url.path): \(error.localizedDescription)")
             }
         }
-        self.items.removeAll { trashed.contains($0.url) }
+        // The tiles after the trashed ones slide back to close the gap, unless so many went that it's a new page.
+        withAnimation(trashed.count <= Gallery.animatedChangeLimit ? Motion.animation(.gridShuffle) : nil) {
+            self.items.removeAll { trashed.contains($0.url) }
+        }
         selection.subtract(trashed)
         if trashed.count < items.count {
             let failed = items.count - trashed.count
