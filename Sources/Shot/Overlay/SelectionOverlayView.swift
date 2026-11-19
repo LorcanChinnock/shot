@@ -913,7 +913,7 @@ final class SelectionOverlayView: NSView {
             options.append(BarButton(symbol: "globe", label: nil, on: controller.browserMode, look: .plain, name: page, key: "B", action: .pageOnly))
             if !controller.browserMode {
                 let shadow = String(localized: "Window shadow")
-                options.append(BarButton(symbol: "shadow", label: nil, on: controller.windowShadow, look: .plain, name: shadow, key: "W", action: .windowShadow))
+                options.append(BarButton(symbol: "macwindow", label: nil, on: controller.windowShadow, look: .plain, name: shadow, key: "W", action: .windowShadow))
             }
         }
         if controller.target == .area {
@@ -975,6 +975,9 @@ final class SelectionOverlayView: NSView {
         func icon(_ button: BarButton, _ color: NSColor) -> NSImage? {
             if let shape = button.shape {
                 return Self.ratioIcon(shape, side: symbolSize, color: color)
+            }
+            if button.action == .windowShadow {
+                return Self.windowShadowIcon(side: symbolSize, color: color)
             }
             let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: button.look == .picked ? .semibold : .medium)
                 .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
@@ -1197,6 +1200,29 @@ final class SelectionOverlayView: NSView {
                 .font: font, .foregroundColor: button.look == .picked || contentColor != nil ? content : NSColor.white,
             ])
             text.draw(at: CGPoint(x: x, y: (box.midY - text.size().height / 2).rounded()))
+        }
+    }
+
+    /// The Window shadow button's icon: the window symbol with a faint copy behind it, down and to the right, as its
+    /// drop shadow. SF Symbols' own `shadow` is a letter's text shadow, which doesn't read as a window's.
+    private static func windowShadowIcon(side: CGFloat, color: NSColor) -> NSImage? {
+        let config = NSImage.SymbolConfiguration(pointSize: side, weight: .medium).applying(NSImage.SymbolConfiguration(paletteColors: [color]))
+        guard let window = NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)?.withSymbolConfiguration(config) else {
+            return nil
+        }
+        let offset = (side * 0.25).rounded()
+        let radius = side * 0.18
+        let front = NSRect(origin: CGPoint(x: 0, y: offset), size: window.size)
+        return NSImage(size: NSSize(width: window.size.width + offset, height: window.size.height + offset), flipped: false) { _ in
+            color.withAlphaComponent(color.alphaComponent * 0.35).setFill()
+            let body = front.offsetBy(dx: offset, dy: -offset).insetBy(dx: side * 0.08, dy: side * 0.1)
+            NSBezierPath(roundedRect: body, xRadius: radius, yRadius: radius).fill()
+            // Clear behind the window, so the shadow shows only where it sticks out.
+            NSGraphicsContext.current?.compositingOperation = .clear
+            NSBezierPath(roundedRect: front.insetBy(dx: side * 0.08, dy: side * 0.1), xRadius: radius, yRadius: radius).fill()
+            NSGraphicsContext.current?.compositingOperation = .sourceOver
+            window.draw(in: front)
+            return true
         }
     }
 
