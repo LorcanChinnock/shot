@@ -1,4 +1,5 @@
 import AppKit
+import QuartzCore
 import ShotCore
 
 final class SelectionOverlayView: NSView {
@@ -41,6 +42,13 @@ final class SelectionOverlayView: NSView {
     private var barPlacement = OverlayBarPlacement.bottom
     /// Where the bar was last drawn, nil while it's hidden or faded, so the chips and loupe keep off it.
     private var barFrame: CGRect?
+    /// The picked mode and its box when the bar was last drawn, in the bar's own coordinates, so a new pick slides the ink
+    /// from there. Nil while the bar isn't drawn, so a mode picked while it's hidden doesn't slide when it comes back.
+    private var pickedMode: (target: CaptureTarget, box: CGRect)?
+    /// The picked mode's ink sliding from `from`, in the bar's coordinates, since `start` (`CACurrentMediaTime`).
+    private var modeSlide: (from: CGRect, start: CFTimeInterval)?
+    /// Redraws the bar every frame while the ink slides, and only then.
+    private var modeSlideTask: Task<Void, Never>?
     /// Where the bar was when it faded, so moving the pointer back onto that spot brings it back (#1370).
     private var fadedBarFrame: CGRect?
     /// The bar's frame in AppKit global space, nil while it's hidden or faded, for the permission card to sit beside.
@@ -942,6 +950,7 @@ final class SelectionOverlayView: NSView {
         }
         guard opacity > 0, let window, NSMouseInRect(NSEvent.mouseLocation, window.frame, false),
               let ctx = NSGraphicsContext.current?.cgContext else {
+            pickedMode = nil
             return
         }
         let textSize = Preferences().textSize
@@ -1000,6 +1009,7 @@ final class SelectionOverlayView: NSView {
         )
         guard let frame = barPlacement.frame(of: size, visible: visible) else {
             hoveredChip = nil
+            pickedMode = nil
             return
         }
         barFrame = frame
@@ -1028,16 +1038,30 @@ final class SelectionOverlayView: NSView {
         kindText.draw(at: CGPoint(x: kindBox.minX + 8 + dot + 7, y: (kindBox.midY - kindText.size().height / 2).rounded()))
 
         var tip: (button: BarButton, box: CGRect)?
-        let rows = [Array(layout.frames[0].dropFirst())] + layout.frames.dropFirst()
+        let modeRects = Array(layout.frames[0].dropFirst())
+        let slidingInk = slidingModeInk(picked: groups[0].firstIndex { $0.look == .picked }.map { modeRects[$0] }).map(placed)
+        let rows = [modeRects] + layout.frames.dropFirst()
         for (buttons, rects) in zip(groups.filter { !$0.isEmpty }, rows) {
             for (button, rect) in zip(buttons, rects) {
                 let box = placed(rect)
-                drawButton(button, in: box, hovered: hoveredChip == button.action, increased: increased, scale: scale, font: font(button), icon: icon)
+                drawButton(button, in: box, hovered: hoveredChip == button.action, increased: increased, scale: scale, font: font(button), icon: icon, drawsPickedInk: slidingInk == nil)
                 barHits.append((box, button.action))
                 if hoveredChip == button.action {
                     tip = (button, box)
                 }
             }
+        }
+        if let slidingInk {
+            // The ink on its way, then the modes' icons and names again in ink wherever it covers them, as a segmented
+            // control's thumb does.
+            drawPickedInk(in: slidingInk, scale: scale)
+            ctx.saveGState()
+            let radius = min(Theme.Radius.group, slidingInk.height / 2)
+            NSBezierPath(roundedRect: slidingInk, xRadius: radius, yRadius: radius).addClip()
+            for (button, rect) in zip(groups[0], modeRects) {
+                drawButton(button, in: placed(rect), hovered: false, increased: increased, scale: scale, font: font(button), icon: icon, contentColor: Self.ink)
+            }
+            ctx.restoreGState()
         }
         NSColor.white.withAlphaComponent(increased ? 0.6 : 0.16).setFill()
         let dividerHeight = min(22, height - 8)
@@ -1050,22 +1074,98 @@ final class SelectionOverlayView: NSView {
         updateBarElements(groups.flatMap { $0 }, frames: barHits.map(\.rect))
     }
 
-    private func drawButton(_ button: BarButton, in box: CGRect, hovered: Bool, increased: Bool, scale: CGFloat, font: NSFont, icon: (BarButton, NSColor) -> NSImage?) {
+    /// Where the picked mode's ink is drawn, in the bar's coordinates, while it slides from the last pick to `picked`;
+    /// nil once it has arrived, when the picked button draws its own. Starts the slide when the pick has changed.
+    private func slidingModeInk(picked: CGRect?) -> CGRect? {
+        let target = controller.target
+        if let picked, let last = pickedMode, last.target != target, !Motion.reduced {
+            // From wherever the ink is now, so a quick second Tab carries on from mid-slide.
+            modeSlide = (slidingInkBox(to: last.box) ?? last.box, CACurrentMediaTime())
+            startModeSlide()
+        }
+        pickedMode = picked.map { (target, $0) }
+        guard let picked else {
+            modeSlide = nil
+            return nil
+        }
+        let box = slidingInkBox(to: picked)
+        if box == nil {
+            modeSlide = nil
+        }
+        return box
+    }
+
+    /// The ink's box at this moment of `modeSlide`, heading for `target`; nil when nothing is sliding or it has arrived.
+    private func slidingInkBox(to target: CGRect) -> CGRect? {
+        guard let modeSlide else {
+            return nil
+        }
+        let progress = (CACurrentMediaTime() - modeSlide.start) / Moment.selectionSlide.duration
+        guard progress < 1 else {
+            return nil
+        }
+        let p = CGFloat(Moment.slide(progress))
+        let from = modeSlide.from
+        return CGRect(
+            x: from.minX + (target.minX - from.minX) * p, y: target.minY,
+            width: from.width + (target.width - from.width) * p, height: target.height
+        )
+    }
+
+    /// Redraws the bar each frame for as long as the ink slides, then stops, so the overlay draws nothing extra otherwise.
+    private func startModeSlide() {
+        modeSlideTask?.cancel()
+        modeSlideTask = Task { [weak self] in
+            let end = CACurrentMediaTime() + Moment.selectionSlide.duration
+            while !Task.isCancelled {
+                guard let self else {
+                    return
+                }
+                if let barFrame = self.barFrame {
+                    self.setNeedsDisplay(barFrame.insetBy(dx: -4, dy: -6))
+                } else {
+                    self.needsDisplay = true
+                }
+                // One more frame after the end, so the button draws its own ink in place of the sliding one.
+                guard CACurrentMediaTime() < end else {
+                    return
+                }
+                try? await Task.sleep(for: .milliseconds(8))
+            }
+        }
+    }
+
+    /// The ink control: the accent with a 1.5 pt black outline and a 2 pt black drop, on whole device pixels.
+    private func drawPickedInk(in box: CGRect, scale: CGFloat) {
+        let radius = min(Theme.Radius.group, box.height / 2)
+        let line = Theme.inkWidth(1.5, scale: scale)
+        let drop = Theme.inkOffset(2, scale: scale)
+        NSColor.black.setFill()
+        NSBezierPath(roundedRect: box.offsetBy(dx: 0, dy: -drop), xRadius: radius, yRadius: radius).fill()
+        FloatingPanel.accentNS.setFill()
+        NSBezierPath(roundedRect: box, xRadius: radius, yRadius: radius).fill()
+        let outline = NSBezierPath(roundedRect: box.insetBy(dx: line / 2, dy: line / 2), xRadius: radius - line / 2, yRadius: radius - line / 2)
+        outline.lineWidth = line
+        NSColor.black.setStroke()
+        outline.stroke()
+    }
+
+    /// One button. While the picked mode's ink slides (`drawsPickedInk` false), the picked button draws its content in
+    /// white like the others. `contentColor` draws only the icon and name, in that colour, with no fill, for the pass
+    /// that redraws the modes in ink under the sliding ink.
+    private func drawButton(
+        _ button: BarButton, in box: CGRect, hovered: Bool, increased: Bool, scale: CGFloat, font: NSFont, icon: (BarButton, NSColor) -> NSImage?,
+        drawsPickedInk: Bool = true, contentColor: NSColor? = nil
+    ) {
         let radius = min(Theme.Radius.group, box.height / 2)
         let content: NSColor
         switch button.look {
+        case _ where contentColor != nil:
+            content = contentColor ?? Self.ink
+        case .picked where !drawsPickedInk:
+            content = .white
         case .picked:
-            // The ink control: the accent with a 1.5 pt black outline and a 2 pt black drop, on whole device pixels.
-            let line = Theme.inkWidth(1.5, scale: scale)
-            let drop = Theme.inkOffset(2, scale: scale)
-            NSColor.black.setFill()
-            NSBezierPath(roundedRect: box.offsetBy(dx: 0, dy: -drop), xRadius: radius, yRadius: radius).fill()
-            FloatingPanel.accentNS.setFill()
-            NSBezierPath(roundedRect: box, xRadius: radius, yRadius: radius).fill()
-            let outline = NSBezierPath(roundedRect: box.insetBy(dx: line / 2, dy: line / 2), xRadius: radius - line / 2, yRadius: radius - line / 2)
-            outline.lineWidth = line
-            NSColor.black.setStroke()
-            outline.stroke()
+            drawPickedInk(in: box, scale: scale)
             content = Self.ink
         case .plain, .toggle:
             if button.on || hovered {
@@ -1086,7 +1186,7 @@ final class SelectionOverlayView: NSView {
         }
         if let label = button.label {
             let text = NSAttributedString(string: label, attributes: [
-                .font: font, .foregroundColor: button.look == .picked ? content : NSColor.white,
+                .font: font, .foregroundColor: button.look == .picked || contentColor != nil ? content : NSColor.white,
             ])
             text.draw(at: CGPoint(x: x, y: (box.midY - text.size().height / 2).rounded()))
         }

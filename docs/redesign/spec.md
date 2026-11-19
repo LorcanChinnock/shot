@@ -200,6 +200,7 @@ SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still sc
 | Copied tick | 240 ms | The tick draws itself: on a Quick Access card as "Copied" pops in, on an editor button as it bounces, or in a toast as it springs up | 120 ms fade |
 | Marks land | 200 ms | A new arrow draws its last few points; counters pop in with a small overshoot | Appear at once |
 | Panel arrive | 240 ms spring | Panels and popovers; Quick Access slides in from its corner | 120 ms fade |
+| Selection slide | 200 ms spring, under 3% overshoot | The ink on the selected tool in the image and video editors, the capture bar's picked mode and a segmented control's thumb slide from the old choice to the new one. The choice takes effect at once, by click or key | Moves at once |
 | Countdown | 1 s tick | Menu bar digits flip; the countdown ring empties | Number changes, no flip or ring animation |
 | Recording pulse | 1.6 s loop | The red dot breathes in the menu bar and the recording controls | Steady dot |
 

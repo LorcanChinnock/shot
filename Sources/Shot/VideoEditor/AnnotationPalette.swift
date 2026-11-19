@@ -39,6 +39,8 @@ struct DrawToolColumn: View {
     @Bindable var model: VideoEditorModel
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var toolSlide
 
     var body: some View {
         ViewThatFits(in: .vertical) {
@@ -60,6 +62,7 @@ struct DrawToolColumn: View {
                 .accessibilityHidden(true)
             ForEach(VideoDrawTools.afterDivider, id: \.self) { tile($0) }
         }
+        .slidingToolSelection(toolSlide, selected: VideoDrawTools.selected(tool: model.annotationTool, cropping: model.isCropping), reduceMotion: reduceMotion)
     }
 
     private func panel(@ViewBuilder _ content: () -> some View) -> some View {
