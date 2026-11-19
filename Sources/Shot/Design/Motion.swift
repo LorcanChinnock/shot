@@ -19,6 +19,7 @@ enum Motion {
         case .panelArrive: .spring(duration: moment.duration, bounce: 0.25)
         case .recordingPulse: .easeOut(duration: moment.duration).repeatForever(autoreverses: false)
         case .viewfinderSnap, .tick, .markLand, .countdownFlip, .clickRing: .easeOut(duration: moment.duration)
+        case .gridShuffle: .spring(duration: moment.duration, bounce: 0.3)
         }
     }
 

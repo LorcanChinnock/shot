@@ -21,6 +21,9 @@ public enum Moment: CaseIterable, Sendable {
     case recordingPulse
     /// A click's ring fades out once it has held for `ClickRing.hold`.
     case clickRing
+    /// A new capture pops into the open gallery with a small overshoot, and the tiles around it, or around one just
+    /// trashed, slide to their new places.
+    case gridShuffle
 
     /// What Reduce Motion plays instead.
     public enum Reduced: Sendable {
@@ -45,6 +48,7 @@ public enum Moment: CaseIterable, Sendable {
         case .countdownRing: 1
         case .recordingPulse: 1.6
         case .clickRing: 0.24
+        case .gridShuffle: 0.26
         }
     }
 
@@ -52,14 +56,14 @@ public enum Moment: CaseIterable, Sendable {
     public var isAmbient: Bool {
         switch self {
         case .countdownRing, .recordingPulse: true
-        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing: false
+        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .gridShuffle: false
         }
     }
 
     public var reduced: Reduced {
         switch self {
         case .viewfinderSnap, .tick, .panelArrive: .fade
-        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing: .none
+        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing, .gridShuffle: .none
         }
     }
 

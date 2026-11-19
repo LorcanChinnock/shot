@@ -370,4 +370,25 @@ public enum Gallery {
         let hours = total / 3600, minutes = total / 60 % 60, secs = total % 60
         return hours > 0 ? String(format: "%d:%02d:%02d", hours, minutes, secs) : String(format: "%d:%02d", minutes, secs)
     }
+
+    /// The most captures a reload may add or remove and still animate. More than this, such as a folder of captures
+    /// copied in, changes at once, so a big change never animates hundreds of tiles.
+    public static let animatedChangeLimit = 12
+
+    /// What a reload that found `new` where `old` was adds, when it should animate: new tiles pop in and the others
+    /// slide to their new places. `nil` when it shouldn't: the first load, a change with nothing added or removed (such as
+    /// a file that grew), or one bigger than `animatedChangeLimit`.
+    public static func animatedArrivals(from old: [GalleryItem], to new: [GalleryItem]) -> Set<URL>? {
+        guard !old.isEmpty else {
+            return nil
+        }
+        let before = Set(old.map(\.url))
+        let after = Set(new.map(\.url))
+        let added = after.subtracting(before)
+        let changed = added.count + before.subtracting(after).count
+        guard changed > 0, changed <= animatedChangeLimit else {
+            return nil
+        }
+        return added
+    }
 }
