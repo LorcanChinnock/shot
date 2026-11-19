@@ -165,6 +165,9 @@ final class EditorModel {
         get { selectedIDs.count == 1 ? selectedIDs.first : nil }
         set { selectedIDs = newValue.map { [$0] } ?? [] }
     }
+    /// The layer picked in the Layers panel with the tool that draws it, which shows its outline and handles without the
+    /// pointer hovering it, as the select tool's selection does. A drawing tool otherwise shows them only on hover.
+    var revealedID: UUID?
     /// Whether the Layers panel shows beside the canvas. It starts closed in every window (rule 2).
     private(set) var showsLayers = false
     /// Whether the picker of images to place on the canvas is open.
@@ -310,12 +313,16 @@ final class EditorModel {
         }
     }
 
-    /// Picks layers from the panel, which also switches to the select tool, as picking one on the canvas does.
+    /// Picks layers from the panel. One layer takes up the tool that draws it, so the style bar shows that tool's options
+    /// and the canvas outlines it with its handles; several, or a placed image or locked layer, take the select tool.
     func selectLayers(_ ids: Set<UUID>) {
-        if tool != .select {
-            tool = .select
+        let picked = document.annotations.filter { ids.contains($0.id) }
+        let pickedTool = EditorTool.picking(picked)
+        if tool != pickedTool {
+            tool = pickedTool
         }
-        selectedIDs = ids.intersection(document.annotations.map(\.id))
+        selectedIDs = Set(picked.map(\.id))
+        revealedID = pickedTool == .select ? nil : selectedID
     }
 
     func moveSelectedLayers(_ move: LayerMove) {

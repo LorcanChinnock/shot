@@ -55,12 +55,13 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Whether `selection` shows its outline and handles. The tools that edit the selection always show them. A tool
-    /// that `showsHoverHandles` shows them round the mark just drawn only while the pointer, last moved to `hover`, is over the mark
-    /// or within `tolerance` of one of its handles. `hover` is where the pointer last moved, not where it's pressed, so
-    /// a press that lands on a handle the pointer never hovered finds it hidden and draws.
-    public func showsHandles(of selection: Annotation, hoveredAt hover: CGPoint?, tolerance: CGFloat) -> Bool {
-        if editsSelection {
+    /// Whether `selection` shows its outline and handles. The tools that edit the selection always show them, and so
+    /// does every tool for a mark that's `revealed`, one picked in the Layers panel. A tool that `showsHoverHandles`
+    /// shows them round the mark just drawn only while the pointer, last moved to `hover`, is over the mark or within
+    /// `tolerance` of one of its handles. `hover` is where the pointer last moved, not where it's pressed, so a press
+    /// that lands on a handle the pointer never hovered finds it hidden and draws.
+    public func showsHandles(of selection: Annotation, hoveredAt hover: CGPoint?, tolerance: CGFloat, revealed: Bool = false) -> Bool {
+        if editsSelection || revealed {
             return true
         }
         guard showsHoverHandles, let hover else {
@@ -71,11 +72,41 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
 
     /// The handle of `selection` a press at `point` adjusts, or `nil` when the press draws or picks instead. Only a
     /// showing handle counts, and a drawing tool never adjusts a locked mark.
-    public func pressedHandle(of selection: Annotation, at point: CGPoint, hoveredAt hover: CGPoint?, tolerance: CGFloat) -> AnnotationHandle? {
-        guard showsHandles(of: selection, hoveredAt: hover, tolerance: tolerance), editsSelection || !selection.isLocked else {
+    public func pressedHandle(
+        of selection: Annotation, at point: CGPoint, hoveredAt hover: CGPoint?, tolerance: CGFloat, revealed: Bool = false
+    ) -> AnnotationHandle? {
+        guard showsHandles(of: selection, hoveredAt: hover, tolerance: tolerance, revealed: revealed), editsSelection || !selection.isLocked else {
             return nil
         }
         return selection.handle(at: point, tolerance: tolerance)
+    }
+
+    /// The tool that draws marks of `kind`: picking one in the Layers panel takes it up, so its style bar shows. A
+    /// blur or pixelate is the redact tool's, and an old highlight box the highlighter's. A placed image has no tool of
+    /// its own, so it's the select tool's.
+    public init(drawing kind: Annotation.Kind) {
+        self = switch kind {
+        case .arrow: .arrow
+        case .line: .line
+        case .shape: .shape
+        case .highlight, .marker: .highlight
+        case .pixelate, .blur: .redact
+        case .spotlight: .spotlight
+        case .text: .text
+        case .counter: .counter
+        case .note: .note
+        case .freehand: .pen
+        case .image: .select
+        }
+    }
+
+    /// The tool picking `layers` in the Layers panel takes up: the one that draws a single layer, else the select tool,
+    /// which picks several at once. A locked layer takes the select tool too, since a drawing tool would only draw over it.
+    public static func picking(_ layers: [Annotation]) -> EditorTool {
+        guard layers.count == 1, let layer = layers.first, !layer.isLocked else {
+            return .select
+        }
+        return EditorTool(drawing: layer.kind)
     }
 
     /// True for the tools that draw in the chosen colour and width.
