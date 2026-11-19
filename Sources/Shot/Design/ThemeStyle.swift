@@ -219,6 +219,17 @@ extension EnvironmentValues {
     /// Narrows toolbar and tool buttons to 4 pt either side of their symbol, for a title bar that's short of room, such
     /// as the image editor's at a larger text size. Their 30 × 28 pt floor stays.
     @Entry var tightToolbar = false
+    /// A group of tool buttons whose ink slides from the old tool to the new one. Set with `slidingToolSelection(_:)`.
+    @Entry var toolSelection: Namespace.ID?
+}
+
+extension View {
+    /// Slides the selected tool's ink between the `ThemeButtonStyle(.tool)` buttons inside, rather than moving it at once,
+    /// whenever `selected` changes, by click, shortcut or anything else. Only the ink moves; the tool is picked at once.
+    func slidingToolSelection(_ namespace: Namespace.ID, selected: some Equatable, reduceMotion: Bool) -> some View {
+        environment(\.toolSelection, namespace)
+            .animation(Motion.animation(.selectionSlide, reduceMotion: reduceMotion), value: selected)
+    }
 }
 
 /// A system font that grows with Settings › General › Text size. Use `.font(.scaled(…))` for Shot's own interface text;
@@ -584,6 +595,7 @@ private struct ThemeButtonBody: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.displayScale) private var scale
     @Environment(\.tightToolbar) private var tightToolbar
+    @Environment(\.toolSelection) private var toolSelection
     @State private var hovering = false
 
     /// Text on the accent stays near-black in both appearances.
@@ -608,6 +620,9 @@ private struct ThemeButtonBody: View {
     private var drop: CGFloat { Theme.inkOffset(style.kind == .tool ? 1.5 : 2, scale: scale) }
     /// Reduce Motion keeps the drop still and darkens the fill instead.
     private var sinks: Bool { inked && pressed && !reduceMotion }
+    /// The selected tool in a group that slides its ink (`slidingToolSelection`): the ink is one plate that moves between
+    /// the group's buttons, so this button draws it as `plate` rather than as its own fill, edge and drop.
+    private var slidingInk: Bool { inked && style.kind == .tool && toolSelection != nil }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .circular)
@@ -627,7 +642,9 @@ private struct ThemeButtonBody: View {
             }
             .modifier(ButtonEdge(shape: shape, width: edgeWidth, color: edgeColor))
             .background {
-                if inked {
+                if slidingInk, let toolSelection {
+                    plate(shape).matchedGeometryEffect(id: "selectedTool", in: toolSelection)
+                } else if inked {
                     shape.fill(inkColor).offset(y: sinks ? 0 : drop)
                 }
             }
@@ -646,6 +663,14 @@ private struct ThemeButtonBody: View {
             .onHover { hovering = $0 }
             .accessibilityAddTraits(style.isOn ? .isSelected : [])
             .animation(Motion.animation(.press, reduceMotion: reduceMotion), value: pressed)
+    }
+
+    /// The selected tool's ink, drawn whole so it can slide to the next tool: the accent with its outline, over the drop.
+    private func plate(_ shape: RoundedRectangle) -> some View {
+        ZStack {
+            shape.fill(inkColor).offset(y: sinks ? 0 : drop)
+            shape.fill(Theme.accent).inkBorder(shape, width: 1.5, color: inkColor)
+        }
     }
 
     private var font: ScaledFont {
@@ -675,6 +700,9 @@ private struct ThemeButtonBody: View {
     }
 
     private var fill: AnyShapeStyle {
+        if slidingInk {
+            return AnyShapeStyle(Color.clear)
+        }
         if inked {
             guard style.kind == .main, style.destructive else { return AnyShapeStyle(Theme.accent) }
             // White on record red is under 4.5:1, so Increase Contrast darkens the red.
@@ -716,6 +744,7 @@ private struct ThemeButtonBody: View {
     }
 
     private var edgeWidth: CGFloat {
+        if slidingInk { return 0 }
         if inked { return 1.5 }
         guard bordered, !floating else { return 0 }
         return colorScheme == .dark && !increased ? 0.5 : 1
@@ -1016,7 +1045,7 @@ struct ThemeSegmented<Value: Hashable>: View {
         guard isEnabled, value != selection else {
             return
         }
-        withAnimation(reduceMotion ? nil : .spring(response: 0.22, dampingFraction: 0.86)) {
+        withAnimation(Motion.animation(.selectionSlide, reduceMotion: reduceMotion)) {
             selection = value
         }
     }

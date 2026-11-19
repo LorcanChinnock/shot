@@ -5,6 +5,8 @@ import SwiftUI
 /// Add image and Crop. The selected tool is the ink button; the hand tool has no button of its own.
 struct EditorToolGroup: View {
     @Bindable var model: EditorModel
+    @Namespace private var toolSlide
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 1) {
@@ -32,6 +34,7 @@ struct EditorToolGroup: View {
         .padding(3)
         .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular))
         .fixedSize()
+        .slidingToolSelection(toolSlide, selected: EditorToolbarLayout.selectedButton(for: model.tool), reduceMotion: reduceMotion)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Tools"))
     }

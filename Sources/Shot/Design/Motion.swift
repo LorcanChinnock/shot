@@ -22,6 +22,7 @@ enum Motion {
         case .stackFan: .spring(duration: moment.duration, bounce: 0.32)
         case .stackFold: .spring(duration: moment.duration, bounce: 0.15)
         case .gridShuffle: .spring(duration: moment.duration, bounce: 0.3)
+        case .selectionSlide: .spring(duration: moment.duration, bounce: 0.15)
         }
     }
 

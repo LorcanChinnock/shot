@@ -26,11 +26,25 @@ struct MomentTests {
         #expect(Moment.stackFold.duration == 0.22)
         #expect(Moment.stackCover.duration == 0.12)
         #expect(Moment.gridShuffle.duration == 0.26)
+        #expect(Moment.selectionSlide.duration == 0.2)
     }
 
     @Test func onlyTheLoopsThatTickWithRealTimeRunLonger() {
         #expect(Moment.allCases.filter(\.isAmbient) == [.countdownRing, .recordingPulse])
         #expect(Moment.countdownRing.reduced == .none)
+    }
+
+    @Test func slideOvershootsSlightlyThenSettles() {
+        #expect(Moment.slide(0) == 0)
+        #expect(abs(Moment.slide(1) - 1) < 1e-9)
+        #expect(Moment.slide(-1) == 0)
+        #expect(abs(Moment.slide(2) - 1) < 1e-9)
+        let samples = stride(from: 0.0, through: 1, by: 0.01).map(Moment.slide)
+        #expect(samples.max()! > 1)
+        #expect(samples.max()! < 1.03)
+        // Most of the way there by halfway, so it reads as quick.
+        #expect(Moment.slide(0.5) > 0.8)
+        #expect(Moment.selectionSlide.reduced == .none)
     }
 
     @Test func popOvershootsThenSettles() {

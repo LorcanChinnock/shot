@@ -200,6 +200,7 @@ SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still sc
 | Copied tick | 240 ms | The tick draws itself: on a Quick Access card as "Copied" pops in, on an editor button as it bounces, or in a toast as it springs up | 120 ms fade |
 | Marks land | 200 ms | A new arrow draws its last few points; counters pop in with a small overshoot | Appear at once |
 | Panel arrive | 240 ms spring | Panels and popovers; Quick Access slides in from its corner; a pin grows out of the card it came from | 120 ms fade |
+| Selection slide | 200 ms spring, under 3% overshoot | The ink on the selected tool in the image and video editors, the capture bar's picked mode and a segmented control's thumb slide from the old choice to the new one. The choice takes effect at once, by click or key | Moves at once |
 | Stack fan and fold | 280 ms spring with an overshoot to fan out, 220 ms with a small bounce to fold, each card 30 or 25 ms after the last | The Quick Access stack opening on hover and closing as the pointer leaves | Cards jump into place |
 | Grid shuffle | 260 ms spring with a small overshoot | A capture arriving in the open gallery grows in from 60%, and the tiles around it, or around captures just trashed, slide to their new places | Tiles jump into place |
 | Countdown | 1 s tick | Menu bar digits flip; the countdown ring empties | Number changes, no flip or ring animation |

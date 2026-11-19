@@ -32,6 +32,9 @@ public enum Moment: CaseIterable, Sendable {
     /// A new capture pops into the open gallery with a small overshoot, and the tiles around it, or around one just
     /// trashed, slide to their new places.
     case gridShuffle
+    /// The highlight on a picked option slides from the old choice to the new one, with a slight overshoot: the selected
+    /// tool, the capture bar's mode and a segmented control's thumb. The choice itself takes effect at once.
+    case selectionSlide
 
     /// What Reduce Motion plays instead.
     public enum Reduced: Sendable {
@@ -60,6 +63,7 @@ public enum Moment: CaseIterable, Sendable {
         case .stackFold: 0.22
         case .stackCover: 0.12
         case .gridShuffle: 0.26
+        case .selectionSlide: 0.2
         }
     }
 
@@ -67,14 +71,14 @@ public enum Moment: CaseIterable, Sendable {
     public var isAmbient: Bool {
         switch self {
         case .countdownRing, .recordingPulse: true
-        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .stackFan, .stackFold, .stackCover, .gridShuffle: false
+        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .stackFan, .stackFold, .stackCover, .gridShuffle, .selectionSlide: false
         }
     }
 
     public var reduced: Reduced {
         switch self {
         case .viewfinderSnap, .tick, .panelArrive, .stackCover: .fade
-        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing, .stackFan, .stackFold, .gridShuffle: .none
+        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing, .stackFan, .stackFold, .gridShuffle, .selectionSlide: .none
         }
     }
 
@@ -90,6 +94,21 @@ public enum Moment: CaseIterable, Sendable {
         }
         let u = (t - turn) / (1 - turn)
         return peak - (peak - 1) * (u * u * (3 - 2 * u))
+    }
+
+    /// How far a sliding highlight has gone at `progress` through `selectionSlide`, from 0 to 1: it eases out, passes
+    /// its new place by under 3% and settles there. For views drawn by hand, such as the capture bar; SwiftUI views use
+    /// `Motion.animation(.selectionSlide)`, a spring of the same feel.
+    public static func slide(_ progress: Double) -> Double {
+        guard progress > 0 else {
+            return 0
+        }
+        guard progress < 1 else {
+            return 1
+        }
+        let back = 0.6
+        let u = progress - 1
+        return 1 + (back + 1) * u * u * u + back * u * u
     }
 
     /// The menu bar digit at `progress` through a flip from 0 to 1: the old digit folds flat in the first half, and the new
