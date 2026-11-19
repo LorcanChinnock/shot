@@ -142,8 +142,8 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
     /// True for the tools whose marks the style bar's Glow switch lights.
     public var takesGlow: Bool {
         switch self {
-        case .arrow, .line, .shape: true
-        case .select, .hand, .pen, .text, .note, .highlight, .spotlight, .redact, .counter, .crop: false
+        case .arrow, .line, .shape, .pen, .counter: true
+        case .select, .hand, .text, .note, .highlight, .spotlight, .redact, .crop: false
         }
     }
 
@@ -242,11 +242,24 @@ public struct EditorStyle: Equatable, Sendable {
     /// Where the next note's text sits in it: in the middle until the user picks another.
     public var verticalAlignment: VerticalTextAlign
     public var penLine: PenLine
-    /// Whether the next arrow, line or shape glows in its own colour.
-    public var glow: Bool
     /// The last shadow and border given to each kind but the capture, in points, which new ones of that kind start
     /// with. A kind with none starts plain.
     public var objectStyles: [StyleKind: ObjectStyle]
+
+    /// Whether the next mark glows in its own colour: whether the shadow marks start with is the Style panel's Glow.
+    /// It reads and writes `objectStyles`, so the style bar's switch and the Style panel never disagree. Turning it on
+    /// replaces any other shadow marks start with, and turning it off leaves them with none.
+    public var glow: Bool {
+        get { objectStyles[.mark]?.shadow?.tint == .object }
+        set {
+            guard newValue != glow else {
+                return
+            }
+            var mark = objectStyles[.mark] ?? ObjectStyle()
+            mark.shadow = newValue ? ShadowPreset.glow.shadow(scale: 1) : nil
+            objectStyles[.mark] = mark.isEmpty ? nil : mark
+        }
+    }
 
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
@@ -274,8 +287,10 @@ public struct EditorStyle: Equatable, Sendable {
         self.noteAlignment = noteAlignment
         self.verticalAlignment = verticalAlignment
         self.penLine = penLine
-        self.glow = glow
         self.objectStyles = objectStyles
+        if glow {
+            self.glow = true
+        }
     }
 
     /// The style a new object of `kind` starts with on a document of `scale` pixels per point: the last one given to

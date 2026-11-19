@@ -254,8 +254,8 @@ private func palette(tool: EditorTool? = .arrow, selection: Annotation? = nil, e
 @Test func theControlsBesideTheColoursStackSoTheBarStaysNarrow() {
     #expect(palette(tool: .arrow).controlRows == [[.width, .lineDash, .glow]])
     #expect(palette(tool: .line).controlRows == [[.width, .lineDash, .glow]])
-    #expect(palette(tool: .pen).controlRows == [[.width, .penLine]])
-    #expect(palette(tool: .counter).controlRows == [[.width]])
+    #expect(palette(tool: .pen).controlRows == [[.width, .penLine, .glow]])
+    #expect(palette(tool: .counter).controlRows == [[.width, .glow]])
     #expect(palette(tool: .shape).controlRows == [[.width, .glow], [.outline]])
     #expect(palette(tool: .text).controlRows == [[.width, .alignment]])
     #expect(palette(tool: .note).controlRows == [[.width], [.alignment], [.verticalAlignment]])

@@ -136,9 +136,17 @@ final class EditorModel {
     var penLine: PenLine {
         didSet { rememberStyle { $0.penLine = penLine } }
     }
-    /// Whether the next arrow, line or shape glows in its own colour.
+    /// Whether the next mark glows in its own colour, kept in the style marks start with (`EditorStyle.glow`), so the
+    /// style bar's switch and the Style panel share it.
     var glow: Bool {
-        didSet { rememberStyle { $0.glow = glow } }
+        get { EditorStyle(objectStyles: objectStyles).glow }
+        set {
+            var style = EditorStyle(objectStyles: objectStyles)
+            style.glow = newValue
+            let mark = style.objectStyles[.mark]
+            objectStyles[.mark] = mark
+            rememberStyle { $0.objectStyles[.mark] = mark }
+        }
     }
     /// The last custom colour picked in each palette.
     private(set) var customColors: [ColorSlot: RGBA]
@@ -245,7 +253,6 @@ final class EditorModel {
         noteAlignment = style.noteAlignment
         verticalAlignment = style.verticalAlignment
         penLine = style.penLine
-        glow = style.glow
         customColors = style.customColors
         width = style.width
         objectStyles = style.objectStyles
@@ -411,7 +418,7 @@ final class EditorModel {
         EditorStyle(
             tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, noteTextColor: noteTextColor, width: width,
             lineDash: lineDash, customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
-            alignment: alignment, noteAlignment: noteAlignment, verticalAlignment: verticalAlignment, penLine: penLine, glow: glow, objectStyles: objectStyles
+            alignment: alignment, noteAlignment: noteAlignment, verticalAlignment: verticalAlignment, penLine: penLine, objectStyles: objectStyles
         )
     }
 

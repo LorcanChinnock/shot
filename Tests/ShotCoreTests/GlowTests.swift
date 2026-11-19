@@ -16,12 +16,14 @@ private func palette(tool: EditorTool?, selection: Annotation? = nil, style: Edi
     )
 }
 
-@Test func onlyArrowsLinesAndShapesTakeAGlow() {
+@Test func onlyTheMarksSharingTheMarkStyleTakeAGlow() {
     #expect(arrow().takesGlow)
     #expect(Annotation(kind: .line(from: .zero, to: CGPoint(x: 5, y: 5)), color: blue, lineWidth: 2).takesGlow)
     #expect(Annotation(kind: .shape(.rectangle, rect: CGRect(x: 0, y: 0, width: 10, height: 10)), color: blue, lineWidth: 2).takesGlow)
-    #expect(!Annotation(kind: .freehand([.zero, CGPoint(x: 4, y: 4)]), color: blue, lineWidth: 2).takesGlow)
-    #expect(EditorTool.allCases.filter(\.takesGlow) == [.arrow, .line, .shape])
+    #expect(Annotation(kind: .freehand([.zero, CGPoint(x: 4, y: 4)]), color: blue, lineWidth: 2).takesGlow)
+    #expect(!Annotation(kind: .highlight(CGRect(x: 0, y: 0, width: 10, height: 10)), color: blue, lineWidth: 2).takesGlow)
+    // Every tool whose marks start with the shared mark style can turn its glow off.
+    #expect(EditorTool.allCases.filter(\.takesGlow) == [.arrow, .line, .shape, .pen, .counter])
 }
 
 @Test func aGlowIsTheStylePanelsGlowShadow() {
@@ -56,12 +58,12 @@ private func palette(tool: EditorTool?, selection: Annotation? = nil, style: Edi
     #expect(!old.glows)
 }
 
-@Test func theStyleBarShowsGlowForArrowsLinesAndShapesOnly() {
+@Test func theStyleBarShowsGlowForMarksOnly() {
     #expect(palette(tool: .arrow).glow == false)
     #expect(palette(tool: .arrow).controlRows[0] == [.width, .lineDash, .glow])
     #expect(palette(tool: .shape).controlRows[0] == [.width, .glow])
-    #expect(palette(tool: .pen).glow == nil)
-    #expect(!palette(tool: .pen).controlRows.joined().contains(.glow))
+    #expect(palette(tool: .pen).controlRows[0] == [.width, .penLine, .glow])
+    #expect(palette(tool: .highlight).glow == nil)
     #expect(palette(tool: .text).glow == nil)
 }
 
@@ -99,7 +101,7 @@ private func palette(tool: EditorTool?, selection: Annotation? = nil, style: Edi
     #expect(bar.style.glow)
 }
 
-@Test func aDraftArrowGlowsAndAPenStrokeDoesNot() throws {
+@Test func aDraftArrowAndPenStrokeGlowAndAHighlightDoesNot() throws {
     let glow = ShadowPreset.glow.shadow(scale: 1)
     let style = AnnotationDraft.Style(
         color: blue, fill: nil, noteColor: blue, lineWidth: 4, shape: .rectangle, redaction: .blur, redactionAmount: Redaction.defaultAmount,
@@ -112,7 +114,11 @@ private func palette(tool: EditorTool?, selection: Annotation? = nil, style: Edi
     let stroke = try #require(AnnotationDraft.annotation(
         tool: .pen, from: .zero, to: CGPoint(x: 50, y: 0), previous: nil, constrain: false, fromCenter: false, minDistance: 1, style: style
     ))
-    #expect(stroke.style.shadow == nil)
+    #expect(stroke.style.shadow == glow)
+    let highlight = try #require(AnnotationDraft.annotation(
+        tool: .highlight, from: .zero, to: CGPoint(x: 50, y: 20), previous: nil, constrain: false, fromCenter: false, minDistance: 1, style: style
+    ))
+    #expect(highlight.style.shadow == nil)
 }
 
 /// The blue level 6 px below a 6 px blue arrow drawn over a red image, from 0 to 255.
@@ -127,4 +133,26 @@ private func blueBelowTheStroke(of mark: Annotation) throws -> UInt8 {
     glowing.setGlow(true, scale: 1)
     #expect(try blueBelowTheStroke(of: arrow()) == 0)
     #expect(try blueBelowTheStroke(of: glowing) > 10)
+}
+
+@Test func theSwitchAndTheStylePanelShareOneGlow() {
+    // The Style panel's Glow, given to a mark, is what the switch shows for the next one.
+    var style = EditorStyle(objectStyles: [.mark: ObjectStyle(shadow: ShadowPreset.glow.shadow(scale: 1))])
+    #expect(style.glow)
+    #expect(palette(tool: .arrow, style: style).glow == true)
+    // Turning the switch off takes the glow out of the style new marks start with, so the next arrow doesn't glow.
+    style.glow = false
+    #expect(style.objectStyles[.mark] == nil)
+    #expect(style.editorObjectStyle(for: .mark, scale: 1).shadow == nil)
+    // Turning it on gives new marks the Glow shadow, in points.
+    style.glow = true
+    #expect(style.objectStyles[.mark]?.shadow == ShadowPreset.glow.shadow(scale: 1))
+}
+
+@Test func turningTheGlowOffKeepsAMarksBorder() {
+    let border = ObjectStyle(shadow: ShadowPreset.glow.shadow(scale: 1), border: Border(kind: .outline, lineWidth: 2, color: RGBA(0, 0, 0)))
+    var style = EditorStyle(objectStyles: [.mark: border])
+    style.glow = false
+    #expect(style.objectStyles[.mark]?.shadow == nil)
+    #expect(style.objectStyles[.mark]?.border == border.border)
 }

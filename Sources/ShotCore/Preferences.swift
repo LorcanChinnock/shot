@@ -62,7 +62,6 @@ public enum PreferenceKey {
     /// Whether the next arrow or line is solid, dashed or dotted.
     public static let editorLineDash = "editorLineDash"
     /// Whether the next arrow, line or shape glows.
-    public static let editorGlow = "editorGlow"
     public static let editorRedaction = "editorRedaction"
     public static let editorRedactionAmount = "editorRedactionAmount"
     public static let editorSpotlight = "editorSpotlight"
@@ -176,7 +175,6 @@ public struct Preferences {
             PreferenceKey.editorNoteTextColor: Data(),
             PreferenceKey.editorShape: EditorStyle().shape.rawValue,
             PreferenceKey.editorLineDash: EditorStyle().lineDash.rawValue,
-            PreferenceKey.editorGlow: EditorStyle().glow,
             PreferenceKey.editorRedaction: EditorStyle().redaction.rawValue,
             PreferenceKey.editorRedactionAmount: Double(EditorStyle().redactionAmount),
             PreferenceKey.editorSpotlight: Data(),
@@ -367,9 +365,6 @@ public struct Preferences {
         if changed(\.penLine) {
             store.set(style.penLine.rawValue, forKey: PreferenceKey.editorPenLine)
         }
-        if changed(\.glow) {
-            store.set(style.glow, forKey: PreferenceKey.editorGlow)
-        }
         if changed(\.objectStyles) {
             store.set(try? JSONEncoder().encode(style.objectStyles), forKey: PreferenceKey.editorObjectStyles)
         }
@@ -517,7 +512,6 @@ public struct Preferences {
             noteAlignment: TextAlign(rawValue: store.string(forKey: PreferenceKey.editorNoteAlignment) ?? "") ?? defaults.noteAlignment,
             verticalAlignment: VerticalTextAlign(rawValue: store.string(forKey: PreferenceKey.editorVerticalAlignment) ?? "") ?? defaults.verticalAlignment,
             penLine: PenLine(rawValue: store.string(forKey: PreferenceKey.editorPenLine) ?? "") ?? defaults.penLine,
-            glow: store.object(forKey: PreferenceKey.editorGlow) as? Bool ?? defaults.glow,
             objectStyles: decoded(PreferenceKey.editorObjectStyles) ?? defaults.objectStyles
         )
     }

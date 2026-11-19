@@ -275,11 +275,12 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
-    /// True for the marks the style bar's Glow switch lights: arrows, lines and shapes.
+    /// True for the marks the style bar's Glow switch lights: arrows, lines, shapes, pen strokes and counters. They share
+    /// one remembered style (`StyleKind.mark`), so each one that can pick up a glow also shows the switch to put it out.
     public var takesGlow: Bool {
         switch kind {
-        case .arrow, .line, .shape: true
-        case .highlight, .pixelate, .blur, .spotlight, .text, .counter, .note, .freehand, .marker, .image: false
+        case .arrow, .line, .shape, .freehand, .counter: true
+        case .highlight, .pixelate, .blur, .spotlight, .text, .note, .marker, .image: false
         }
     }
 
