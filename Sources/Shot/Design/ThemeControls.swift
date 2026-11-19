@@ -72,7 +72,7 @@ struct CustomColorButton: View {
         .accessibilityAddTraits(custom != nil ? .isSelected : [])
         .animation(reduceMotion || compact ? nil : .spring(response: 0.2, dampingFraction: 0.7), value: isSelected)
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            ColorEditor(initial: lastCustom ?? fallback, pick: pick)
+            ColorEditor(initial: lastCustom ?? fallback, pick: pick) { isOpen = false }
         }
         .onChange(of: isOpen) { editorShown(isOpen) }
     }
@@ -136,8 +136,12 @@ struct CustomColorButton: View {
     }
 }
 
+/// Picks a custom colour. Letting go of the saturation and brightness field, or sampling a colour on screen, picks it and
+/// calls `done`, so its popover closes without a click outside. The hue and opacity sliders leave it open, as they're
+/// usually set before the field.
 struct ColorEditor: View {
     let pick: (RGBA) -> Void
+    let done: () -> Void
     @State private var hue: Double
     @State private var saturation: Double
     @State private var brightness: Double
@@ -145,8 +149,9 @@ struct ColorEditor: View {
     /// The colour sampled last and the values it set, so committing those values applies it exactly, not its HSB round trip.
     @State private var sampled: (color: RGBA, values: [Double])?
 
-    init(initial: RGBA, pick: @escaping (RGBA) -> Void) {
+    init(initial: RGBA, pick: @escaping (RGBA) -> Void, done: @escaping () -> Void) {
         self.pick = pick
+        self.done = done
         let c = NSColor(srgbRed: initial.r, green: initial.g, blue: initial.b, alpha: initial.a)
         _hue = State(initialValue: Double(c.hueComponent))
         _saturation = State(initialValue: Double(c.saturationComponent))
@@ -158,7 +163,7 @@ struct ColorEditor: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            SaturationBrightnessField(hue: hue, saturation: $saturation, brightness: $brightness)
+            SaturationBrightnessField(hue: hue, saturation: $saturation, brightness: $brightness, released: done)
                 .frame(width: 200, height: 140)
             ThemeSlider(
                 value: $hue,
@@ -215,6 +220,7 @@ struct ColorEditor: View {
             opacity = Double(picked.a)
             // The values may not have changed, which commits nothing, so apply it here too.
             pick(picked)
+            done()
         }
     }
 }
@@ -224,6 +230,8 @@ private struct SaturationBrightnessField: View {
     let hue: Double
     @Binding var saturation: Double
     @Binding var brightness: Double
+    /// Called as a drag or click on the field ends, but not after the arrow keys.
+    let released: () -> Void
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -248,7 +256,8 @@ private struct SaturationBrightnessField: View {
             .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
                 saturation = min(max(drag.location.x / size.width, 0), 1)
                 brightness = 1 - min(max(drag.location.y / size.height, 0), 1)
-            })
+            }
+            .onEnded { _ in released() })
         }
         .focusable(interactions: .activate)
         .focused($isFocused)

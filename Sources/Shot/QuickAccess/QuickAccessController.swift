@@ -195,10 +195,14 @@ final class QuickAccessController {
         }
     }
 
-    /// Entering a card fans the stack out. Leaving a card restarts its timer. Entering doesn't cancel it: when cards
-    /// reflow under a still pointer the exit can be missed, so expiry checks the pointer instead.
+    /// Entering a card fans the stack out and clears its "Copied", so its hover buttons can be clicked at once. Leaving
+    /// a card restarts its timer. Entering doesn't cancel it: when cards reflow under a still pointer the exit can be
+    /// missed, so expiry checks the pointer instead.
     func setHovering(_ hovering: Bool, card id: UUID) {
         if hovering {
+            if let index = model.cards.firstIndex(where: { $0.id == id }), model.cards[index].confirmation != nil {
+                model.cards[index].confirmation = nil
+            }
             fanOut()
         } else {
             startTimer(for: id)
