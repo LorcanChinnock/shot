@@ -21,6 +21,7 @@ enum Motion {
         case .viewfinderSnap, .tick, .markLand, .countdownFlip, .clickRing, .stackCover: .easeOut(duration: moment.duration)
         case .stackFan: .spring(duration: moment.duration, bounce: 0.32)
         case .stackFold: .spring(duration: moment.duration, bounce: 0.15)
+        case .gridShuffle: .spring(duration: moment.duration, bounce: 0.3)
         }
     }
 

@@ -29,6 +29,9 @@ public enum Moment: CaseIterable, Sendable {
     /// A Quick Access card's dark cover lifting off as it rises out of the stack, or settling back on as it lands,
     /// `QuickAccessLayout.coverDelay` after the fold starts.
     case stackCover
+    /// A new capture pops into the open gallery with a small overshoot, and the tiles around it, or around one just
+    /// trashed, slide to their new places.
+    case gridShuffle
 
     /// What Reduce Motion plays instead.
     public enum Reduced: Sendable {
@@ -56,6 +59,7 @@ public enum Moment: CaseIterable, Sendable {
         case .stackFan: 0.28
         case .stackFold: 0.22
         case .stackCover: 0.12
+        case .gridShuffle: 0.26
         }
     }
 
@@ -63,14 +67,14 @@ public enum Moment: CaseIterable, Sendable {
     public var isAmbient: Bool {
         switch self {
         case .countdownRing, .recordingPulse: true
-        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .stackFan, .stackFold, .stackCover: false
+        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .stackFan, .stackFold, .stackCover, .gridShuffle: false
         }
     }
 
     public var reduced: Reduced {
         switch self {
         case .viewfinderSnap, .tick, .panelArrive, .stackCover: .fade
-        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing, .stackFan, .stackFold: .none
+        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing, .stackFan, .stackFold, .gridShuffle: .none
         }
     }
 
