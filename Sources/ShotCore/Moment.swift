@@ -21,6 +21,8 @@ public enum Moment: CaseIterable, Sendable {
     case recordingPulse
     /// A click's ring fades out once it has held for `ClickRing.hold`.
     case clickRing
+    /// After an undo or redo, an outline round each mark it changed holds, then fades (`UndoFlash`).
+    case undoFlash
 
     /// What Reduce Motion plays instead.
     public enum Reduced: Sendable {
@@ -45,6 +47,7 @@ public enum Moment: CaseIterable, Sendable {
         case .countdownRing: 1
         case .recordingPulse: 1.6
         case .clickRing: 0.24
+        case .undoFlash: 0.28
         }
     }
 
@@ -52,13 +55,13 @@ public enum Moment: CaseIterable, Sendable {
     public var isAmbient: Bool {
         switch self {
         case .countdownRing, .recordingPulse: true
-        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing: false
+        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .undoFlash: false
         }
     }
 
     public var reduced: Reduced {
         switch self {
-        case .viewfinderSnap, .tick, .panelArrive: .fade
+        case .viewfinderSnap, .tick, .panelArrive, .undoFlash: .fade
         case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing: .none
         }
     }

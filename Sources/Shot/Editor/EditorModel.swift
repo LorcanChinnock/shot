@@ -196,6 +196,9 @@ final class EditorModel {
     /// The tallest the style bar has been in this window. It sits at the canvas's top, so the fitted image keeps clear of
     /// it, and a zoomed one can scroll its top edge below it (#1377).
     var styleBarClearance: CGFloat = 0
+    /// The marks the last undo or redo changed, in image space, for the canvas to flash an outline round. A new id each
+    /// time, so the same marks flash again on the next step.
+    var undoFlash: (id: UUID, rects: [CGRect])?
     /// How much of the canvas's foot the zoom control and hint take, with their inset, which the style bar keeps clear of.
     var canvasFootHeight: CGFloat = 0
     /// The size of the zoom control and Canvas menu at the canvas's bottom left, which the crop bar keeps clear of.
@@ -1052,8 +1055,10 @@ final class EditorModel {
             cancelCrop()
             return
         }
+        let before = document.annotations
         if history.undo(&document) {
             keepSelectionThatRemains()
+            flashChanges(from: before)
         }
     }
 
@@ -1062,8 +1067,18 @@ final class EditorModel {
             cancelCrop()
             return
         }
+        let before = document.annotations
         if history.redo(&document) {
             keepSelectionThatRemains()
+            flashChanges(from: before)
+        }
+    }
+
+    /// Asks the canvas to flash an outline round each mark the undo or redo changed (`UndoFlash`).
+    private func flashChanges(from before: [Annotation]) {
+        let rects = UndoFlash.rects(from: before, to: document.annotations)
+        if !rects.isEmpty {
+            undoFlash = (UUID(), rects)
         }
     }
 

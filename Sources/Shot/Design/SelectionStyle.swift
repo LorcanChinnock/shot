@@ -21,6 +21,14 @@ enum SelectionStyle {
         path.stroke()
     }
 
+    /// The solid outline flashed round a mark an undo or redo changed, 3 pt outside `rect` (view points), at `opacity`.
+    static func flash(_ rect: CGRect, opacity: Double) {
+        let path = NSBezierPath(roundedRect: rect.insetBy(dx: -3, dy: -3), xRadius: 3, yRadius: 3)
+        path.lineWidth = 2
+        NSColor.controlAccentColor.withAlphaComponent(opacity).setStroke()
+        path.stroke()
+    }
+
     /// A resize handle at `center`, in view points: a square, or a dot for a corner-radius handle.
     static func handle(at center: CGPoint, round: Bool = false) {
         let box = CGRect(x: center.x - handleSize / 2, y: center.y - handleSize / 2, width: handleSize, height: handleSize)

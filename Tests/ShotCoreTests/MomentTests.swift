@@ -9,7 +9,7 @@ struct MomentTests {
     }
 
     @Test func reduceMotionFadesOnlyTheMomentsTheSpecSays() {
-        #expect(Moment.allCases.filter { $0.reduced == .fade } == [.viewfinderSnap, .tick, .panelArrive])
+        #expect(Moment.allCases.filter { $0.reduced == .fade } == [.viewfinderSnap, .tick, .panelArrive, .undoFlash])
         #expect(Moment.reducedFade == 0.12)
     }
 
@@ -22,6 +22,7 @@ struct MomentTests {
         #expect(Moment.recordingPulse.duration == 1.6)
         #expect(Moment.countdownRing.duration == 1)
         #expect(Moment.clickRing.duration == 0.24)
+        #expect(Moment.undoFlash.duration == 0.28)
     }
 
     @Test func onlyTheLoopsThatTickWithRealTimeRunLonger() {

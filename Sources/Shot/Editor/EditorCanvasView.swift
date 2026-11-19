@@ -8,6 +8,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     /// A counter popping in as it lands, and when it was placed. Only drawing changes: the document already holds it whole.
     private var landing: (id: UUID, start: CFTimeInterval)?
     private var landingLink: CADisplayLink?
+    /// The outline flashing round the marks an undo or redo changed (`EditorModel.undoFlash`), and when it started.
+    private var flash: (id: UUID, rects: [CGRect], start: CFTimeInterval)?
+    private var flashLink: CADisplayLink?
     /// What dragging in crop mode does, decided where the press landed, with the crop as it was then.
     private enum CropDrag {
         case handle(CropHandle, start: CGRect)
@@ -95,8 +98,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             _ = model.revealedID
             _ = model.tool
             _ = model.editingText
+            _ = model.undoFlash?.id
         } onChange: { [weak self] in
             Task { @MainActor in
+                self?.startFlashIfNew()
                 // A fitted canvas rescales as it grows or is cropped.
                 self?.viewportDidChange()
                 if let self {
@@ -229,6 +234,32 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
     }
 
+    /// How long the undo flash plays: `Moment.undoFlash`, or Reduce Motion's short fade.
+    private var flashDuration: TimeInterval { Motion.reduced ? Moment.reducedFade : Moment.undoFlash.duration }
+
+    /// Starts flashing the marks the model's latest undo or redo changed, once per step.
+    private func startFlashIfNew() {
+        guard let next = model.undoFlash, next.id != flash?.id else {
+            return
+        }
+        flash = (next.id, next.rects, CACurrentMediaTime())
+        if flashLink == nil {
+            let link = displayLink(target: self, selector: #selector(flashFrame))
+            link.add(to: .main, forMode: .common)
+            flashLink = link
+        }
+    }
+
+    @objc private func flashFrame(_ link: CADisplayLink) {
+        needsDisplay = true
+        guard let flash, CACurrentMediaTime() - flash.start < flashDuration else {
+            flash = nil
+            flashLink?.invalidate()
+            flashLink = nil
+            return
+        }
+    }
+
     /// Marks transparent padding, as image editors do.
     private static let checkerboard = NSColor(patternImage: NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
         NSColor.white.setFill()
@@ -312,6 +343,14 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 if movedSinceMouseDown, let dragged = radiusHandles.first(where: { $0.handle == resizeHandle }), let radius = selected.cornerBox?.radius {
                     drawRadiusLabel(radius / model.scale, near: viewRect(CGRect(origin: dragged.point, size: .zero)).origin)
                 }
+            }
+        }
+        if let flash {
+            // Reduce Motion fades it out from the start, with no hold.
+            let progress = (CACurrentMediaTime() - flash.start) / flashDuration
+            let opacity = Motion.reduced ? 1 - min(max(progress, 0), 1) : UndoFlash.opacity(progress)
+            for rect in flash.rects {
+                SelectionStyle.flash(viewRect(rect), opacity: opacity)
             }
         }
         for badge in cropBadges {

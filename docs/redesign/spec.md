@@ -198,6 +198,7 @@ SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still sc
 | Press | 80 ms | Ink buttons drop 2 pt into their shadow | No movement |
 | Viewfinder snap | 180 ms, soft flash | Area, window and full-screen capture, after the image is copied | 120 ms fade |
 | Copied tick | 240 ms | The tick draws itself: on a Quick Access card as "Copied" pops in, on an editor button as it bounces, or in a toast as it springs up | 120 ms fade |
+| Undo flash | 280 ms | After an undo or redo in the image editor, a 2 pt accent outline 3 pt outside each mark it changed holds for a third of the time, then fades. A removed mark flashes where it was. Drawn on the canvas only | 120 ms fade, no hold |
 | Marks land | 200 ms | A new arrow draws its last few points; counters pop in with a small overshoot | Appear at once |
 | Panel arrive | 240 ms spring | Panels and popovers; Quick Access slides in from its corner | 120 ms fade |
 | Countdown | 1 s tick | Menu bar digits flip; the countdown ring empties | Number changes, no flip or ring animation |
