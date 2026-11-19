@@ -29,6 +29,8 @@ struct OverlayResult {
     let delay: Int
     let scrolling: Bool
     let target: CaptureTarget
+    /// Whether a picked window keeps its macOS shadow.
+    let windowShadow: Bool
 }
 
 final class OverlayPanel: NSPanel {
@@ -44,6 +46,9 @@ final class SelectionOverlayController {
     /// switches it for this overlay only. It stays as set while another mode is picked.
     private(set) var pageOnly = Preferences().browserPageOnly
     var browserMode: Bool { windowMode && pageOnly && Permissions.hasAccessibility }
+    /// Whether a picked window keeps its macOS shadow. It starts as Settings has it, and W or the bar's Shadow toggle
+    /// switches it for this overlay only. A page never has one.
+    private(set) var windowShadow = Preferences().windowShadow
     var screenMode: Bool { target == .screen }
     /// Whether the pick is for a recording rather than a screenshot, which the bar names.
     let recording: Bool
@@ -124,7 +129,7 @@ final class SelectionOverlayController {
         controller.magnifierTask?.cancel()
         controller.barTimer?.cancel()
         withExtendedLifetime(controller) {}
-        return OverlayResult(selection: selection, modifiers: controller.endModifiers, delay: controller.delay, scrolling: controller.scrolling, target: controller.target)
+        return OverlayResult(selection: selection, modifiers: controller.endModifiers, delay: controller.delay, scrolling: controller.scrolling, target: controller.target, windowShadow: controller.windowShadow)
     }
 
     private func show(_ displays: [OverlayDisplay]) {
@@ -298,6 +303,17 @@ final class SelectionOverlayController {
     func togglePageOnly() {
         if setPageOnly(!browserMode) {
             setTarget(.window)
+        }
+    }
+
+    /// W or the bar's Shadow toggle, in Window only.
+    func toggleWindowShadow() {
+        guard windowMode, !browserMode else {
+            return
+        }
+        windowShadow.toggle()
+        for view in views {
+            view.needsDisplay = true
         }
     }
 
