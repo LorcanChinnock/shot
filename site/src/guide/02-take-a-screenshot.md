@@ -10,7 +10,7 @@ Every screenshot is saved, copied to the clipboard as a PNG, and shown in a [Qui
 
 ## Take a screenshot
 
-1. Press <kbd>⌘⇧4</kbd>, or choose **Screenshot** in the menu bar menu. The screen freezes.
+1. Press <kbd>⇧⌘4</kbd>, or choose **Screenshot** in the menu bar menu. The screen freezes.
 2. Drag across what you want. For exact edges, turn on the magnifier, the crosshair and a label with the size in pixels in **Settings › Capture**.
 3. Let go.
 
@@ -67,7 +67,7 @@ If the panel says something needs attention, it tells you what to do:
 
 ## Without a mouse
 
-After <kbd>⌘⇧4</kbd>, press an arrow key to start an area at the pointer, or in the middle of the screen. Then:
+After <kbd>⇧⌘4</kbd>, press an arrow key to start an area at the pointer, or in the middle of the screen. Then:
 
 - Arrow keys move the area by 10 points, or by 1 with <kbd>Shift</kbd>.
 - <kbd>⌥</kbd> with the arrow keys resizes it.

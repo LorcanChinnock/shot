@@ -4,7 +4,7 @@ import ShotCore
 
 private let log = Logger.shot("system-shortcuts")
 
-/// Hands ⌘⇧4 and ⌘⇧5 between macOS and Shot.
+/// Hands ⇧⌘4 and ⇧⌘5 between macOS and Shot.
 @MainActor
 enum SystemShortcuts {
     private static var hotkeys: [String: Any] {
@@ -60,7 +60,7 @@ enum SystemShortcuts {
         }
     }
 
-    /// Turns ⌘⇧6 back on for people whose takeover included it for text capture. Only once, and
+    /// Turns ⇧⌘6 back on for people whose takeover included it for text capture. Only once, and
     /// only when Shot turned it off, so a choice made in System Settings sticks.
     static func giveBackTextCaptureKeyIfNeeded() {
         let store = UserDefaults.standard
@@ -76,14 +76,14 @@ enum SystemShortcuts {
         if prefs.disabledSystemScreenshots, let updated = SystemScreenshotShortcut.givingBackTextCaptureKey(in: hotkeys) {
             apply(updated, wait: false)
             guard SystemScreenshotShortcut.givingBackTextCaptureKey(in: hotkeys) == nil else {
-                log.error("macOS did not turn ⌘⇧6 back on")
+                log.error("macOS did not turn ⇧⌘6 back on")
                 return
             }
         }
         store.set(true, forKey: PreferenceKey.gaveBackTextCaptureKey)
     }
 
-    /// Turns ⌘⇧3 back on for people whose takeover included it, as ⌘⇧6 is above. Only once, and only when Shot turned it
+    /// Turns ⇧⌘3 back on for people whose takeover included it, as ⇧⌘6 is above. Only once, and only when Shot turned it
     /// off, so a choice made in System Settings sticks.
     static func giveBackFullScreenKeyIfNeeded() {
         let prefs = Preferences()
@@ -93,7 +93,7 @@ enum SystemShortcuts {
         if prefs.disabledSystemScreenshots, let updated = SystemScreenshotShortcut.givingBackFullScreenKey(in: hotkeys) {
             apply(updated, wait: false)
             guard SystemScreenshotShortcut.givingBackFullScreenKey(in: hotkeys) == nil else {
-                log.error("macOS did not turn ⌘⇧3 back on")
+                log.error("macOS did not turn ⇧⌘3 back on")
                 return
             }
         }

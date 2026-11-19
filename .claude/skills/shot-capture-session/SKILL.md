@@ -16,7 +16,7 @@ Read CLAUDE.md's "Running and testing locally" and "Capturing something in QA an
 
 ## Drive it
 
-- `⌘⇧4` opens the overlay once ShotDev has permission. Keys: `S` toggles Scroll, `Tab` cycles Area, Window, Browser and Screen. Chips are clickable. `shot-dev://gallery` and `shot-dev://settings?section=general` open windows without a keyboard.
+- `⇧⌘4` opens the overlay once ShotDev has permission. Keys: `S` toggles Scroll, `Tab` cycles Area, Window, Browser and Screen. Chips are clickable. `shot-dev://gallery` and `shot-dev://settings?section=general` open windows without a keyboard.
 - **Key presses and clicks go to the frontmost app.** If a terminal is frontmost, `Escape` and `Return` do nothing. Click the ShotDemo window first.
 - **Esc may not reach Shot while computer use drives the Mac.** In the #1080 session no Esc reached any of Shot's overlays, whether it came from computer use, a synthetic key event or the user's keyboard, while Return and the arrow keys did. Check a change to Esc handling against an Esc that's known to work, such as closing the capture overlay, and ask the user to try it by hand once the session is over.
 - **A Shot overlay can miss computer use's key presses.** The overlays are panels that take the keyboard without making ShotDev the frontmost app, and computer use can send its keys to the app it thinks is in front. If a key does nothing, check the console for it first, then post it as a real key event with a small CGEvent script (`CGEvent(keyboardEventSource:virtualKey:keyDown:)` posted to `.cghidEventTap`). That reaches the overlay.

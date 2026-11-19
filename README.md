@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⌘⇧4, opening it from the Quick Access card, highlighting the discount and pointing an arrow at the $0, then pasting it into a chat">
+  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⇧⌘4, opening it from the Quick Access card, highlighting the discount and pointing an arrow at the $0, then pasting it into a chat">
 </p>
 
 ## Features
@@ -79,8 +79,8 @@ Shot lives in the menu bar. It takes over the macOS screenshot keys while it run
 
 | Press | To |
 |---|---|
-| ⌘⇧4 | Take a screenshot. Press Tab to pick an area, a window or the whole screen. |
-| ⌘⇧5 | Record. Press Tab to pick an area, a window or the whole screen. |
+| ⇧⌘4 | Take a screenshot. Press Tab to pick an area, a window or the whole screen. |
+| ⇧⌘5 | Record. Press Tab to pick an area, a window or the whole screen. |
 
 To keep the macOS screenshot tool, and for every other shortcut, see [Keyboard shortcuts](https://shot.lorcanchinnock.com/docs/keyboard-shortcuts/).
 

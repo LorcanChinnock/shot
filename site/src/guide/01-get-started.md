@@ -27,18 +27,18 @@ Download the zip from the [latest release](https://github.com/LorcanChinnock/sho
 
 ## Follow the welcome window
 
-![The welcome window on its Shortcuts step, titled Make it yours, with Permission ticked and Try it still to come along the top. Use Shot for ⌘⇧4 and ⌘⇧5 is on, Open Shot at login is off, and the screenshot keys are drawn as keycaps beside them above a yellow Continue button](../../../docs/media/welcome.png)
+![The welcome window on its Shortcuts step, titled Make it yours, with Permission ticked and Try it still to come along the top. Use Shot for ⇧⌘4 and ⇧⌘5 is on, Open Shot at login is off, and the screenshot keys are drawn as keycaps beside them above a yellow Continue button](../../../docs/media/welcome.png)
 
 A short welcome window walks you through up to three steps: **Permission**, **Shortcuts** and **Try it**. They're named across the top of the window, with a tick beside each one you've done, so you can see how far you've got. **Back** in the bottom left returns to the step before. You can close the window at any point to skip the rest.
 
 1. **Permission.** macOS needs screen recording access for every capture. Click **Grant**, turn Shot on under **Screen & System Audio Recording**, then click **Relaunch**. macOS only applies the permission after Shot restarts. If Shot already has it, the step is ticked and the window starts on the next one.
-2. **Shortcuts.** Under **Make it yours**, choose whether Shot takes over the screenshot keys <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd>, and whether it opens when you log in. Both start on. Click **Continue** to apply them. If you close the window here instead, macOS keeps its keys and Shot doesn't open at login.
-3. **Try it.** Press <kbd>⌘⇧4</kbd> and drag across anything on screen. The step gets its tick, and the window shows a few tips and a **Done** button. Click **Skip** if you'd rather try it later.
+2. **Shortcuts.** Under **Make it yours**, choose whether Shot takes over the screenshot keys <kbd>⇧⌘4</kbd> and <kbd>⇧⌘5</kbd>, and whether it opens when you log in. Both start on. Click **Continue** to apply them. If you close the window here instead, macOS keeps its keys and Shot doesn't open at login.
+3. **Try it.** Press <kbd>⇧⌘4</kbd> and drag across anything on screen. The step gets its tick, and the window shows a few tips and a **Done** button. Click **Skip** if you'd rather try it later.
 
 Shot doesn't ask for Accessibility access up front. Only capturing just the page of a browser window needs it, to find where a browser shows its page, so Shot asks when you turn on **Capture only the page in browser windows** in **Settings › Capture**. To set it up ahead of time, grant it in **Settings › About**.
 
 > [!TIP]
-> Turned off **Use Shot for ⌘⇧4 and ⌘⇧5**? Shot uses <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd> instead, and the macOS screenshot tool keeps its keys. Either way, macOS gets its keys back whenever Shot quits.
+> Turned off **Use Shot for ⇧⌘4 and ⇧⌘5**? Shot uses <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd> instead, and the macOS screenshot tool keeps its keys. Either way, macOS gets its keys back whenever Shot quits.
 
 ## Where to find Shot
 
@@ -50,8 +50,8 @@ After each capture, Shot saves it, copies it, and shows a small [Quick Access](#
 
 | Press | To |
 |---|---|
-| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the whole screen. |
-| <kbd>⌘⇧5</kbd> | Record your screen. |
+| <kbd>⇧⌘4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the whole screen. |
+| <kbd>⇧⌘5</kbd> | Record your screen. |
 
 Every other shortcut is on the [Keyboard shortcuts](#keyboard-shortcuts) page.
 

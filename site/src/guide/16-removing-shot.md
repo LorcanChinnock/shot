@@ -23,7 +23,7 @@ That deletes the saved versions in Application Support, so screenshots you saved
 To do it by hand, quit Shot (quitting gives the screenshot keys back to macOS) and move it to the Trash. If you installed it with Homebrew in the past, run `brew uninstall --zap shot` instead.
 
 > [!TIP]
-> If <kbd>⌘⇧4</kbd> and <kbd>⌘⇧5</kbd> still do nothing, for example because Shot crashed before you removed it, turn the shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
+> If <kbd>⇧⌘4</kbd> and <kbd>⇧⌘5</kbd> still do nothing, for example because Shot crashed before you removed it, turn the shortcuts back on in **System Settings › Keyboard › Keyboard Shortcuts › Screenshots**.
 
 ## Remove everything else by hand
 

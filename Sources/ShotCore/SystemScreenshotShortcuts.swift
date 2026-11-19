@@ -5,15 +5,15 @@ public enum SystemScreenshotShortcut: Int, CaseIterable, Sendable {
     case saveArea = 30
     case options = 184
 
-    /// ⌘⇧6, which Shot took over for text capture until it dropped that feature.
+    /// ⇧⌘6, which Shot took over for text capture until it dropped that feature.
     static let textCaptureID = "181"
-    /// ⌘⇧3, which Shot took over until Tab on the overlay replaced a full-screen shortcut.
+    /// ⇧⌘3, which Shot took over until Tab on the overlay replaced a full-screen shortcut.
     static let fullScreenID = "28"
 
     public static let domain = "com.apple.symbolichotkeys"
     public static let key = "AppleSymbolicHotKeys"
 
-    /// Character, virtual key code and Cocoa modifier flags (⌘⇧) of the macOS default.
+    /// Character, virtual key code and Cocoa modifier flags (⇧⌘) of the macOS default.
     var defaultParameters: [Int] {
         let commandShift = 0x10_0000 | 0x2_0000
         switch self {
@@ -51,12 +51,12 @@ public enum SystemScreenshotShortcut: Int, CaseIterable, Sendable {
         return result
     }
 
-    /// Returns `hotkeys` with ⌘⇧6 turned back on and its key kept, or `nil` when it's already on.
+    /// Returns `hotkeys` with ⇧⌘6 turned back on and its key kept, or `nil` when it's already on.
     public static func givingBackTextCaptureKey(in hotkeys: [String: Any]) -> [String: Any]? {
         givingBack(textCaptureID, in: hotkeys)
     }
 
-    /// Returns `hotkeys` with ⌘⇧3 turned back on and its key kept, or `nil` when it's already on.
+    /// Returns `hotkeys` with ⇧⌘3 turned back on and its key kept, or `nil` when it's already on.
     public static func givingBackFullScreenKey(in hotkeys: [String: Any]) -> [String: Any]? {
         givingBack(fullScreenID, in: hotkeys)
     }

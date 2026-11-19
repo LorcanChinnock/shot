@@ -221,7 +221,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Capture bar
 
-#1075 builds Foundations › Capture bar, the strip on the selection overlay after ⌘⇧4 or ⌘⇧5. AppKit draws it into the overlay, so it uses `FloatingPanel`'s AppKit values and draws its own shadow outside the bar only.
+#1075 builds Foundations › Capture bar, the strip on the selection overlay after ⇧⌘4 or ⇧⌘5. AppKit draws it into the overlay, so it uses `FloatingPanel`'s AppKit values and draws its own shadow outside the bar only.
 
 | Part | Look |
 | --- | --- |
@@ -245,7 +245,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Area capture
 
-#1076 builds Capture › Area capture: what you see while dragging out an area after ⌘⇧4. AppKit draws all of it into the overlay view, so nothing adds a screen-sized layer.
+#1076 builds Capture › Area capture: what you see while dragging out an area after ⇧⌘4. AppKit draws all of it into the overlay view, so nothing adds a screen-sized layer.
 
 | Part | Look |
 | --- | --- |
@@ -1271,7 +1271,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 | Group | Row | Control | Description |
 | --- | --- | --- | --- |
-| None | Use Shot for ⌘⇧4 and ⌘⇧5 | Switch | "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5." |
+| None | Use Shot for ⇧⌘4 and ⇧⌘5 | Switch | "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5." |
 | None | macOS still uses these keys, only while the switch is on and the macOS shortcuts are too | Open, a secondary button | "Turn off the Screenshots shortcuts under Keyboard Shortcuts." |
 | Global | Screenshot, with `viewfinder` | The recorder | None |
 | Global | Record, with `record.circle` in record red | The recorder | None |
@@ -1373,7 +1373,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Steps in the title bar.** ShotCore's `OnboardingIndicatorItem` decides them from the window's steps, the step showing and whether Try it's capture is done, with tests.
 - **One ink control.** Grant, Relaunch once Shot has asked, Continue or Done. Try it has none until the capture is done, since Skip is plain. The switches take the accent with an ink edge when on. The picture's keycaps and switches are drawings, hidden from VoiceOver.
 - **What went.** The coloured icon tile beside each title, the pink number chips, the glass cards and the step dots.
-- **Departures from the board.** The board's title is 32 pt at 800; Shot uses Display, 28 pt heavy. The board's rows are 14 × 16 pt with 13.5 pt semibold names; Shot uses the shared rows, 9 × 14 pt in Body. The board's picture tiles are the accent with an ink edge and a record-red tint; Shot's are the quiet control fill with ink icons, since Rule 6 keeps yellow for the next action and the switches, and record red for recording. The board says "⌘⇧5 records instead"; Shot names the record keys and says they record the screen, and says "copied and saved" only while both happen after a capture. The board's keycaps read ⌘ ⇧ 4; Shot's use the order macOS menus show, ⇧ ⌘ 4, as the empty gallery's do, and follow the first switch, so they show the keys Shot will use. The board's Back is grey text; Shot's is the shared plain button in accent text. The board's buttons are 13 and 14 pt; Shot uses the shared large buttons. #1118 allows handwriting here, and Rule 7 rules it out, so there's none. The board shows light only; dark takes the window and group fills.
+- **Departures from the board.** The board's title is 32 pt at 800; Shot uses Display, 28 pt heavy. The board's rows are 14 × 16 pt with 13.5 pt semibold names; Shot uses the shared rows, 9 × 14 pt in Body. The board's picture tiles are the accent with an ink edge and a record-red tint; Shot's are the quiet control fill with ink icons, since Rule 6 keeps yellow for the next action and the switches, and record red for recording. The board says "⇧⌘5 records instead"; Shot names the record keys and says they record the screen, and says "copied and saved" only while both happen after a capture. The board's keycaps read ⌘ ⇧ 4; Shot's use the order macOS menus show, ⇧ ⌘ 4, as the empty gallery's do, and follow the first switch, so they show the keys Shot will use. The board's Back is grey text; Shot's is the shared plain button in accent text. The board's buttons are 13 and 14 pt; Shot uses the shared large buttons. #1118 allows handwriting here, and Rule 7 rules it out, so there's none. The board shows light only; dark takes the window and group fills.
 - **Keyboard.** Return presses the main button. With keyboard navigation on, Tab moves through the switches and buttons in reading order, and each shows the accent focus halo.
 - **Steps already done.** When Screen Recording is already allowed, Welcome leaves out the Permission step and shows it ticked in the steps, so Shortcuts is the first page and has no Back.
 - **VoiceOver** reads the steps as one element, such as "Step 2 of 3: Shortcuts", reads the title as a heading and moves to it on each step, reads each switch by its name, and skips the picture.
