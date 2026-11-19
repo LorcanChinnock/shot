@@ -42,4 +42,15 @@ public enum PinLayout {
         let offset = CGFloat(max(0, index) % steps) * cascade
         return CGRect(x: (centred.x + offset).rounded(), y: (centred.y - offset).rounded(), width: size.width, height: size.height)
     }
+
+    /// Where a pin opened from a Quick Access card starts before it springs to its place: the card's frame cut to the
+    /// pin's shape and centred on the card, as the card shows the middle of the capture.
+    public static func launchFrame(for pin: CGRect, from card: CGRect) -> CGRect {
+        guard pin.width > 0, pin.height > 0, card.width > 0, card.height > 0 else {
+            return card
+        }
+        let scale = min(card.width / pin.width, card.height / pin.height)
+        let size = CGSize(width: (pin.width * scale).rounded(), height: (pin.height * scale).rounded())
+        return CGRect(x: (card.midX - size.width / 2).rounded(), y: (card.midY - size.height / 2).rounded(), width: size.width, height: size.height)
+    }
 }
