@@ -136,6 +136,18 @@ final class EditorModel {
     var penLine: PenLine {
         didSet { rememberStyle { $0.penLine = penLine } }
     }
+    /// Whether the next mark glows in its own colour, kept in the style marks start with (`EditorStyle.glow`), so the
+    /// style bar's switch and the Style panel share it.
+    var glow: Bool {
+        get { EditorStyle(objectStyles: objectStyles).glow }
+        set {
+            var style = EditorStyle(objectStyles: objectStyles)
+            style.glow = newValue
+            let mark = style.objectStyles[.mark]
+            objectStyles[.mark] = mark
+            rememberStyle { $0.objectStyles[.mark] = mark }
+        }
+    }
     /// The last custom colour picked in each palette.
     private(set) var customColors: [ColorSlot: RGBA]
     /// The next annotation's line width, in points.
@@ -436,6 +448,7 @@ final class EditorModel {
         if next.noteAlignment != noteAlignment { noteAlignment = next.noteAlignment }
         if next.verticalAlignment != verticalAlignment { verticalAlignment = next.verticalAlignment }
         if next.penLine != penLine { penLine = next.penLine }
+        if next.glow != glow { glow = next.glow }
         for (slot, colour) in next.customColors where customColors[slot] != colour {
             customColors[slot] = colour
             rememberStyle { $0.customColors[slot] = colour }
@@ -493,6 +506,15 @@ final class EditorModel {
     func setPenLine(_ newPenLine: PenLine) {
         var changed = palette
         changed.setPenLine(newPenLine)
+        adopt(changed)
+    }
+
+    /// Whether the arrow, line or shape the toolbar shows glows. `nil` for any other mark or tool.
+    var paletteGlow: Bool? { palette.glow }
+
+    func setGlow(_ on: Bool) {
+        var changed = palette
+        changed.setGlow(on)
         adopt(changed)
     }
 
@@ -897,7 +919,8 @@ final class EditorModel {
         AnnotationDraft.Style(
             color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
             redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment, noteAlignment: noteAlignment,
-            verticalAlignment: verticalAlignment, noteTextColor: noteTextColor, lineDash: lineDash, penLine: penLine
+            verticalAlignment: verticalAlignment, noteTextColor: noteTextColor, lineDash: lineDash, penLine: penLine,
+            glow: glow ? startingStyle(for: .mark).shadow : nil
         )
     }
     /// Space kept between an annotation and a canvas edge that grew to hold it.

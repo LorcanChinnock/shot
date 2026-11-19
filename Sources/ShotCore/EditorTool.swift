@@ -139,6 +139,14 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// True for the tools whose marks the style bar's Glow switch lights.
+    public var takesGlow: Bool {
+        switch self {
+        case .arrow, .line, .shape, .pen, .counter: true
+        case .select, .hand, .text, .note, .highlight, .spotlight, .redact, .crop: false
+        }
+    }
+
     /// True for the tools whose lines can be dashed or dotted.
     public var takesLineDash: Bool {
         switch self {
@@ -238,6 +246,21 @@ public struct EditorStyle: Equatable, Sendable {
     /// with. A kind with none starts plain.
     public var objectStyles: [StyleKind: ObjectStyle]
 
+    /// Whether the next mark glows in its own colour: whether the shadow marks start with is the Style panel's Glow.
+    /// It reads and writes `objectStyles`, so the style bar's switch and the Style panel never disagree. Turning it on
+    /// replaces any other shadow marks start with, and turning it off leaves them with none.
+    public var glow: Bool {
+        get { objectStyles[.mark]?.shadow?.tint == .object }
+        set {
+            guard newValue != glow else {
+                return
+            }
+            var mark = objectStyles[.mark] ?? ObjectStyle()
+            mark.shadow = newValue ? ShadowPreset.glow.shadow(scale: 1) : nil
+            objectStyles[.mark] = mark.isEmpty ? nil : mark
+        }
+    }
+
     public init(
         tool: EditorTool = .arrow, color: RGBA = RGBA.presets[0], noteColor: RGBA = RGBA.presets[2],
         highlightColor: RGBA = RGBA.presets[2], fill: RGBA? = nil, noteTextColor: RGBA? = nil,
@@ -245,7 +268,7 @@ public struct EditorStyle: Equatable, Sendable {
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
         spotlight: SpotlightStyle = SpotlightStyle(),
         alignment: TextAlign = .left, noteAlignment: TextAlign = .center, verticalAlignment: VerticalTextAlign = .middle, penLine: PenLine = .smooth,
-        objectStyles: [StyleKind: ObjectStyle] = [:]
+        glow: Bool = false, objectStyles: [StyleKind: ObjectStyle] = [:]
     ) {
         self.tool = tool
         self.color = color
@@ -265,6 +288,9 @@ public struct EditorStyle: Equatable, Sendable {
         self.verticalAlignment = verticalAlignment
         self.penLine = penLine
         self.objectStyles = objectStyles
+        if glow {
+            self.glow = true
+        }
     }
 
     /// The style a new object of `kind` starts with on a document of `scale` pixels per point: the last one given to

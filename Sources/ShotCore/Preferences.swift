@@ -61,6 +61,7 @@ public enum PreferenceKey {
     public static let editorShape = "editorShape"
     /// Whether the next arrow or line is solid, dashed or dotted.
     public static let editorLineDash = "editorLineDash"
+    /// Whether the next arrow, line or shape glows.
     public static let editorRedaction = "editorRedaction"
     public static let editorRedactionAmount = "editorRedactionAmount"
     public static let editorSpotlight = "editorSpotlight"

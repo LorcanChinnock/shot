@@ -275,6 +275,28 @@ public struct Annotation: Identifiable, Equatable, Sendable, Codable {
         }
     }
 
+    /// True for the marks the style bar's Glow switch lights: arrows, lines, shapes, pen strokes and counters. They share
+    /// one remembered style (`StyleKind.mark`), so each one that can pick up a glow also shows the switch to put it out.
+    public var takesGlow: Bool {
+        switch kind {
+        case .arrow, .line, .shape, .freehand, .counter: true
+        case .highlight, .pixelate, .blur, .spotlight, .text, .note, .marker, .image: false
+        }
+    }
+
+    /// Whether the mark glows in its own colour: its shadow takes the mark's colour, as the Style panel's Glow does.
+    public var glows: Bool { style.shadow?.tint == .object }
+
+    /// Lights the mark with the Glow shadow on a document of `scale` pixels per point, or puts its glow out. A glow it
+    /// has already is kept as it is, and putting it out leaves any other shadow.
+    public mutating func setGlow(_ on: Bool, scale: CGFloat) {
+        if on, !glows {
+            style.shadow = ShadowPreset.glow.shadow(scale: scale)
+        } else if !on, glows {
+            style.shadow = nil
+        }
+    }
+
     public var supportsFill: Bool {
         switch kind {
         case .shape: true
