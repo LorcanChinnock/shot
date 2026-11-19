@@ -157,7 +157,7 @@ final class UpdatePromptWindow: FloatingPanelWindow {
         }
     }
 
-    /// Puts the window behind the others, for an update a scheduled check found while you were busy in Shot.
+    /// Has VoiceOver read the update's title and subtitle.
     func announce() {
         NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested, userInfo: [
             .announcement: "\(model.title). \(model.subtitle)", .priority: NSAccessibilityPriorityLevel.high.rawValue,
