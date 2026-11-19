@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0-beta.96](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.95...v0.7.0-beta.96) (2026-11-19)
+
+
+### Features
+
+* **editor:** add a glow toggle for arrows, lines and shapes ([#1442](https://github.com/LorcanChinnock/shot/issues/1442)) ([78b258d](https://github.com/LorcanChinnock/shot/commit/78b258dfa7abb1ac8d70306e3c2b5cec64e164b9))
+* **editor:** show recent custom colours in the colour picker ([#1429](https://github.com/LorcanChinnock/shot/issues/1429)) ([95e8e03](https://github.com/LorcanChinnock/shot/commit/95e8e03d9352071faca96e905f5a446395139335))
+* **gallery:** pop new captures in and slide tiles together after a delete ([#1436](https://github.com/LorcanChinnock/shot/issues/1436)) ([0fc283f](https://github.com/LorcanChinnock/shot/commit/0fc283f38b8b2ce4e9a496926483f5093e5c5af6))
+* **quick-access:** deal the stack out and drop it back with staggered springs ([#1431](https://github.com/LorcanChinnock/shot/issues/1431)) ([938f824](https://github.com/LorcanChinnock/shot/commit/938f8243e87ca068a2eda14a3c5f9b17d6426e71))
+* **quick-access:** grow pins out of their card and lift cards as they're dragged out ([#1438](https://github.com/LorcanChinnock/shot/issues/1438)) ([099ff12](https://github.com/LorcanChinnock/shot/commit/099ff127adf00d61b8a07a096275937ebbd9a68c))
+* slide the selected tool and capture mode ink between choices ([#1440](https://github.com/LorcanChinnock/shot/issues/1440)) ([4556608](https://github.com/LorcanChinnock/shot/commit/4556608b822e885b88e1c6f56e0ad8a9ac00e9a4))
+
+
+### Bug Fixes
+
+* clear Quick Access "Copied" on hover and close the colour picker on release ([#1425](https://github.com/LorcanChinnock/shot/issues/1425)) ([bee1476](https://github.com/LorcanChinnock/shot/commit/bee1476e4e70d7ff6e5ed1098500ca7b41c2ddab))
+* **editor:** drag spotlights and blurs after drawing them ([#1427](https://github.com/LorcanChinnock/shot/issues/1427)) ([2714d3e](https://github.com/LorcanChinnock/shot/commit/2714d3ed273f93ed897fed55a34cf51409407da7))
+
 ## [0.7.0-beta.95](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.94...v0.7.0-beta.95) (2026-11-19)
 
 
