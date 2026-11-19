@@ -87,6 +87,8 @@ public struct QuickAccessLayout: Equatable, Sendable {
     public static let fanStagger: TimeInterval = 0.03
     /// How long after the stack starts folding each card starts to drop, the top one first.
     public static let foldStagger: TimeInterval = 0.025
+    /// How long after the stack starts folding a card's dark cover starts to settle back on, so it lands with the card.
+    public static let coverDelay: TimeInterval = 0.1
 
     /// When the card at `index` of `count` (oldest first, so the last is the front card) starts to move as the stack
     /// fans out or folds. The front card doesn't move, so it waits for nothing.

@@ -72,12 +72,13 @@ private struct QuickAccessCardView: View {
     /// The dark cover lifts off quickly as a card rises out of the stack, so the capture shows while it moves, and
     /// settles back on only as the card lands behind the front one.
     private var coverTransition: AnyTransition {
-        guard !reduceMotion else {
-            return .opacity
+        let fade = Motion.animation(.stackCover, reduceMotion: reduceMotion)
+        guard !reduceMotion, let fade else {
+            return .opacity.animation(fade)
         }
         return .asymmetric(
-            insertion: .opacity.animation(.easeIn(duration: 0.12).delay(0.1)),
-            removal: .opacity.animation(.easeOut(duration: 0.12))
+            insertion: .opacity.animation(fade.delay(QuickAccessLayout.coverDelay)),
+            removal: .opacity.animation(fade)
         )
     }
 

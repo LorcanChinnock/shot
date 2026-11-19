@@ -26,6 +26,9 @@ public enum Moment: CaseIterable, Sendable {
     case stackFan
     /// One Quick Access card dropping back behind the front one, with a small bounce as it lands, the top card first.
     case stackFold
+    /// A Quick Access card's dark cover lifting off as it rises out of the stack, or settling back on as it lands,
+    /// `QuickAccessLayout.coverDelay` after the fold starts.
+    case stackCover
 
     /// What Reduce Motion plays instead.
     public enum Reduced: Sendable {
@@ -52,6 +55,7 @@ public enum Moment: CaseIterable, Sendable {
         case .clickRing: 0.24
         case .stackFan: 0.28
         case .stackFold: 0.22
+        case .stackCover: 0.12
         }
     }
 
@@ -59,13 +63,13 @@ public enum Moment: CaseIterable, Sendable {
     public var isAmbient: Bool {
         switch self {
         case .countdownRing, .recordingPulse: true
-        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .stackFan, .stackFold: false
+        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .stackFan, .stackFold, .stackCover: false
         }
     }
 
     public var reduced: Reduced {
         switch self {
-        case .viewfinderSnap, .tick, .panelArrive: .fade
+        case .viewfinderSnap, .tick, .panelArrive, .stackCover: .fade
         case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing, .stackFan, .stackFold: .none
         }
     }
