@@ -84,9 +84,9 @@ final class UpdatePromptWindow: FloatingPanelWindow {
         self.model = model
         let size = NSSize(width: UpdatePromptView.width(Preferences().textSize), height: 200)
         super.init(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless])
-        // A normal level, like Sparkle's window: an update offered while you work can sit behind other windows, and
-        // the menu bar menu brings it back.
-        level = .normal
+        // Floating, so an update offered while you work opens on top of other windows, other apps' included, even
+        // while Shot isn't the active app. The menu bar menu still brings it back.
+        level = .floating
         hidesOnDeactivate = false
         isReleasedWhenClosed = false
         collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
@@ -113,14 +113,15 @@ final class UpdatePromptWindow: FloatingPanelWindow {
         }
     }
 
-    /// Brings the window forward and makes it key. The first time, it's centred on the screen with the pointer and
-    /// rises a few points as it fades in, or only fades with Reduce Motion.
+    /// Brings the window to the front, and with `activating` makes Shot active and the window key; without it, the
+    /// window shows on top but leaves the keyboard where it is. The first time, it's centred on the screen with the
+    /// pointer and rises a few points as it fades in, or only fades with Reduce Motion.
     func present(activating: Bool) {
         if activating {
             NSApp.activate()
         }
         guard !shownOnce || !isVisible else {
-            makeKeyAndOrderFront(nil)
+            bringForward(activating: activating)
             return
         }
         let firstTime = !shownOnce
@@ -132,7 +133,7 @@ final class UpdatePromptWindow: FloatingPanelWindow {
             let reduced = Motion.reduced
             alphaValue = 0
             setFrame(reduced ? frame : frame.offsetBy(dx: 0, dy: -8), display: true)
-            makeKeyAndOrderFront(nil)
+            bringForward(activating: activating)
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = reduced ? Moment.reducedFade : Moment.panelArrive.duration
                 context.timingFunction = reduced ? CAMediaTimingFunction(name: .easeOut) : Motion.arriveCurve
@@ -143,20 +144,20 @@ final class UpdatePromptWindow: FloatingPanelWindow {
                 }
             }
         } else {
-            makeKeyAndOrderFront(nil)
+            bringForward(activating: activating)
         }
         announce()
     }
 
-    /// Puts the window behind the others, for an update a scheduled check found while you were busy in Shot.
-    func presentBehind() {
-        if !shownOnce {
-            shownOnce = true
-            setFrame(centred(frame.size), display: true)
+    private func bringForward(activating: Bool) {
+        if activating {
+            makeKeyAndOrderFront(nil)
+        } else {
+            orderFrontRegardless()
         }
-        orderBack(nil)
     }
 
+    /// Puts the window behind the others, for an update a scheduled check found while you were busy in Shot.
     func announce() {
         NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested, userInfo: [
             .announcement: "\(model.title). \(model.subtitle)", .priority: NSAccessibilityPriorityLevel.high.rawValue,

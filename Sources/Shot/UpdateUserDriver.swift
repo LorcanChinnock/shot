@@ -219,19 +219,12 @@ final class UpdateUserDriver: NSObject, SPUUserDriver {
     /// and the dot on its menu bar icon.
     @objc func logGentleScheduledUpdateReminderWarningIfNeeded() {}
 
-    /// Shows an update a scheduled check found, as Sparkle's standard driver does for a menu bar app. Near launch it
-    /// takes the keyboard. Otherwise it appears without taking the keyboard from another app, and behind Shot's own
-    /// windows while you're using one, and the menu bar row stays until you look at it.
+    /// Shows an update a scheduled check found, always on top of other windows. Near launch it takes the keyboard.
+    /// Otherwise it appears without taking the keyboard from what you're typing in, Shot's own windows included, and
+    /// the menu bar row stays until you look at it.
     private func showScheduled() {
         let nearLaunch = ContinuousClock.now - opportuneTime <= .seconds(3)
-        let window = promptWindow()
-        if nearLaunch {
-            window.present(activating: true)
-        } else if NSApp.isActive, NSApp.keyWindow != nil {
-            window.presentBehind()
-        } else {
-            window.present(activating: false)
-        }
+        promptWindow().present(activating: nearLaunch)
     }
 
     /// The person has seen the offer once its window is key while Shot is active, as Sparkle's standard driver judges it.
