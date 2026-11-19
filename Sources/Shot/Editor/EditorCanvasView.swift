@@ -18,6 +18,8 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var dragStart: CGPoint?
     private var lastPoint: CGPoint?
     private var movedSinceMouseDown = false
+    /// A press inside the spotlight or redaction just drawn, which drags it rather than drawing (`EditorTool.pressMoves`).
+    private var movingSelection = false
     /// Text or a note pressed with the text or note tool. A drag moves it, and a click edits it only if it was already
     /// selected, so which one is only known when the button comes up.
     private var pressedText: Annotation?
@@ -668,6 +670,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
                 resizeStart = selected
                 return
             }
+            if model.tool.pressMoves(selected, at: point, hoveredAt: hoverPoint, tolerance: handleTolerance, revealed: isRevealed(selected)) {
+                movingSelection = true
+                return
+            }
             model.selectedID = nil
         }
         hoverPoint = nil
@@ -744,7 +750,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             return
         }
         defer { lastPoint = point }
-        if resizeHandle != nil {
+        if resizeHandle != nil || movingSelection {
             dragSelection(to: point, from: last, modifiers: event.modifierFlags)
             return
         }
@@ -811,10 +817,11 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             resizeStart = nil
             spaceMove = nil
             pressedText = nil
+            movingSelection = false
             viewportDidChange()
         }
-        // A drawing tool's handle drag ends with the pointer still on the mark, so its handles stay until the pointer leaves.
-        if resizeHandle != nil, !model.tool.editsSelection {
+        // A drawing tool's handle drag or move ends with the pointer still on the mark, so its handles stay until the pointer leaves.
+        if resizeHandle != nil || movingSelection, !model.tool.editsSelection {
             hoverPoint = imagePoint(event)
         }
         if let pressedText, resizeHandle == nil {

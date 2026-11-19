@@ -316,7 +316,7 @@ private struct CustomBackgroundTile: View {
         .accessibilityLabel(Text("Custom background colour"))
         .accessibilityAddTraits(custom != nil ? .isSelected : [])
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            ColorEditor(initial: model.lastBackgroundColor ?? custom ?? RGBA(1, 1, 1), pick: model.pickBackground)
+            ColorEditor(initial: model.lastBackgroundColor ?? custom ?? RGBA(1, 1, 1), pick: model.pickBackground) { isOpen = false }
         }
     }
 
