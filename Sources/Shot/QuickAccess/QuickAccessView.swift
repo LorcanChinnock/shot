@@ -20,6 +20,11 @@ struct QuickAccessView: View {
         )
     }
 
+    /// A card dropped in another app shrinks away where it is, as if it went with the drop. Reduce Motion fades it.
+    private var droppedTransition: AnyTransition {
+        Motion.reduced ? .opacity : .scale(scale: 0.6).combined(with: .opacity)
+    }
+
     var body: some View {
         let layout = model.layout
         ZStack(alignment: .bottom) {
@@ -37,7 +42,7 @@ struct QuickAccessView: View {
                     .zIndex(Double(index))
                     // VoiceOver reads the newest card first, as it's the one in front.
                     .accessibilitySortPriority(Double(index))
-                    .transition(transition)
+                    .transition(card.wasDropped ? droppedTransition : transition)
             }
         }
         .padding(QuickAccessLayout.padding)
@@ -98,8 +103,10 @@ private struct QuickAccessCardView: View {
         .onChange(of: voiceOverFocused) { _, focused in
             controller.setVoiceOverFocus(focused, card: card.id)
         }
-        .onDrag { NSItemProvider(contentsOf: card.styledURL ?? card.fileURL) ?? NSItemProvider() }
         .contextMenu { menu }
+        // While its lifted copy is carried off, the card waits where it was, faded and pressed in a little.
+        .scaleEffect(card.isLifted && !reduceMotion ? 0.97 : 1)
+        .opacity(card.isLifted ? 0.35 : 1)
     }
 
     /// The board's 0.5 pt edge at 30% black; Increase Contrast takes it to 1 pt at 60%, or at 40% white on a dark card

@@ -199,7 +199,7 @@ SF Pro at native sizes, through `ScaledFont`, so Settings › Text size still sc
 | Viewfinder snap | 180 ms, soft flash | Area, window and full-screen capture, after the image is copied | 120 ms fade |
 | Copied tick | 240 ms | The tick draws itself: on a Quick Access card as "Copied" pops in, on an editor button as it bounces, or in a toast as it springs up | 120 ms fade |
 | Marks land | 200 ms | A new arrow draws its last few points; counters pop in with a small overshoot | Appear at once |
-| Panel arrive | 240 ms spring | Panels and popovers; Quick Access slides in from its corner | 120 ms fade |
+| Panel arrive | 240 ms spring | Panels and popovers; Quick Access slides in from its corner; a pin grows out of the card it came from | 120 ms fade |
 | Countdown | 1 s tick | Menu bar digits flip; the countdown ring empties | Number changes, no flip or ring animation |
 | Recording pulse | 1.6 s loop | The red dot breathes in the menu bar and the recording controls | Steady dot |
 
@@ -402,7 +402,8 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Corner buttons keep the floating-panel edge.** The board draws their edge at 20% white. They use `floatingPanel`'s 14%, so they match every other floating panel.
 - **Card size.** `QuickAccessLayout` in ShotCore holds the width and the height limits, and `cardHeight(for:)` works the height out from the capture's size, with tests.
 - **Shadow.** The system shadow is worked out again once a card has slid in and whenever the panel changes size, so it doesn't lag behind a new card.
-- **Reduce Motion** slides nothing: cards fade in and out, and the scrim appears at once.
+- **Dragging a card out lifts it.** AppKit starts the drag (`QuickAccessDrag`), not SwiftUI's `onDrag`, since only an `NSDraggingSource` hears how it ended. What follows the pointer is the card at 103% with a deeper shadow (32% black, 18 pt blur, 8 pt down), and the card waits where it was at 35% and 97%. Dropped in another app, or on an editor, the card closes, shrinking to 60% as it fades on `Motion.leave`. Let go nowhere, the picture slides back and the card springs back to full on `Motion.arrive`.
+- **Reduce Motion** slides nothing: cards fade in and out, and the scrim appears at once. A dropped card fades rather than shrinks.
 - **VoiceOver** reads the card as "Screenshot" or "Recording" and the file name, with "Drag into any app" as its hint. Each corner button reads its name, and the drag chip and length badge are hidden from it.
 - **Text size.** Copy, Save As…, the drag chip's label and the length badge scale with Settings › Text size. The card and the corner buttons don't.
 - **Dark appearance** changes nothing: the card is the capture, the scrim and corner buttons are floating panels, and Save As… stays white.
@@ -444,6 +445,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Opacity slider | A floating `ThemeSlider`, 60 pt wide: a 3 pt track of white at 25%, filled in white up to a 12 pt white knob. It runs from 20% to 100% |
 | Click Through | A floating toolbar button with a 12 pt pointer, filled at white 16% while it's on |
 
+- **The pin grows out of its card.** From a card, the pin starts on the card's frame, cut to the pin's shape (`PinLayout.launchFrame`), and springs to its place on `Moment.panelArrive` with `Motion.arriveCurve` as it fades in, while the card leaves, so the card reads as becoming the pin. Reduce Motion fades it in where it ends up. A pin from the editor's Share menu opens in place, as before.
 - **The bar starts hidden.** It shows while the pointer is on the pin or the pin is focused, and fades over `Motion.fade`, as Close did before. A pin at rest is just the capture, so Rule 2 holds.
 - **A pin starts solid.** The board shows 80% as an example, and a new pin is 100%. Opacity changes the capture only, so the bar stays readable at 20%. `PinOpacity` in ShotCore clamps it, steps it and makes the label's percentage, with tests.
 - **Click Through lets clicks reach the window under the pin.** The bar's strip still takes clicks while it's on, so the same button turns it off again. While it's on, the pin watches the pointer with event monitors, which need no permission, to show the bar and to take clicks in the strip only. `PinLayout.barStrip(in:barHeight:)` gives the strip, with tests. The monitors stop when Click Through goes off or the pin closes.

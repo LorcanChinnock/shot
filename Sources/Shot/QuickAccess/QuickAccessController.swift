@@ -21,6 +21,10 @@ struct QuickAccessCard: Identifiable {
     var duration: Double?
     /// "Copied" over the card, for a moment after it's copied.
     var confirmation: ActionConfirmation?
+    /// The card is being dragged out, so it shows faded where it was while the lifted copy follows the pointer.
+    var isLifted = false
+    /// The card was dropped in another app, so it shrinks away as it closes rather than sliding off.
+    var wasDropped = false
 
     var height: CGFloat { QuickAccessLayout.cardHeight(for: thumbnail.size) }
 }
@@ -56,6 +60,8 @@ final class QuickAccessController {
     private var panel: FloatingPanelWindow?
     private var timers: [UUID: Task<Void, Never>] = [:]
     private var settleTask: Task<Void, Never>?
+    /// Starts a drag when a card is pulled out of the panel.
+    private lazy var drag = QuickAccessDrag(controller: self)
     /// The cards VoiceOver's focus is on, which hold every card as the pointer does.
     private var voiceOverFocus: Set<UUID> = []
     /// Watch the pointer while the stack is fanned out, to fold it again once the pointer leaves.
@@ -314,6 +320,7 @@ final class QuickAccessController {
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
             panel.contentView = NSView(hosting: QuickAccessView(model: model, controller: self))
+            drag.watch(panel)
             self.panel = panel
         }
     }
@@ -443,8 +450,67 @@ final class QuickAccessController {
     /// Floats the capture, styled as Copy has it, above other windows; the card goes, as the pin replaces it. It goes once
     /// the pin has read the image, since removing the card deletes the styled file.
     func pin(_ card: QuickAccessCard) {
-        PinController.shared.pin(card.styledURL ?? card.fileURL, styled: card.styledURL != nil) { [weak self] in
+        PinController.shared.pin(card.styledURL ?? card.fileURL, styled: card.styledURL != nil, from: screenFrame(of: card.id)) { [weak self] in
             self?.remove(card.id)
+        }
+    }
+
+    /// Where the card is drawn on screen, or nil when it isn't showing.
+    private func screenFrame(of id: UUID) -> CGRect? {
+        guard let panel, let frame = windowFrame(of: id) else {
+            return nil
+        }
+        return frame.offsetBy(dx: panel.frame.minX, dy: panel.frame.minY)
+    }
+
+    /// Where the card is drawn in the panel, in window coordinates, or nil when it isn't showing.
+    func windowFrame(of id: UUID) -> CGRect? {
+        guard let panel, panel.isVisible, let index = model.cards.firstIndex(where: { $0.id == id }) else {
+            return nil
+        }
+        let layout = model.layout
+        guard layout.placements.indices.contains(index) else {
+            return nil
+        }
+        // The layout's frames are in the panel's bottom-left-origin coordinates, as the window's are.
+        return layout.placements[index].frame
+    }
+
+    /// The card drawn at `point` in the panel's window coordinates, the frontmost where they overlap.
+    func card(at point: CGPoint) -> UUID? {
+        model.layout.card(at: point).flatMap { model.cards.indices.contains($0) ? model.cards[$0].id : nil }
+    }
+
+    func card(withID id: UUID) -> QuickAccessCard? {
+        model.cards.first { $0.id == id }
+    }
+
+    // MARK: Dragging out
+
+    func dragBegan(_ id: UUID) {
+        guard let index = model.cards.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        withAnimation(Motion.reduced ? nil : Motion.fade) {
+            model.cards[index].isLifted = true
+        }
+    }
+
+    /// A card dropped in another app has done its job, so it shrinks away. One let go nowhere comes back.
+    func dragEnded(_ id: UUID, dropped: Bool) {
+        guard let index = model.cards.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        guard dropped else {
+            withAnimation(Motion.reduced ? nil : Motion.arrive) {
+                model.cards[index].isLifted = false
+            }
+            return
+        }
+        model.cards[index].wasDropped = true
+        // On the next turn, so the card has drawn with its shrinking transition before it's removed.
+        Task { @MainActor [weak self] in
+            self?.remove(id)
         }
     }
 

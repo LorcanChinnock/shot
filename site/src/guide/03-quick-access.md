@@ -23,7 +23,7 @@ The card is just your capture until you point at it. Hover it to dim the picture
 
 A recording's card shows its length in the bottom-right corner, even when you're not pointing at it.
 
-Drag the card straight into another app to drop the file there, as the **Drag into any app** label in its bottom-left corner says, or onto an open editor to [combine images](#combine-images).
+Drag the card straight into another app to drop the file there, as the **Drag into any app** label in its bottom-left corner says, or onto an open editor to [combine images](#combine-images). Once you drop it, the card closes, since the file is where you wanted it. If you let go somewhere that doesn't take files, the card stays.
 
 Right-click the card for the same actions, plus **Copy Path** and **Show in Finder**.
 
@@ -37,7 +37,7 @@ Right-click the card for the same actions, plus **Copy Path** and **Show in Find
 2. Drag the pin to move it, or drag its edges to resize it.
 3. To close it, hover it and click **✕** at the left of its bar, or click it and press <kbd>Esc</kbd>.
 
-A pin opens in the middle of the screen at its own size, or at half the screen if it's bigger, and the card closes. If the screenshot has a style, the pin shows it the way **Copy** would, shadow and border included. A window captured with its shadow keeps its see-through edge too. You can have several pins open at once.
+A pin grows out of the card into the middle of the screen, at its own size or at half the screen if it's bigger, and the card closes. If the screenshot has a style, the pin shows it the way **Copy** would, shadow and border included. A window captured with its shadow keeps its see-through edge too. You can have several pins open at once.
 
 When you hover a pin, a dark bar appears across its top. A wide pin shows **Pinned** and its opacity, such as 100%, beside the close button, and a narrow one leaves that out, then the slider, so the two buttons always fit:
 
