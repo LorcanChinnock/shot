@@ -22,6 +22,8 @@ struct MomentTests {
         #expect(Moment.recordingPulse.duration == 1.6)
         #expect(Moment.countdownRing.duration == 1)
         #expect(Moment.clickRing.duration == 0.24)
+        #expect(Moment.stackFan.duration == 0.28)
+        #expect(Moment.stackFold.duration == 0.22)
     }
 
     @Test func onlyTheLoopsThatTickWithRealTimeRunLonger() {

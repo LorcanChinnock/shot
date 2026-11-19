@@ -56,13 +56,15 @@ final class QuickAccessController {
     private var panel: FloatingPanelWindow?
     private var timers: [UUID: Task<Void, Never>] = [:]
     private var settleTask: Task<Void, Never>?
+    /// Works the shadow out again every frame while the cards move (`followShadow`).
+    private var shadowTask: Task<Void, Never>?
     /// The cards VoiceOver's focus is on, which hold every card as the pointer does.
     private var voiceOverFocus: Set<UUID> = []
     /// Watch the pointer while the stack is fanned out, to fold it again once the pointer leaves.
     private var pointerMonitors: [Any] = []
 
     /// How long a card's exit takes; the panel keeps its size until then so the card isn't clipped mid-slide.
-    private static let exitDuration: Duration = .milliseconds(350)
+    private static let exitDuration: Duration = .milliseconds(400)
 
     /// `copied` says the capture went to the clipboard too, which the card confirms once it has slid in.
     func add(fileURL: URL, thumbnail: CGImage, size: NSSize, copied: Bool) {
@@ -134,6 +136,7 @@ final class QuickAccessController {
             withAnimation(Motion.arrive) {
                 self.model.cards.append(card)
             }
+            self.followShadow()
             Perf.endAtCommit("Quick Access open", opening, "card")
             while self.model.cards.count > Self.maxCards {
                 self.remove(self.model.cards[0].id)
@@ -171,6 +174,7 @@ final class QuickAccessController {
         withAnimation(Motion.leave) {
             model.cards.removeAll { $0.id == id }
         }
+        followShadow()
         if model.cards.isEmpty {
             fold()
         }
@@ -191,6 +195,19 @@ final class QuickAccessController {
             } else {
                 self.layout()
                 self.panel?.refreshShadow()
+            }
+        }
+    }
+
+    /// The system shadow follows what's drawn only when it's worked out again, so while the cards move it's redone every
+    /// frame. Otherwise it lags behind them and jumps into place once they settle.
+    private func followShadow() {
+        shadowTask?.cancel()
+        shadowTask = Task { [weak self] in
+            let end = ContinuousClock.now + Self.exitDuration
+            while !Task.isCancelled, ContinuousClock.now < end {
+                self?.panel?.invalidateShadow()
+                try? await Task.sleep(for: .milliseconds(16))
             }
         }
     }
@@ -222,9 +239,9 @@ final class QuickAccessController {
         }
         settleTask?.cancel()
         layout(for: model.cards, fannedOut: true, growOnly: true)
-        withAnimation(Motion.arrive) {
-            model.isFannedOut = true
-        }
+        // Each card animates its own part, staggered (`QuickAccessView.stackAnimation`).
+        model.isFannedOut = true
+        followShadow()
         watchPointer()
         settle()
     }
@@ -243,9 +260,8 @@ final class QuickAccessController {
         guard model.isFannedOut else {
             return
         }
-        withAnimation(Motion.leave) {
-            model.isFannedOut = false
-        }
+        model.isFannedOut = false
+        followShadow()
     }
 
     /// The pointer leaving can't be seen from the cards alone: it may leave through a gap between them, where the panel

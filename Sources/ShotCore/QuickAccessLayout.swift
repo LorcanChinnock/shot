@@ -82,6 +82,23 @@ public struct QuickAccessLayout: Equatable, Sendable {
         size = CGSize(width: width, height: front + (heights.count > 1 ? Self.peek : 0) + Self.padding * 2)
     }
 
+    /// How long after the stack starts fanning out each older card starts to rise, one after the next from the front
+    /// card up, so they deal out of the stack rather than move as one block.
+    public static let fanStagger: TimeInterval = 0.03
+    /// How long after the stack starts folding each card starts to drop, the top one first.
+    public static let foldStagger: TimeInterval = 0.025
+
+    /// When the card at `index` of `count` (oldest first, so the last is the front card) starts to move as the stack
+    /// fans out or folds. The front card doesn't move, so it waits for nothing.
+    public static func moveDelay(forCardAt index: Int, of count: Int, fanningOut: Bool) -> TimeInterval {
+        // 1 for the card just behind the front one, up to count - 1 for the oldest.
+        let depth = count - 1 - index
+        guard depth > 0 else {
+            return 0
+        }
+        return fanningOut ? Double(depth - 1) * fanStagger : Double(count - 1 - depth) * foldStagger
+    }
+
     /// The index of the card drawn at `point`, the frontmost where cards overlap; `nil` between or outside them.
     public func card(at point: CGPoint) -> Int? {
         // Later cards are drawn over earlier ones.
