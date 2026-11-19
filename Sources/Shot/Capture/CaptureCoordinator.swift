@@ -239,17 +239,17 @@ final class CaptureCoordinator {
             return nil
         }
         if result.delay > 0 {
-            try await captureAfterDelay(result.delay, selection: selection, frozen: frozen)
+            try await captureAfterDelay(result.delay, selection: selection, frozen: frozen, windowShadow: result.windowShadow)
             return nil
         }
-        let picked = try await picture(of: selection, frozen: frozen)
+        let picked = try await picture(of: selection, frozen: frozen, windowShadow: result.windowShadow)
         try await finish(image: picked.image, scale: picked.scale, from: picked.frame, windowShadow: picked.windowShadow)
         return nil
     }
 
     /// Counts down on screen, then takes the picked area, window or screen as it looks by then, so a menu or hover state
     /// set up in the meantime is in it. Esc or Cancel on the countdown takes nothing.
-    private func captureAfterDelay(_ seconds: Int, selection: OverlaySelection, frozen: [FrozenDisplay]) async throws {
+    private func captureAfterDelay(_ seconds: Int, selection: OverlaySelection, frozen: [FrozenDisplay], windowShadow: Bool) async throws {
         let index: Int
         switch selection {
         case let .area(display, _, _), let .fullDisplay(display):
@@ -273,7 +273,7 @@ final class CaptureCoordinator {
             try await finish(image: image, scale: fresh.scale, from: rect.offsetBy(dx: fresh.frame.minX, dy: fresh.frame.minY))
         case .window, .page:
             // A window is captured afresh anyway.
-            let picked = try await picture(of: selection, frozen: frozen)
+            let picked = try await picture(of: selection, frozen: frozen, windowShadow: windowShadow)
             try await finish(image: picked.image, scale: picked.scale, from: picked.frame, windowShadow: picked.windowShadow)
         case .fullDisplay:
             try await captureScreen(screen)
@@ -282,7 +282,7 @@ final class CaptureCoordinator {
 
     /// What `selection` shows: cut from the frozen displays, or for a window, captured afresh, with the shadow if
     /// Settings ask for it. `frame` is in AppKit global points.
-    private func picture(of selection: OverlaySelection, frozen: [FrozenDisplay]) async throws -> (image: CGImage, scale: CGFloat, frame: CGRect, windowShadow: Bool) {
+    private func picture(of selection: OverlaySelection, frozen: [FrozenDisplay], windowShadow: Bool) async throws -> (image: CGImage, scale: CGFloat, frame: CGRect, windowShadow: Bool) {
         switch selection {
         case let .area(index, rect, _):
             let display = frozen[index]
@@ -292,7 +292,6 @@ final class CaptureCoordinator {
             }
             return (cropped, display.scale, rect.offsetBy(dx: display.frame.minX, dy: display.frame.minY), false)
         case let .window(info):
-            let windowShadow = Preferences().windowShadow
             let result = try await WindowCapturer.capture(windowID: info.windowID, includeShadow: windowShadow)
             return (result.image, result.scale, Geometry.flip(info.frame, primaryHeight: NSScreen.screens.first?.frame.height ?? 0), windowShadow)
         case let .page(info, insets):

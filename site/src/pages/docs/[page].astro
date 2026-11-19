@@ -21,8 +21,8 @@ const lead = words.slice(0, -1).join(' ');
 const last = words.at(-1);
 
 // The "Try it now" card, on pages about something a global shortcut starts.
-const screenshot = { keys: ['⌘', '⇧', '4'], label: 'takes a screenshot' };
-const record = { keys: ['⌘', '⇧', '5'], label: 'starts a recording' };
+const screenshot = { keys: ['⇧', '⌘', '4'], label: 'takes a screenshot' };
+const record = { keys: ['⇧', '⌘', '5'], label: 'starts a recording' };
 const tries: Record<string, typeof screenshot> = {
   'get-started': screenshot,
   'take-a-screenshot': screenshot,

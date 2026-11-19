@@ -221,7 +221,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Capture bar
 
-#1075 builds Foundations › Capture bar, the strip on the selection overlay after ⌘⇧4 or ⌘⇧5. AppKit draws it into the overlay, so it uses `FloatingPanel`'s AppKit values and draws its own shadow outside the bar only.
+#1075 builds Foundations › Capture bar, the strip on the selection overlay after ⇧⌘4 or ⇧⌘5. AppKit draws it into the overlay, so it uses `FloatingPanel`'s AppKit values and draws its own shadow outside the bar only.
 
 | Part | Look |
 | --- | --- |
@@ -239,13 +239,14 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Record red on the kind dot** marks a recording that's about to start, which rule 6 allows.
 - **Modes.** The bar's modes are the overlay's three targets: Area, Window and Full Screen. Tab steps through them as before. Space switches only between Area and Window: from Window it goes to Area, and from Area or Full Screen it goes to Window. While an area is being dragged, holding Space moves it instead.
 - **Leave out browser toolbars** (#1282). A globe toggle after Delay and Scroll, shown only while Window is picked, as Ratio is for Area: it changes how a window is picked rather than what is picked, so it isn't a mode. It starts as Settings has it and stays as set while another mode is picked. B switches it in Window, and from another mode picks Window with it on. Turning it on asks for Accessibility the first time, through the permission card.
+- **Window shadow** (#1446). A `shadow` toggle after the globe, shown only while Window is picked and Leave out browser toolbars is off, since a page has no shadow. It starts as Settings › Capture › Window shadow has it, off by default, and switches the shadow for this overlay only. W switches it in Window.
 - **Layout.** `CaptureBarLayout` places the buttons and dividers, with tests. Sizes scale with Settings › Text size. `OverlayBarPlacement` and the 4 s fade are unchanged, and the fade now takes `Moment.panelArrive`'s length, or Reduce Motion's fade.
 - **VoiceOver** finds each button as an element the overlay draws: modes as radio buttons, Scroll and the toggles as toggles, Delay as a button, each with its key in the help. A press shows the bar again. The crosshair and loupe aren't drawn while the pointer is on the bar, so they don't cover its buttons.
 - **Increase Contrast and Reduce Transparency** make the bar and tooltip solid, take the edge to 40% white and the dividers to 60%.
 
 ### Area capture
 
-#1076 builds Capture › Area capture: what you see while dragging out an area after ⌘⇧4. AppKit draws all of it into the overlay view, so nothing adds a screen-sized layer.
+#1076 builds Capture › Area capture: what you see while dragging out an area after ⇧⌘4. AppKit draws all of it into the overlay view, so nothing adds a screen-sized layer.
 
 | Part | Look |
 | --- | --- |
@@ -299,7 +300,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 | Edge | 3 pt accent just inside the edge, then 1.5 pt ink inside that, on whole device pixels |
 | Corners | Panel radius (14) on a whole window, close to the window's own corners. A page and a screen are square, as captured |
 | Camera | A 64 pt circle at the floating-panel fill (0.86) with its 0.5 pt edge and shadow, holding a 24 pt white `camera` symbol |
-| Name panel | The window's title in Window type, white, cut short past 420 pt. Under it the size in pixels in 11.5 pt medium SF Mono at 75% white, then "· with shadow" when Settings › Capture › Window shadow is on. Floating-panel fill, panel radius, 8 × 14 pt padding |
+| Name panel | The window's title in Window type, white, cut short past 420 pt. Under it the size in pixels in 11.5 pt medium SF Mono at 75% white, then "· with shadow" when the bar's Window shadow toggle is on (it starts as Settings › Capture › Window shadow, off by default). Floating-panel fill, panel radius, 8 × 14 pt padding |
 | Hint | "Click or press Return to capture", then "Arrows: next window" for a window, in 12 pt ink on a `rgba(255,255,255,0.9)` pill |
 | Stack | Camera, name panel and hint, 10 pt apart, in the middle of what's highlighted |
 
@@ -1271,7 +1272,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 | Group | Row | Control | Description |
 | --- | --- | --- | --- |
-| None | Use Shot for ⌘⇧4 and ⌘⇧5 | Switch | "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5." |
+| None | Use Shot for ⇧⌘4 and ⇧⌘5 | Switch | "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5." |
 | None | macOS still uses these keys, only while the switch is on and the macOS shortcuts are too | Open, a secondary button | "Turn off the Screenshots shortcuts under Keyboard Shortcuts." |
 | Global | Screenshot, with `viewfinder` | The recorder | None |
 | Global | Record, with `record.circle` in record red | The recorder | None |
@@ -1280,7 +1281,7 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Rows with icons.** `SettingRow` takes an optional `Icon`, a 16 pt wide SF Symbol in ink at 85% (or a given tint) 12 pt before the name. Each action's symbol is `ShotAction.symbol` in ShotCore, which the menu bar menu now uses too, so Record is red in both. `SettingsCard`'s title is optional, for the switch's panel.
 - **Recorder.** At least 120 pt wide and 24 pt tall, rounded at 7. A set shortcut shows each key from `KeyCombo.keycaps` as a 12 pt semibold keycap on the secondary fill with a control edge and a 1 pt drop, 3 pt apart, on a field-fill pill with a hairline edge. With no shortcut it says "Record Shortcut" in 12.5 pt tertiary text in an empty box with a control edge. Clicking it listens: "Press keys…" in 12.5 pt semibold accent text on the accent at 18%, in the focus halo, with "Esc cancels · ⌫ clears" in 11.5 pt tertiary text to its left. Esc or a second click cancels, Delete clears, and the new keys are checked as before: they need ⌘, ⌥ or ⌃, and a reserved shortcut or another action's beeps and shows a toast. ↑ and ↓ reach the recorder while it listens (`SettingsNavigation.recordingShortcut`).
 - **Global note.** "Click a shortcut to change it. It needs ⌘, ⌥ or ⌃, and can’t be one that macOS or another action already uses."
-- **Key reference.** "While picking what to capture" over a group panel with 12 × 14 pt padding: ten keys three to a row, two below 480 pt, 18 pt apart across and 10 pt down. Each is the shared `Keycap` beside its label in 12.5 pt: Tab steps through Area, Window and Full Screen, then B Leave out browser toolbars, D the delays, S Scrolling capture, R the ratios, M Magnifier, C Crosshair, I Size label, ⌥ Adjust before recording and Esc Cancel. `PickingKey.all` in ShotCore builds the list from the overlay's own targets, delays and ratios, with tests, so it changes when they do.
+- **Key reference.** "While picking what to capture" over a group panel with 12 × 14 pt padding: ten keys three to a row, two below 480 pt, 18 pt apart across and 10 pt down. Each is the shared `Keycap` beside its label in 12.5 pt: Tab steps through Area, Window and Full Screen, then B Leave out browser toolbars, W Window shadow, D the delays, S Scrolling capture, R the ratios, M Magnifier, C Crosshair, I Size label, ⌥ Adjust before recording and Esc Cancel. `PickingKey.all` in ShotCore builds the list from the overlay's own targets, delays and ratios, with tests, so it changes when they do.
 - **Restore Defaults** is a secondary button at the right of the 52 pt title bar, 20 pt in, while Shortcuts shows and nothing is being searched. It resets every shortcut and turns the switch back on, as before.
 - **One ink control.** The pane adds none: the selected sidebar row stays the window's only ink. The switch takes the accent with an ink edge when on, as the Ink table allows.
 - **What went.** The "macOS screenshot keys" group name and the long description that named a keyboard's screenshot key and said macOS gets the keys back while Shot isn't running (Keyboard shortcuts › Global still says so). The "Global hotkeys" name, the mono shortcut buttons that read "None" with no shortcut, and the hint under them, "Click a shortcut, then press the new keys. Esc cancels, Delete clears.", which the listening recorder now says.

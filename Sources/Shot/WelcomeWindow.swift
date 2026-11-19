@@ -397,7 +397,7 @@ private struct SetupStep: View {
     var body: some View {
         StepPage(model: model, title: "Make it yours", subtitle: "Two choices. You can change both later in Settings.") {
             SettingsCard {
-                ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: keysSubtitle, isOn: $model.usesSystemKeys)
+                ToggleRow(title: "Use Shot for ⇧⌘4 and ⇧⌘5", subtitle: keysSubtitle, isOn: $model.usesSystemKeys)
                 ToggleRow(title: "Open Shot at login", subtitle: "So your shortcuts work after a restart.", isOn: $model.opensAtLogin)
             }
         } picture: {
@@ -638,17 +638,20 @@ private struct BigKeycaps: View {
     }
 }
 
-/// An icon on a quiet tile, then what it means.
+/// A shortcut on a quiet tile, then what it does. The tiles share one width, so the words line up.
 private struct PictureLine: View {
-    let symbol: String
+    let keys: String
     let text: String
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .semibold))
+            Text(verbatim: keys)
+                .font(.scaled(12, weight: .semibold))
+                .monospacedDigit()
                 .foregroundStyle(Theme.ink)
-                .frame(width: 34, height: 34)
+                .lineLimit(1)
+                .fixedSize()
+                .frame(minWidth: 52, minHeight: 30)
                 .background(Theme.controlFill, in: RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular))
             Text(text)
                 .font(.scaled(13))
@@ -679,14 +682,19 @@ private struct ShortcutPicture: View {
     }
 
     var body: some View {
-        VStack(spacing: 22) {
-            if let screenshot = combo(.screenshot) {
+        let screenshot = combo(.screenshot)
+        let record = combo(.record)
+        // The keys and the lines share a left edge, and the whole group is centred.
+        VStack(alignment: .leading, spacing: 22) {
+            if let screenshot {
                 BigKeycaps(keys: screenshot.keycaps)
             }
-            VStack(alignment: .leading, spacing: 12) {
-                PictureLine(symbol: "viewfinder", text: screenshotLine)
-                if let record = combo(.record) {
-                    PictureLine(symbol: "record.circle", text: String(localized: "\(record.displayString) records the screen"))
+            VStack(alignment: .leading, spacing: 10) {
+                if let screenshot {
+                    PictureLine(keys: screenshot.displayString, text: screenshotLine)
+                }
+                if let record {
+                    PictureLine(keys: record.displayString, text: String(localized: "Screen recording"))
                 }
             }
         }
@@ -737,7 +745,8 @@ private struct PermissionPicture: View {
     }
 }
 
-/// Try it's picture: the screenshot keys over an area being picked, which fills in with a tick once the capture is done.
+/// Try it's picture: the screenshot keys over a small screen with an area being picked, drawn as the overlay draws it
+/// (Capture › Area capture). Once the capture is done, the dim lifts and the area shows a tick.
 private struct TryItPicture: View {
     let keys: [String]?
     let captured: Bool
@@ -747,18 +756,152 @@ private struct TryItPicture: View {
             if let keys {
                 BigKeycaps(keys: keys)
             }
-            let shape = RoundedRectangle(cornerRadius: 4, style: .circular)
-            ZStack {
-                if captured {
-                    shape.fill(Theme.group)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundStyle(Theme.ink)
-                }
-            }
-            .frame(width: 200, height: 112)
-            .inkBorder(shape, width: 1.5, color: Theme.ink.opacity(captured ? 0.14 : 0.6), dash: captured ? [] : [5, 4])
+            AreaPickPicture(captured: captured)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// A screen in miniature, a window on it, and an area dragged across the window, with the overlay's dim, edge, handles,
+/// size chip and crosshair.
+private struct AreaPickPicture: View {
+    let captured: Bool
+
+    private static let screen = CGSize(width: 248, height: 148)
+    private static let area = CGRect(x: 58, y: 44, width: 132, height: 76)
+
+    var body: some View {
+        let screenShape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .circular)
+        let area = Self.area
+        ZStack(alignment: .topLeading) {
+            desktop
+            if captured {
+                RoundedRectangle(cornerRadius: 3, style: .circular)
+                    .fill(Theme.group)
+                    .overlay {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(Theme.ink)
+                    }
+                    .inkBorder(RoundedRectangle(cornerRadius: 3, style: .circular), width: 1.5)
+                    .frame(width: area.width, height: area.height)
+                    .offset(x: area.minX, y: area.minY)
+                    .transition(.opacity)
+            } else {
+                dim
+                edge
+                handles
+                sizeChip
+                Crosshair()
+                    .offset(x: area.maxX - Crosshair.size / 2, y: area.maxY - Crosshair.size / 2)
+            }
+        }
+        .frame(width: Self.screen.width, height: Self.screen.height, alignment: .topLeading)
+        .clipShape(screenShape)
+        .inkBorder(screenShape, width: 1.5)
+        .animation(.easeOut(duration: 0.25), value: captured)
+    }
+
+    /// The screen's own colours, lighter than the window's fills in dark mode so the dim shows over them.
+    private static let wallpaper = Color(light: Color(hex: 0xE4E0D8), dark: Color(hex: 0x4A4A52))
+    private static let windowFill = Color(light: .white, dark: Color(hex: 0x66666E))
+    private static let textLine = Color(light: Color(hex: 0xE4E0D8), dark: Color(hex: 0x86868D))
+
+    /// A plain window on the desktop, with lines standing in for its text.
+    private var desktop: some View {
+        ZStack(alignment: .topLeading) {
+            Self.wallpaper
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 4) {
+                    ForEach(0..<3, id: \.self) { _ in Circle().fill(Self.textLine).frame(width: 6, height: 6) }
+                }
+                .padding(.bottom, 4)
+                ForEach([96, 150, 124, 140, 82], id: \.self) { width in
+                    Capsule().fill(Self.textLine).frame(width: CGFloat(width), height: 7)
+                }
+            }
+            .padding(12)
+            .frame(width: 196, height: 120, alignment: .topLeading)
+            .background(Self.windowFill, in: RoundedRectangle(cornerRadius: 6, style: .circular))
+            .offset(x: 26, y: 16)
+        }
+    }
+
+    /// The overlay's dim outside the area.
+    private var dim: some View {
+        Path { path in
+            path.addRect(CGRect(origin: .zero, size: Self.screen))
+            path.addRect(Self.area)
+        }
+        .fill(Color(red: 12 / 255, green: 12 / 255, blue: 16 / 255).opacity(0.42), style: FillStyle(eoFill: true))
+    }
+
+    /// 1 pt white just outside the area, then 1 pt dark outside that.
+    private var edge: some View {
+        let area = Self.area
+        return ZStack(alignment: .topLeading) {
+            Rectangle().strokeBorder(Color.black.opacity(0.35), lineWidth: 1)
+                .frame(width: area.width + 4, height: area.height + 4)
+                .offset(x: area.minX - 2, y: area.minY - 2)
+            Rectangle().strokeBorder(Color.white.opacity(0.95), lineWidth: 1)
+                .frame(width: area.width + 2, height: area.height + 2)
+                .offset(x: area.minX - 1, y: area.minY - 1)
+        }
+    }
+
+    /// White circles with an ink edge at the corners and the middle of each side, except the corner under the pointer.
+    private var handles: some View {
+        let area = Self.area
+        let points = [
+            CGPoint(x: area.minX, y: area.minY), CGPoint(x: area.midX, y: area.minY), CGPoint(x: area.maxX, y: area.minY),
+            CGPoint(x: area.minX, y: area.midY), CGPoint(x: area.maxX, y: area.midY),
+            CGPoint(x: area.minX, y: area.maxY), CGPoint(x: area.midX, y: area.maxY),
+        ]
+        return ZStack(alignment: .topLeading) {
+            ForEach(Array(points.enumerated()), id: \.offset) { _, point in
+                Circle()
+                    .fill(Color.white)
+                    .inkBorder(Circle(), width: 1.5, color: Color(hex: 0x16161A))
+                    .frame(width: 8, height: 8)
+                    .offset(x: point.x - 4, y: point.y - 4)
+            }
+        }
+    }
+
+    /// The area's size in pixels, above its top-left corner, as the overlay's size chip shows it.
+    private var sizeChip: some View {
+        Text(verbatim: "1280 × 720")
+            .font(.system(size: 10, weight: .bold, design: .monospaced))
+            .foregroundStyle(.white)
+            .padding(.vertical, 2)
+            .padding(.horizontal, 6)
+            .background(Color(red: 26 / 255, green: 26 / 255, blue: 30 / 255).opacity(0.88), in: RoundedRectangle(cornerRadius: 6, style: .circular))
+            .fixedSize()
+            .offset(x: Self.area.minX, y: Self.area.minY - 24)
+    }
+}
+
+/// The overlay's crosshair: white under ink, with a gap in the middle.
+private struct Crosshair: View {
+    static let size: CGFloat = 18
+
+    var body: some View {
+        let path = Path { path in
+            let mid = Self.size / 2
+            let gap: CGFloat = 2
+            path.move(to: CGPoint(x: 0, y: mid))
+            path.addLine(to: CGPoint(x: mid - gap, y: mid))
+            path.move(to: CGPoint(x: mid + gap, y: mid))
+            path.addLine(to: CGPoint(x: Self.size, y: mid))
+            path.move(to: CGPoint(x: mid, y: 0))
+            path.addLine(to: CGPoint(x: mid, y: mid - gap))
+            path.move(to: CGPoint(x: mid, y: mid + gap))
+            path.addLine(to: CGPoint(x: mid, y: Self.size))
+        }
+        ZStack {
+            path.stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            path.stroke(Color(hex: 0x16161A), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+        }
+        .frame(width: Self.size, height: Self.size)
     }
 }

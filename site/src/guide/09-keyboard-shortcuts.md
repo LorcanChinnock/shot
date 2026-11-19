@@ -10,8 +10,8 @@ These work in any app, while Shot is running:
 
 | Shortcut | Action |
 |---|---|
-| <kbd>⌘⇧4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
-| <kbd>⌘⇧5</kbd> | Record. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
+| <kbd>⇧⌘4</kbd> | Take a screenshot. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
+| <kbd>⇧⌘5</kbd> | Record. Press <kbd>Tab</kbd> to pick an area, a window or the full screen. |
 
 While you set up a recording, the record shortcut starts it. While you record, it stops the recording.
 
@@ -23,16 +23,16 @@ Shot takes these keys over from macOS while it runs, once it has Screen Recordin
 2. Under **Global**, click a shortcut. It says **Press keys…** while it waits.
 3. Press the new keys. They must include <kbd>⌘</kbd>, <kbd>⌥</kbd> or <kbd>⌃</kbd>. <kbd>Esc</kbd> cancels, and <kbd>Delete</kbd> clears the shortcut, which then says **Record Shortcut**.
 
-Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults**, at the top right of the window, puts them all back and turns **Use Shot for ⌘⇧4 and ⌘⇧5** back on.
+Shot won't take a shortcut that another action already uses, or <kbd>⌘Q</kbd>, <kbd>⌘W</kbd>, <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>⌘H</kbd> or <kbd>⌘M</kbd>. **Restore Defaults**, at the top right of the window, puts them all back and turns **Use Shot for ⇧⌘4 and ⇧⌘5** back on.
 
 Under **While picking what to capture**, the same pane lists the main keys from [While selecting](#while-selecting).
 
 ## Keep the macOS screenshot tool
 
-Turn off **Use Shot for ⌘⇧4 and ⌘⇧5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with <kbd>⌃</kbd> in place of <kbd>⌘</kbd>: <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd>.
+Turn off **Use Shot for ⇧⌘4 and ⇧⌘5** in **Settings › Shortcuts**. macOS gets its keys back, and Shot uses the same keys with <kbd>⌃</kbd> in place of <kbd>⌘</kbd>: <kbd>⌃⇧4</kbd> and <kbd>⌃⇧5</kbd>.
 
 > [!NOTE]
-> If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⌘⇧4 and ⌘⇧5** on again.
+> If you turn the macOS shortcuts back on in System Settings, Shot stops using those keys until you turn **Use Shot for ⇧⌘4 and ⇧⌘5** on again.
 
 ## Actions without a shortcut
 
@@ -59,6 +59,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | R | Step the area's ratio. |
 | X | Turn the area's ratio between landscape and portrait. |
 | B | Turn **Leave out browser toolbars** on or off for this capture. While it's on, clicking a browser window captures just its page, and any other window is captured whole. From Area or Full Screen it switches to Window with it on. |
+| W | In Window, keep or leave out the window's macOS shadow for this capture. It starts as **Settings › Capture › Window shadow** has it, off unless you turn it on. |
 | M | Turn the magnifier on or off for this capture. |
 | C | Turn the crosshair guide lines on or off for this capture. |
 | I | Turn the size label (the area's width and height in pixels) on or off for this capture. |
@@ -147,7 +148,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | Return | Edit the selection |
 | Space | Preview the selection, or go back to the grid |
 | ← / → in the preview | Previous / next capture |
-| ⌘A, ⌘⇧A | Select all, deselect all |
+| ⌘A, ⇧⌘A | Select all, deselect all |
 | ⌘C | Copy |
 | ⌘R | Show in Finder |
 | Delete | Move to the Trash, after asking |

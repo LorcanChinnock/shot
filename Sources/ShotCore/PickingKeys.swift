@@ -17,6 +17,7 @@ extension PickingKey {
             PickingKey(key: "Tab", label: targets),
             PickingKey(key: "V", label: String(localized: "Switch between screenshot and record")),
             PickingKey(key: "B", label: String(localized: "Leave out browser toolbars")),
+            PickingKey(key: "W", label: String(localized: "Window shadow")),
             PickingKey(key: "D", label: String(localized: "Delay \(delays) s")),
             PickingKey(key: "S", label: String(localized: "Scrolling capture")),
             PickingKey(key: "R", label: String(localized: "Ratio \(ratios)")),

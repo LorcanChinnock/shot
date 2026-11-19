@@ -96,9 +96,9 @@ public enum PreferenceKey {
     /// True while the macOS screenshot shortcuts are off because Shot turned them off. Not a
     /// setting, so resetting settings keeps it and Shot can still give the keys back.
     public static let disabledSystemScreenshots = "disabledSystemScreenshots"
-    /// True once Shot has given ⌘⇧6 back to macOS, so it does that only once.
+    /// True once Shot has given ⇧⌘6 back to macOS, so it does that only once.
     public static let gaveBackTextCaptureKey = "gaveBackTextCaptureKey"
-    /// True once Shot has given ⌘⇧3 back to macOS, so it does that only once.
+    /// True once Shot has given ⇧⌘3 back to macOS, so it does that only once.
     public static let gaveBackFullScreenKey = "gaveBackFullScreenKey"
     /// True once launch has kept the magnifier, crosshair and size label on for someone who used Shot while they started on.
     /// Not a setting, so resetting settings keeps it.
@@ -140,7 +140,7 @@ public struct Preferences {
             PreferenceKey.showCrosshair: false,
             PreferenceKey.browserPageOnly: false,
             PreferenceKey.showSizeLabel: false,
-            PreferenceKey.windowShadow: true,
+            PreferenceKey.windowShadow: false,
             PreferenceKey.quickAccessPosition: QuickAccessPosition.left.rawValue,
             PreferenceKey.quickAccessDuration: 8.0,
             PreferenceKey.recordingFPS: RecordingFrameRate.default,

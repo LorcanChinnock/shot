@@ -1339,7 +1339,7 @@ private struct DevicePicker: View {
 
 // MARK: Shortcuts
 
-/// Settings › Shortcuts (Library & Settings › Settings · Shortcuts): the switch that takes ⌘⇧4 and ⌘⇧5 from macOS, each
+/// Settings › Shortcuts (Library & Settings › Settings · Shortcuts): the switch that takes ⇧⌘4 and ⇧⌘5 from macOS, each
 /// action's global shortcut with its icon, and a reference of the keys that work while picking what to capture. Restore
 /// Defaults sits in the title bar (`RestoreShortcutsButton`).
 private struct ShortcutSettings: View {
@@ -1355,7 +1355,7 @@ private struct ShortcutSettings: View {
 
     var body: some View {
         SettingsCard {
-            ToggleRow(title: "Use Shot for ⌘⇧4 and ⌘⇧5", subtitle: "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5.", isOn: useShot)
+            ToggleRow(title: "Use Shot for ⇧⌘4 and ⇧⌘5", subtitle: "Off gives macOS its screenshot keys back, and Shot’s default shortcuts become ⌃⇧4 and ⌃⇧5.", isOn: useShot)
             if replacesSystemScreenshots && macOSOwnsKeys {
                 SettingRow(title: "macOS still uses these keys", subtitle: "Turn off the Screenshots shortcuts under Keyboard Shortcuts.") {
                     Button("Open") { SystemShortcuts.openKeyboardSettings() }
@@ -1393,7 +1393,7 @@ extension Notification.Name {
     fileprivate static let shortcutsRestored = Notification.Name("ShotShortcutsRestored")
 }
 
-/// Restore Defaults in the title bar while Shortcuts shows: it puts every shortcut back and gives the ⌘⇧4 and ⌘⇧5 keys
+/// Restore Defaults in the title bar while Shortcuts shows: it puts every shortcut back and gives the ⇧⌘4 and ⇧⌘5 keys
 /// to Shot again, as the button under the shortcuts did before.
 private struct RestoreShortcutsButton: View {
     var body: some View {
