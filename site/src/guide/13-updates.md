@@ -26,7 +26,7 @@ When there's a new version, Shot opens a small window with what's new in it. Cli
 - **Skip** stops Shot offering that version. A newer one is still offered.
 - **Install future updates automatically**, shown while Check automatically is on, lets Shot download each new version by itself and install it the next time Shot quits.
 
-An update an automatic check finds doesn't take over the keyboard while you work, and its window can open behind other windows. Choose **Update to Shot** in the menu bar menu to bring it back.
+An update an automatic check finds doesn't take over the keyboard while you work, but its window opens on top of other windows. If you close it or it gets covered, choose **Update to Shot** in the menu bar menu to bring it back.
 
 ## Installing over a running copy
 
