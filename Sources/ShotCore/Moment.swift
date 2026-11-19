@@ -21,6 +21,17 @@ public enum Moment: CaseIterable, Sendable {
     case recordingPulse
     /// A click's ring fades out once it has held for `ClickRing.hold`.
     case clickRing
+    /// One Quick Access card rising out of the stack to its own place, with an overshoot. The older cards follow one
+    /// another, `QuickAccessLayout.fanStagger` apart.
+    case stackFan
+    /// One Quick Access card dropping back behind the front one, with a small bounce as it lands, the top card first.
+    case stackFold
+    /// A Quick Access card's dark cover lifting off as it rises out of the stack, or settling back on as it lands,
+    /// `QuickAccessLayout.coverDelay` after the fold starts.
+    case stackCover
+    /// A new capture pops into the open gallery with a small overshoot, and the tiles around it, or around one just
+    /// trashed, slide to their new places.
+    case gridShuffle
     /// The highlight on a picked option slides from the old choice to the new one, with a slight overshoot: the selected
     /// tool, the capture bar's mode and a segmented control's thumb. The choice itself takes effect at once.
     case selectionSlide
@@ -48,6 +59,10 @@ public enum Moment: CaseIterable, Sendable {
         case .countdownRing: 1
         case .recordingPulse: 1.6
         case .clickRing: 0.24
+        case .stackFan: 0.28
+        case .stackFold: 0.22
+        case .stackCover: 0.12
+        case .gridShuffle: 0.26
         case .selectionSlide: 0.2
         }
     }
@@ -56,14 +71,14 @@ public enum Moment: CaseIterable, Sendable {
     public var isAmbient: Bool {
         switch self {
         case .countdownRing, .recordingPulse: true
-        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .selectionSlide: false
+        case .press, .viewfinderSnap, .tick, .markLand, .panelArrive, .countdownFlip, .clickRing, .stackFan, .stackFold, .stackCover, .gridShuffle, .selectionSlide: false
         }
     }
 
     public var reduced: Reduced {
         switch self {
-        case .viewfinderSnap, .tick, .panelArrive: .fade
-        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing, .selectionSlide: .none
+        case .viewfinderSnap, .tick, .panelArrive, .stackCover: .fade
+        case .press, .markLand, .countdownFlip, .countdownRing, .recordingPulse, .clickRing, .stackFan, .stackFold, .gridShuffle, .selectionSlide: .none
         }
     }
 
