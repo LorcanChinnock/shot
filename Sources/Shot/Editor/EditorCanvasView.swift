@@ -10,6 +10,9 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
     private var landingLink: CADisplayLink?
     /// The outline flashing round the marks an undo or redo changed (`EditorModel.undoFlash`), and when it started.
     private var flash: (id: UUID, rects: [CGRect], start: CFTimeInterval)?
+    /// The undo or redo flashed last. The model keeps its `undoFlash` after the flash ends, so this stops a later edit,
+    /// which also notifies the canvas, from playing it again.
+    private var flashedID: UUID?
     private var flashLink: CADisplayLink?
     /// What dragging in crop mode does, decided where the press landed, with the crop as it was then.
     private enum CropDrag {
@@ -239,9 +242,10 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     /// Starts flashing the marks the model's latest undo or redo changed, once per step.
     private func startFlashIfNew() {
-        guard let next = model.undoFlash, next.id != flash?.id else {
+        guard let next = model.undoFlash, next.id != flashedID else {
             return
         }
+        flashedID = next.id
         flash = (next.id, next.rects, CACurrentMediaTime())
         if flashLink == nil {
             let link = displayLink(target: self, selector: #selector(flashFrame))
