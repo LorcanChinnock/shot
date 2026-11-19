@@ -172,6 +172,8 @@ public enum StyleBarControl: Equatable, Sendable {
     case verticalAlignment
     /// Whether the pen's next stroke is smoothed or kept as drawn.
     case penLine
+    /// Whether an arrow, line or shape glows in its own colour.
+    case glow
 }
 
 /// What's typed in the style bar's size box.

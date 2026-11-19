@@ -1137,7 +1137,8 @@ extension VideoEditorModel {
         return AnnotationDraft.Style(
             color: nextColor, fill: style.fill, noteColor: style.noteColor, lineWidth: lineWidth, shape: style.shape,
             redaction: style.redaction, redactionAmount: style.redactionAmount, spotlight: nextSpotlightStyle, alignment: style.alignment, noteAlignment: style.noteAlignment,
-            verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor, lineDash: style.lineDash, penLine: style.penLine
+            verticalAlignment: style.verticalAlignment, noteTextColor: style.noteTextColor, lineDash: style.lineDash, penLine: style.penLine,
+            glow: style.glow ? ShadowPreset.glow.shadow(scale: styleScale) : nil
         )
     }
 
@@ -1227,6 +1228,15 @@ extension VideoEditorModel {
     func setPenLine(_ penLine: PenLine) {
         var changed = palette
         changed.setPenLine(penLine)
+        adopt(changed)
+    }
+
+    /// Whether the arrow, line or shape the palette shows glows. `nil` for any other mark or tool.
+    var paletteGlow: Bool? { palette.glow }
+
+    func setGlow(_ on: Bool) {
+        var changed = palette
+        changed.setGlow(on)
         adopt(changed)
     }
 

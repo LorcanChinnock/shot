@@ -139,6 +139,14 @@ public enum EditorTool: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// True for the tools whose marks the style bar's Glow switch lights.
+    public var takesGlow: Bool {
+        switch self {
+        case .arrow, .line, .shape: true
+        case .select, .hand, .pen, .text, .note, .highlight, .spotlight, .redact, .counter, .crop: false
+        }
+    }
+
     /// True for the tools whose lines can be dashed or dotted.
     public var takesLineDash: Bool {
         switch self {
@@ -234,6 +242,8 @@ public struct EditorStyle: Equatable, Sendable {
     /// Where the next note's text sits in it: in the middle until the user picks another.
     public var verticalAlignment: VerticalTextAlign
     public var penLine: PenLine
+    /// Whether the next arrow, line or shape glows in its own colour.
+    public var glow: Bool
     /// The last shadow and border given to each kind but the capture, in points, which new ones of that kind start
     /// with. A kind with none starts plain.
     public var objectStyles: [StyleKind: ObjectStyle]
@@ -245,7 +255,7 @@ public struct EditorStyle: Equatable, Sendable {
         shape: BoxShape = .rectangle, redaction: Redaction = .blur, redactionAmount: CGFloat = Redaction.defaultAmount,
         spotlight: SpotlightStyle = SpotlightStyle(),
         alignment: TextAlign = .left, noteAlignment: TextAlign = .center, verticalAlignment: VerticalTextAlign = .middle, penLine: PenLine = .smooth,
-        objectStyles: [StyleKind: ObjectStyle] = [:]
+        glow: Bool = false, objectStyles: [StyleKind: ObjectStyle] = [:]
     ) {
         self.tool = tool
         self.color = color
@@ -264,6 +274,7 @@ public struct EditorStyle: Equatable, Sendable {
         self.noteAlignment = noteAlignment
         self.verticalAlignment = verticalAlignment
         self.penLine = penLine
+        self.glow = glow
         self.objectStyles = objectStyles
     }
 

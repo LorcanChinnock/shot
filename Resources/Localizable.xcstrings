@@ -4102,6 +4102,9 @@
         }
       }
     },
+    "Adds a soft glow in the mark's colour around it." : {
+
+    },
     "Adds its keyframes at the end of the annotation." : {
       "localizations" : {
         "de" : {

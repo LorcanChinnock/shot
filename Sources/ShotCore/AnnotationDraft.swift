@@ -23,11 +23,14 @@ public enum AnnotationDraft {
         public var noteAlignment: TextAlign
         public var verticalAlignment: VerticalTextAlign
         public var penLine: PenLine
+        /// The glow a new arrow, line or shape draws with, in image pixels; `nil` for none.
+        public var glow: Shadow?
 
         public init(
             color: RGBA, fill: RGBA?, noteColor: RGBA, lineWidth: CGFloat, shape: BoxShape,
             redaction: Redaction, redactionAmount: CGFloat, spotlight: SpotlightStyle, alignment: TextAlign, noteAlignment: TextAlign,
-            verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil, lineDash: LineDash = .solid, penLine: PenLine = .smooth
+            verticalAlignment: VerticalTextAlign, noteTextColor: RGBA? = nil, lineDash: LineDash = .solid, penLine: PenLine = .smooth,
+            glow: Shadow? = nil
         ) {
             self.color = color
             self.fill = fill
@@ -43,6 +46,7 @@ public enum AnnotationDraft {
             self.noteAlignment = noteAlignment
             self.verticalAlignment = verticalAlignment
             self.penLine = penLine
+            self.glow = glow
         }
     }
 
@@ -108,6 +112,9 @@ public enum AnnotationDraft {
             shape.fill = style.fill
         }
         shape.lineDash = style.lineDash
+        if shape.takesGlow, let glow = style.glow {
+            shape.style.shadow = glow
+        }
         return shape
     }
 

@@ -132,7 +132,7 @@ private func inksAt(_ xs: [CGFloat], of annotation: Annotation) throws -> [Bool]
     #expect(palette(tool: .line).lineDash == .solid)
     #expect(palette(tool: .shape).lineDash == nil)
     #expect(palette(tool: .pen).lineDash == nil)
-    #expect(palette(tool: .shape).controlRows == [[.width], [.outline]])
+    #expect(palette(tool: .shape).controlRows == [[.width, .glow], [.outline]])
 
     var drawn = palette(tool: .arrow, selection: arrow)
     drawn.setLineDash(.dotted)

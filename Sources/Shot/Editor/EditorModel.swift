@@ -136,6 +136,10 @@ final class EditorModel {
     var penLine: PenLine {
         didSet { rememberStyle { $0.penLine = penLine } }
     }
+    /// Whether the next arrow, line or shape glows in its own colour.
+    var glow: Bool {
+        didSet { rememberStyle { $0.glow = glow } }
+    }
     /// The last custom colour picked in each palette.
     private(set) var customColors: [ColorSlot: RGBA]
     /// The next annotation's line width, in points.
@@ -241,6 +245,7 @@ final class EditorModel {
         noteAlignment = style.noteAlignment
         verticalAlignment = style.verticalAlignment
         penLine = style.penLine
+        glow = style.glow
         customColors = style.customColors
         width = style.width
         objectStyles = style.objectStyles
@@ -406,7 +411,7 @@ final class EditorModel {
         EditorStyle(
             tool: tool, color: color, noteColor: noteColor, highlightColor: highlightColor, fill: fill, noteTextColor: noteTextColor, width: width,
             lineDash: lineDash, customColors: customColors, shape: shape, redaction: redaction, redactionAmount: redactionAmount, spotlight: spotlight,
-            alignment: alignment, noteAlignment: noteAlignment, verticalAlignment: verticalAlignment, penLine: penLine, objectStyles: objectStyles
+            alignment: alignment, noteAlignment: noteAlignment, verticalAlignment: verticalAlignment, penLine: penLine, glow: glow, objectStyles: objectStyles
         )
     }
 
@@ -436,6 +441,7 @@ final class EditorModel {
         if next.noteAlignment != noteAlignment { noteAlignment = next.noteAlignment }
         if next.verticalAlignment != verticalAlignment { verticalAlignment = next.verticalAlignment }
         if next.penLine != penLine { penLine = next.penLine }
+        if next.glow != glow { glow = next.glow }
         for (slot, colour) in next.customColors where customColors[slot] != colour {
             customColors[slot] = colour
             rememberStyle { $0.customColors[slot] = colour }
@@ -493,6 +499,15 @@ final class EditorModel {
     func setPenLine(_ newPenLine: PenLine) {
         var changed = palette
         changed.setPenLine(newPenLine)
+        adopt(changed)
+    }
+
+    /// Whether the arrow, line or shape the toolbar shows glows. `nil` for any other mark or tool.
+    var paletteGlow: Bool? { palette.glow }
+
+    func setGlow(_ on: Bool) {
+        var changed = palette
+        changed.setGlow(on)
         adopt(changed)
     }
 
@@ -897,7 +912,8 @@ final class EditorModel {
         AnnotationDraft.Style(
             color: nextColor, fill: fill, noteColor: noteColor, lineWidth: lineWidth, shape: shape,
             redaction: redaction, redactionAmount: redactionAmount, spotlight: nextSpotlightStyle, alignment: alignment, noteAlignment: noteAlignment,
-            verticalAlignment: verticalAlignment, noteTextColor: noteTextColor, lineDash: lineDash, penLine: penLine
+            verticalAlignment: verticalAlignment, noteTextColor: noteTextColor, lineDash: lineDash, penLine: penLine,
+            glow: glow ? ShadowPreset.glow.shadow(scale: scale) : nil
         )
     }
     /// Space kept between an annotation and a canvas edge that grew to hold it.

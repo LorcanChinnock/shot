@@ -55,6 +55,8 @@ protocol StyleBarEditing: AnyObject, Observable {
     func setShape(_ shape: BoxShape)
     var palettePenLine: PenLine? { get }
     func setPenLine(_ penLine: PenLine)
+    var paletteGlow: Bool? { get }
+    func setGlow(_ on: Bool)
     var paletteRedaction: Redaction? { get }
     func setRedaction(_ redaction: Redaction)
     var paletteRedactionAmount: CGFloat { get }
@@ -82,7 +84,7 @@ extension EditorModel: StyleBarEditing {}
 /// The bar. On the left, a row of colours for each colour the mark has, named on its left: Line, and Fill under it for a
 /// shape; Text, and Background under it for a note. Each row has the seven colours and a custom one, then transparent
 /// where the mark stays visible without that colour. On the
-/// right, the width or text size, a line's dashes, the pen's smoothing, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
+/// right, the width or text size, a line's dashes, the pen's smoothing, a Glow switch for an arrow, line or shape, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
 /// options in one row in place of the colours. Right-clicking it offers Reset Style, as the Edit menu does. The video
 /// editor shows it too, at the top of the video's well.
 struct StyleBar<Model: StyleBarEditing>: View {
@@ -161,6 +163,18 @@ struct StyleBar<Model: StyleBarEditing>: View {
                     StyleBarGlyph(symbol: penLine.symbol, selected: selected)
                 }
                 .accessibilityLabel(Text("Smooth or as drawn"))
+            }
+        case .glow:
+            if let glow = model.paletteGlow {
+                HStack(spacing: 6) {
+                    Text("Glow").font(Theme.small).foregroundStyle(labelColor).accessibilityHidden(true)
+                    Toggle("Glow", isOn: Binding(get: { glow }, set: { model.setGlow($0) }))
+                        .toggleStyle(ThemeToggleStyle())
+                        .labelsHidden()
+                        .accessibilityLabel(Text("Glow"))
+                }
+                .frame(height: 24)
+                .themeTip("Glow", detail: "Adds a soft glow in the mark's colour around it.")
             }
         case .outline:
             if let shape = model.paletteShape {

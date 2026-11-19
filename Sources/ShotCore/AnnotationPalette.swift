@@ -167,6 +167,9 @@ public struct AnnotationPalette: Equatable, Sendable {
         if penLine != nil {
             rows[0].append(.penLine)
         }
+        if glow != nil {
+            rows[0].append(.glow)
+        }
         if shape != nil {
             rows.append([.outline])
         }
@@ -405,6 +408,26 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
     }
 
+    // MARK: Glow
+
+    /// Whether the mark shown glows: the selected arrow's, line's or shape's, else the next one's. `nil` when neither is
+    /// one of those.
+    public var glow: Bool? {
+        if let shown {
+            return shown.takesGlow ? shown.glows : nil
+        }
+        return tool?.takesGlow == true ? style.glow : nil
+    }
+
+    public mutating func setGlow(_ on: Bool) {
+        if selection?.takesGlow == true {
+            selection?.setGlow(on, scale: scale)
+        }
+        if stylesNextAnnotation {
+            style.glow = on
+        }
+    }
+
     // MARK: Shape
 
     /// The outline shown: the selected shape's, else the next shape's. `nil` when neither is a shape.
@@ -596,6 +619,9 @@ public struct AnnotationPalette: Equatable, Sendable {
         if let lineDash {
             setLineDash(lineDash)
         }
+        if let glow {
+            setGlow(glow)
+        }
         if let shape {
             setShape(shape)
         }
@@ -660,6 +686,9 @@ public struct AnnotationPalette: Equatable, Sendable {
         }
         if lineDash != nil {
             setLineDash(defaults.lineDash)
+        }
+        if glow != nil {
+            setGlow(defaults.glow)
         }
         if shape != nil {
             setShape(defaults.shape)
