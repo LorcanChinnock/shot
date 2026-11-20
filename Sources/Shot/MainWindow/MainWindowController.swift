@@ -12,19 +12,54 @@ final class MainWindowNavigation {
 
     static let shared = MainWindowNavigation()
     var page: Page = .library
+    /// Set by "Show all in library", which shows every matching capture in the grid. A new search clears it.
+    var showAllCaptures = false
+    /// Whether a setting matches the search, which the library learns from `SettingsMatchProbe`.
+    var settingsMatch = false
 
-    /// Shows the library, ending any settings search.
+    /// The search, which the library's field and the settings pages' field share: `MainWindowView` keeps the gallery's
+    /// query and the settings query the same.
+    var query: String {
+        page == .library ? GalleryController.shared.model.query : SettingsNavigation.shared.query
+    }
+
+    /// What fills the window beside the sidebar for the search.
+    var content: MainWindowSearch.Content {
+        MainWindowSearch.content(query: query, page: page == .library ? .library : .settings, settingsMatch: settingsMatch, showAllCaptures: showAllCaptures)
+    }
+
+    /// Shows the library, ending any search.
     func openLibrary() {
-        SettingsNavigation.shared.query = ""
+        clearSearch()
         page = .library
     }
 
-    /// Shows the settings pages, at `section` when one is given.
+    /// Shows the settings pages, at `section` when one is given, ending any search.
     func openSettings(_ section: SettingsSection? = nil) {
+        clearSearch()
         if let section {
             SettingsNavigation.shared.open(section)
         }
         page = .settings
+    }
+
+    /// "Show all in library": every capture that matches the search, in the grid, keeping the search.
+    func showAllInLibrary() {
+        showAllCaptures = true
+        page = .library
+    }
+
+    /// Previews a capture from the search results in the library, with the rest of the matches behind it.
+    func preview(_ item: GalleryItem) {
+        showAllInLibrary()
+        GalleryController.shared.model.preview(item)
+    }
+
+    func clearSearch() {
+        SettingsNavigation.shared.query = ""
+        GalleryController.shared.model.query = ""
+        showAllCaptures = false
+        settingsMatch = false
     }
 }
 
@@ -115,16 +150,30 @@ enum MainWindowController {
         window.setFrameAutosaveName(frameName)
         let navigation = MainWindowNavigation.shared
         let gallery = GalleryController.shared
+        // While search results cover the grid, the grid's keys would act on captures out of sight, so only ⌘F and ⌘W reach it.
+        let showingResults = { navigation.page == .library && navigation.content == .results }
         window.onCommand = { key, shift in
-            navigation.page == .library && gallery.handleCommand(key, shift: shift, in: window)
+            guard navigation.page == .library, !showingResults() || ["f", "w"].contains(key) else {
+                return false
+            }
+            return gallery.handleCommand(key, shift: shift, in: window)
         }
         window.onTextKey = { event in
-            navigation.page == .library && gallery.handleKey(event, in: window)
+            guard navigation.page == .library else {
+                return false
+            }
+            // Esc in the search field ends a search showing results, back to the library as it was.
+            if showingResults(), event.keyCode == 53 {
+                navigation.clearSearch()
+                window.makeFirstResponder(nil)
+                return true
+            }
+            return gallery.handleKey(event, in: window)
         }
         window.onKey = { event in
             switch navigation.page {
             case .library:
-                return gallery.handleKey(event, in: window)
+                return !showingResults() && gallery.handleKey(event, in: window)
             case .settings:
                 guard event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
                     return false
@@ -160,6 +209,7 @@ enum MainWindowController {
 /// open, whichever is shown, so going back to the library is instant.
 private struct MainWindowView: View {
     @Bindable private var navigation = MainWindowNavigation.shared
+    private let settings = SettingsNavigation.shared
 
     var body: some View {
         let model = GalleryController.shared.model
@@ -172,6 +222,19 @@ private struct MainWindowView: View {
             }
         }
         .environment(\.inMainWindow, true)
+        // One search: typing on either page searches both captures and settings.
+        .onChange(of: model.query) {
+            if settings.query != model.query {
+                settings.query = model.query
+            }
+            // A new search starts from the results again, rather than the grid "Show all in library" left.
+            navigation.showAllCaptures = false
+        }
+        .onChange(of: settings.query) {
+            if model.query != settings.query {
+                model.query = settings.query
+            }
+        }
         .onAppear { model.start() }
         .onDisappear { model.stop() }
         .frame(minWidth: MainWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)

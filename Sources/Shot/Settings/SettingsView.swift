@@ -85,6 +85,7 @@ struct SettingsView: View {
     @Setting(PreferenceKey.appSidebarWidth) private var sidebarWidth: Double
     @Bindable private var navigation = SettingsNavigation.shared
     @FocusState private var searchFocused: Bool
+    @Environment(\.inMainWindow) private var inMainWindow
     /// The sections with a row that matches the search, which the sidebar keeps at full strength.
     @State private var matchingSections: Set<SettingsSection> = []
 
@@ -108,7 +109,9 @@ struct SettingsView: View {
                 header
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
-                        if navigation.isSearching {
+                        if navigation.isSearching && inMainWindow {
+                            MainWindowResults()
+                        } else if navigation.isSearching {
                             SettingsSearchResults(navigation: navigation)
                         } else {
                             SettingsSectionContent(section: navigation.section)
@@ -175,8 +178,15 @@ struct SettingsView: View {
                 RestoreShortcutsButton()
                     .padding(.trailing, -8)
             }
+            if inMainWindow {
+                // The one Shot window's search, which finds captures as well as settings, where the library has it.
+                SettingsSearchField(navigation: navigation, focus: $searchFocused, prompt: "Search captures and settings",
+                                    tip: "Search settings, and captures by name or text (⌘F)")
+                    .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
+            }
         }
-        .padding(.horizontal, 28)
+        .padding(.leading, 28)
+        .padding(.trailing, inMainWindow ? 16 : 28)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: GlassWindow.titlebarHeight)
         .overlay(alignment: .bottom) {
@@ -202,7 +212,7 @@ private struct SettingsSectionContent: View {
 }
 
 /// The sections with a row matching the search, gathered from each section's results.
-private struct MatchingSections: SwiftUI.PreferenceKey {
+struct MatchingSections: SwiftUI.PreferenceKey {
     static let defaultValue: Set<SettingsSection> = []
 
     static func reduce(value: inout Set<SettingsSection>, nextValue: () -> Set<SettingsSection>) {
@@ -231,7 +241,8 @@ private struct SettingsSearchResults: View {
     }
 }
 
-private struct SectionResults: View {
+/// One section's rows that match the search, under its name and a Show All link, or nothing when none match.
+struct SectionResults: View {
     let section: SettingsSection
     let open: () -> Void
 
@@ -266,6 +277,27 @@ private struct SectionResults: View {
                 .buttonStyle(PanelLinkStyle())
                 .accessibilityLabel(Text("Show all of \(section.title)"))
         }
+    }
+}
+
+/// Whether any setting matches `query`, without showing them: every section's rows, filtered and hidden, for the one Shot
+/// window to decide whether its library shows search results.
+struct SettingsMatchProbe: View {
+    let query: String
+    let found: (Bool) -> Void
+
+    var body: some View {
+        ZStack {
+            ForEach(SettingsSection.allCases) { section in
+                SectionResults(section: section) {}
+            }
+        }
+        .environment(\.settingsQuery, query)
+        .frame(width: 0, height: 0)
+        .hidden()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .onPreferenceChange(MatchingSections.self) { found(!$0.isEmpty) }
     }
 }
 
