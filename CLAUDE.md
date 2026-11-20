@@ -99,6 +99,7 @@ Read the note in `docs/architecture/` before changing the area it covers:
 - Never pair `onTapGesture(count: 2)` with a single tap; every single click waits out the double-click interval. Use one `onTapGesture` and read `NSApp.currentEvent?.clickCount`.
 - Put a `# macOS: <reason>` comment above each macOS `runs-on` in `.github/workflows/`, saying why the job can't run on Linux, since macOS jobs queue.
 - On the site, no card has one thick coloured edge: `border-top-color` and its kin, or a colour on a one-edge border, are rejected (`site/DESIGN.md`). `HeroStage.astro` is exempt.
+- On the site, draw arrows with `<Arrow from={…} to={…} />` (`site/src/components/Arrow.astro`), never a hand-written SVG arrow, whose head drifts off its shaft when either is edited.
 - When `shellcheck` is installed, it checks the install and uninstall scripts and their tests.
 
 ## CI
@@ -111,7 +112,9 @@ The repository is public, so GitHub's runners are free, but the free plan runs o
 - The repository has auto-merge turned on only for `dependabot-automerge.yml`, which enables it on Dependabot's patch and minor PRs (not major bumps or Sparkle) so they merge once `linux` and `macos` pass. An admin merges the release PR by hand once the gate has passed. If the gate fails, fix it in a normal PR. release-please updates the release PR only for commits that change the changelog, so after a `test:`, `ci:` or `docs:` fix, run `gh pr update-branch <release PR>` to gate it again.
 - `release.yml` runs `make test` on the tagged commit before it signs anything, because a `docs:`, `test:` or `ci:` commit merged after the gate passed can change what's released.
 - Run `make lint` and `make test` before every push, and push once per PR where you can, so CI is a check rather than a debugger. Every push re-runs CI, and a newer push cancels the run before it.
-- The redesign is built on a long-lived `redesign` branch with the same required checks. Name work branches `redesign-<slug>`: git can't create `redesign/<slug>` while a `redesign` branch exists. Main is merged into it by hand when needed, as a `chore: merge main into redesign` PR from `chore/merge-main-into-redesign`, with conflicts resolved on the redesign side. Once CI passes, land it with `git push origin chore/merge-main-into-redesign:redesign`, a fast-forward that keeps the merge commit and marks the PR merged; never squash it, and the merge button only squashes (CONTRIBUTING.md › The redesign branch). PRs into `redesign` still use `Closes #N`; `redesign-close-issues.yml` closes those issues on merge, since GitHub only does it for `main`. Only the epic, #1050, stays open until `redesign` merges into `main`.
+- The redesign lives on a long-lived `redesign` branch with the same required checks. Name work branches `redesign-<slug>` (git can't create `redesign/<slug>` alongside it).
+- To merge main into `redesign`, follow CONTRIBUTING.md › The redesign branch: land it with a fast-forward `git push`, never the merge button, which only squashes.
+- PRs into `redesign` still use `Closes #N` (`redesign-close-issues.yml` closes them). Only the epic, #1050, stays open until `redesign` merges into `main`.
 - Every release builds and tests again, so let the release-please PR collect several merges rather than releasing after each one.
 
 ## Conventions
