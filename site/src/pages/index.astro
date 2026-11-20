@@ -160,7 +160,7 @@ const software = {
             <div class:list={['mode', m.id]}>
               <Window tone="lilac" tilt="-1deg">
                 <div class="crop" style={m.crop}>
-                  <Image src={m.image} alt={m.alt} widths={[1000, 2000]} sizes="(min-width: 1240px) 1000px, 100vw" />
+                  <Image src={m.image} alt={m.alt} widths={[1000, 2000]} sizes="(min-width: 1240px) 1080px, 100vw" />
                 </div>
               </Window>
               <div class="mode-text">
@@ -179,7 +179,7 @@ const software = {
         <article class="ink-card extra tilt" style="--tilt: -0.6deg">
           <div class="extra-art panel lilac">
             <div class="crop" style="--iw: 2000; --x: 1512; --y: 27; --w: 452; --h: 660">
-              <Image src={captureScroll} alt="The Keep scrolling panel during a long capture: a preview of the tall image so far, with the part not captured yet hatched, a size of 1,920 by 1,740, and the sticky header kept once" widths={[400, 900]} sizes="240px" />
+              <Image src={captureScroll} alt="The Keep scrolling panel during a long capture: a preview of the tall image so far, with the part not captured yet hatched, a size of 1,920 by 1,740, and the sticky header kept once" widths={[700, 1300]} sizes="640px" />
             </div>
           </div>
           <div class="extra-text">
@@ -217,7 +217,7 @@ const software = {
           </div>
           <div class="editor-shot anchor tilt" style="--tilt: 1deg">
             <div class="crop" style="--iw: 1600; --x: 470; --y: 39; --w: 910; --h: 696">
-              <Image src={editor} alt="Close up of the editor: the highlighted discount line on a support ticket, with a red arrow pointing at it from a sticky note, under the toolbar with Share, Save and Copy" widths={[600, 1200]} sizes="(min-width: 1240px) 760px, 100vw" />
+              <Image src={editor} alt="Close up of the editor: the highlighted discount line on a support ticket, with a red arrow pointing at it from a sticky note, under the toolbar with Share, Save and Copy" widths={[1000, 1600]} sizes="(min-width: 1240px) 1000px, 135vw" />
             </div>
             <span class="editable deco" aria-hidden="true"><Arrow placed from={[44, -42]} to={[2, -4]} bend={-0.2} /><span class="note wobble">this arrow stays editable</span></span>
           </div>
@@ -281,7 +281,7 @@ const software = {
       </div>
       <Window tone="sage" tilt="1deg" class="find-shot">
         <div class="crop" style="--iw: 1600; --x: 170; --y: 88; --w: 1260; --h: 786">
-          <Image src={gallery} alt="The gallery window with SPRING20 typed in its search field, showing the two screenshots of the ticket that mention it" widths={[700, 1400]} sizes="(min-width: 1240px) 700px, 100vw" />
+          <Image src={gallery} alt="The gallery window with SPRING20 typed in its search field, showing the two screenshots of the ticket that mention it" widths={[820, 1600]} sizes="(min-width: 1240px) 820px, 110vw" />
         </div>
         <span slot="marks" class="search-label deco pop on-view" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24"><path d={icon.search} /></svg>SPRING20<span class="found">2 found</span></span>
       </Window>

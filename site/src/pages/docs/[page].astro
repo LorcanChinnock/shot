@@ -72,6 +72,8 @@ const edit = `${repo}/edit/main/site/src/guide/${page.file}`;
 </Prose>
 
 <script>
+  import '../../scripts/loops.ts';
+
   // A Copy button on each code block. It says Copied ✓, or selects the code and says Press ⌘C when the clipboard is blocked.
   const status = document.getElementById('copy-status');
   for (const button of document.querySelectorAll<HTMLButtonElement>('.copy-code')) {
@@ -121,8 +123,8 @@ const edit = `${repo}/edit/main/site/src/guide/${page.file}`;
 
   /* Screenshots stand on the group's pastel panel, tilted a little, straightening on hover (rehypeFigures in src/lib/guide.ts). */
   .prose .guide-body figure.shot { display: grid; place-items: center; margin: 8px 0; padding: clamp(14px, 3.5vw, 28px); }
-  .prose .guide-body figure.shot img { border-radius: 14px; box-shadow: 0 24px 50px rgb(40 30 90 / 0.22); transform: rotate(-0.8deg); transition: transform var(--hover-ease); }
-  .prose .guide-body figure.shot img:hover { transform: rotate(0deg) translateY(-3px); }
+  .prose .guide-body figure.shot :is(img, video) { border-radius: 14px; box-shadow: 0 24px 50px rgb(40 30 90 / 0.22); transform: rotate(-0.8deg); transition: transform var(--hover-ease); }
+  .prose .guide-body figure.shot :is(img, video):hover { transform: rotate(0deg) translateY(-3px); }
 
   /* Steps: each a white card on a red numbered badge. */
   .prose .guide-body > ol { display: grid; gap: 12px; }
@@ -181,6 +183,6 @@ const edit = `${repo}/edit/main/site/src/guide/${page.file}`;
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .prose .guide-body figure.shot img:hover { transform: rotate(-0.8deg); }
+    .prose .guide-body figure.shot :is(img, video):hover { transform: rotate(-0.8deg); }
   }
 </style>
