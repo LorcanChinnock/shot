@@ -39,11 +39,11 @@ const code = (lines) => `<div class="sc-code">${lines.map((l) => `<p>${l}</p>`).
 const shortcuts = [['⇧⌘4', 'Area'], ['⇧⌘3', 'Whole screen'], ['⇧⌘5', 'Record'], ['A', 'Arrow'], ['B', 'Blur'], ['T', 'Text'], ['M', 'Highlight'], ['⌘C', 'Copy'], ['⌘Z', 'Undo']];
 const languages = ['English', 'Deutsch', 'Français', 'Español', 'Italiano', 'Português', '日本語', '한국어', '简体中文'];
 const scenes = {
-  'get-started': shot('welcome.png', [1240, 940], [190, 150, 860, 583]),
-  'take-a-screenshot': shot('capture-area.png', [2000, 1255], [340, 200, 1320, 1035]),
+  'get-started': shot('welcome.png', [2330, 1766], [357, 299, 1616, 1096]),
+  'take-a-screenshot': shot('capture-area.png', [2534, 2026], [0, 0, 2534, 1987]),
   'quick-access': `<img class="sc-plain" src="${media('quick-access.png')}">`,
   'record-your-screen': strip('recording-controls.png'),
-  'annotate-a-screenshot': shot('editor.png', wide, editorWindow),
+  'annotate-a-screenshot': shot('editor.png', [3200, 2000], [440, 78, 2320, 1766]),
   'crop-and-arrange': shot('editor-crop.png', wide, editorWindow),
   'style-a-screenshot': shot('editor-style.png', wide, editorWindow),
   'combine-images': shot('editor-combine.png', wide, editorWindow),
@@ -61,7 +61,7 @@ const scenes = {
   troubleshooting: `<div class="sc-list"><p class="q"><b>?</b><span>Captures fail after I turned on Screen Recording</span></p><p class="q"><b>?</b><span>Microphone says NOT ASKED</span></p><p class="q"><b>?</b><span>⇧⌘4 still opens the macOS tool</span></p></div>`,
   'removing-shot': code(['<b>$</b> curl -fsSL \\', '  shot.lorcanchinnock.com/uninstall.sh \\', '  | bash']),
   // A chat with a general assistant: the marked-up order from editor.png pasted in with a question.
-  'share-a-capture-with-an-ai-assistant': `<div class="sc-chat"><div class="msg">${shot('editor.png', wide, [784, 498, 460, 280])}<p>The code is valid, so why is the total the same?</p></div><p class="ask">Reply…</p></div>`,
+  'share-a-capture-with-an-ai-assistant': `<div class="sc-chat"><div class="msg">${shot('editor.png', [3200, 2000], [1564, 934, 920, 560])}<p>The code is valid, so why is the total the same?</p></div><p class="ask">Reply…</p></div>`,
 };
 
 const page = ({ chip, chipColor, tone, headline, size, keys, scene }) => `<!doctype html>

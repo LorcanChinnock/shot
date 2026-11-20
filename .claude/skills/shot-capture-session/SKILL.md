@@ -31,7 +31,7 @@ computer-use screenshots are for looking only and can't be saved. Make files wit
 - **Privacy first.** The screen shows the user's real desktop and terminal even though computer-use screenshots hide them. Ask before minimising their terminal (`osascript` with `AXMinimized`), and bring it back afterwards, then focus it with `activate` as the last step. Never leave it hidden.
 - **A window:** list ids with `scripts/winid.py <OwnerName>`, then `screencapture -x -o -l <id> raw.png`.
 - **A region** (for the Scroll panel, which is a separate window next to the target): `screencapture -x -R x,y,w,h out.png` in points, with the desktop clear.
-- **Match the existing media.** `scripts/compose.py raw.png out.png [width]` puts a window on the grey-purple gradient used by `docs/media`, at 1600×1000 with a shadow.
+- **Match the existing media.** `scripts/compose.py raw.png out.png [width] [scale] [canvas]` puts a window on the grey-purple gradient used by `docs/media`, at 1600×1000 with a shadow. Pass a scale (2 for `editor.png`, so the window keeps its own 2x pixels) for images the site shows large; `welcome.png` uses `860 1.879 1240x940`.
 - Use a scratch save folder, not the user's `~/Pictures/Shot`: `defaults write dev.lorcan.Shot.dev saveFolder <dir>`, and delete the key afterwards. Name the folder `Shot`, because the gallery shows its name.
 - The scripts need `python3 -m venv` plus `pip install Pillow pyobjc-framework-Quartz`, which downloads packages, so tell the user first.
 
