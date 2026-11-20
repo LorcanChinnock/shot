@@ -54,6 +54,8 @@ enum Theme {
     static let fieldFill = Color(light: Color(hex: 0x16161A).opacity(0.06), dark: .white.opacity(0.07))
     /// Toolbar buttons on hover, and toolbar toggles that are on.
     static let hover = Color(light: Color(hex: 0x16161A).opacity(0.07), dark: .white.opacity(0.08))
+    /// The selected sidebar row in the one Shot window: a soft grey, a step darker than hover, since yellow is for the next action.
+    static let selectedFill = Color(light: Color(hex: 0x16161A).opacity(0.09), dark: .white.opacity(0.12))
 
     /// A secondary button: white in light, the control fill in dark.
     static let secondaryFill = Color(light: .white, dark: Color(hex: 0x3A3A3F))

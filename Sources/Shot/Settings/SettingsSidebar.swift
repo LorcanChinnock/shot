@@ -25,20 +25,17 @@ struct SettingsSidebar: View {
                 .themeTip("Search every setting by name or description (⌘F)")
                 .padding(.horizontal, 4)
                 .padding(.bottom, 12)
-            ForEach(SettingsSection.allCases) { section in
-                SettingsSidebarRow(
-                    section: section,
-                    selected: !navigation.isSearching && section == navigation.section,
-                    faded: matching.map { !$0.contains(section) } ?? false
-                ) {
-                    navigation.open(section)
-                }
+            // In the one Shot window, About sits at the foot in place of the version footer, since it shows the version.
+            ForEach(inMainWindow ? SettingsSection.allCases.filter { $0 != .about } : SettingsSection.allCases) { section in
+                row(section)
             }
             Spacer(minLength: 12)
-            if !inMainWindow {
+            if inMainWindow {
+                row(.about)
+            } else {
                 OpenGalleryRow()
+                SettingsSidebarFooter { navigation.open(.about) }
             }
-            SettingsSidebarFooter { navigation.open(.about) }
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 14)
@@ -48,14 +45,39 @@ struct SettingsSidebar: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Settings sections"))
     }
+
+    private func row(_ section: SettingsSection) -> some View {
+        SettingsSidebarRow(
+            section: section,
+            selected: !navigation.isSearching && section == navigation.section,
+            faded: matching.map { !$0.contains(section) } ?? false
+        ) {
+            navigation.open(section)
+        }
+    }
 }
 
-/// A section's icon on its tinted tile, or on white with an ink glyph when it's the selected row.
+/// A section's icon on its tinted tile, or on white with an ink glyph when it's the selected row. In the one Shot window, the
+/// glyph alone in one colour, ink when selected.
 struct SettingsSectionTile: View {
     let section: SettingsSection
     let selected: Bool
+    @Environment(\.inMainWindow) private var quiet
 
     var body: some View {
+        if quiet {
+            Image(systemName: section.symbol)
+                .font(.scaled(13, weight: .medium))
+                .foregroundStyle(selected ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink)))
+                .frame(width: 22, height: 22)
+                .accessibilityHidden(true)
+        } else {
+            tile
+        }
+    }
+
+    @ViewBuilder
+    private var tile: some View {
         let tint = selected ? Theme.SidebarTint.selected : section.tint
         let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         Image(systemName: section.symbol)

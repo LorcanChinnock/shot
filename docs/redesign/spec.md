@@ -49,9 +49,10 @@ From **Foundations › Design language**, **Components**, **Capture bar** and **
 | Separator | `rgba(22,22,26,0.07)` | `rgba(255,255,255,0.08)` | Rows inside a group |
 | Field fill | `rgba(22,22,26,0.06)` | `rgba(255,255,255,0.07)` | Search fields, segmented tracks, tag chips |
 | Hover | `rgba(22,22,26,0.07)` | `rgba(255,255,255,0.08)` | Toolbar buttons on hover |
+| Selected fill | `rgba(22,22,26,0.09)` | `rgba(255,255,255,0.12)` | The selected sidebar row in the one Shot window (#1460) |
 | Disabled text | `rgba(22,22,26,0.35)` | `rgba(237,235,230,0.35)` | Disabled controls |
 
-**Sidebar icon tints** appear only as the tile behind a sidebar icon, never as a fill. The selected row's tile is `#FFFFFF` with a `#16161A` icon in both appearances.
+**Sidebar icon tints** appear only as the tile behind a sidebar icon, never as a fill. The selected row's tile is `#FFFFFF` with a `#16161A` icon in both appearances. In the one Shot window (#1460, behind its switch) the settings sidebar drops the tiles: each icon is a bare glyph in secondary text, ink when selected, and the selected row is the Selected fill with no yellow or ink edge (an ink edge under Increase Contrast). The library's Screenshots, Recordings and GIFs icons keep their colours.
 
 | Section | Light tile | Light icon | Dark tile | Dark icon |
 | --- | --- | --- | --- | --- |
