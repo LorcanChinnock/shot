@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⇧⌘4, opening it from the Quick Access card, highlighting the discount and pointing an arrow at the $0, then pasting it into a chat">
+  <img src="docs/media/hero.gif" width="720" alt="Capturing an order with ⇧⌘4, opening it from the Quick Access card, highlighting the discount and pointing an arrow at it, then pasting it into a chat">
 </p>
 
 ## Features
@@ -43,7 +43,7 @@
 
 ### Capture and Quick Access
 
-<img src="docs/media/capture.gif" width="720" alt="Pressing Tab to step the capture bar from Area to Window and Full Screen and back to Area, then dragging out an area around a support ticket, then the Quick Access card sliding into the corner">
+<img src="docs/media/capture.gif" width="720" alt="Clicking through the capture bar from Area to Window and Full Screen and back to Area, then dragging out an area around a support ticket, then the Quick Access card sliding into the corner">
 
 ### Annotate anything
 

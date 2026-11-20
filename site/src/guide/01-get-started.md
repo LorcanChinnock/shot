@@ -27,7 +27,7 @@ Download the zip from the [latest release](https://github.com/LorcanChinnock/sho
 
 ## Follow the welcome window
 
-![The welcome window on its Shortcuts step, titled Make it yours, with Permission ticked and Try it still to come along the top. Use Shot for ⇧⌘4 and ⇧⌘5 is on, Open Shot at login is off, and the screenshot keys are drawn as keycaps beside them above a yellow Continue button](../../../docs/media/welcome.png)
+![The welcome window on its Shortcuts step, titled Make it yours, with Permission ticked and Try it still to come along the top. Use Shot for ⇧⌘4 and ⇧⌘5 is on and Open Shot at login is off. Beside them, the ⇧, ⌘ and 4 keys are drawn as keycaps above two rows: ⇧⌘4, Screenshot, copied and saved, and ⇧⌘5, Screen recording. A yellow Continue button is at the bottom right](../../../docs/media/welcome.png)
 
 A short welcome window walks you through up to three steps: **Permission**, **Shortcuts** and **Try it**. They're named across the top of the window, with a tick beside each one you've done, so you can see how far you've got. **Back** in the bottom left returns to the step before. You can close the window at any point to skip the rest.
 

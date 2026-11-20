@@ -17,12 +17,12 @@ import quickAccess from '../../../docs/media/quick-access.png';
 <div class="hero-scene panel sand" role="img" aria-label="Shot's editor with a support ticket: the email address is blurred, the discount line is highlighted, and an arrow points at it from a note saying the code is valid but the total is unchanged. The capture bar sits under it, and the Quick Access card floats beside it with Copy and Save As.">
   <div class="scene" aria-hidden="true">
     <div class="editor-crop">
-      <Image src={editor} class="editor" alt="" widths={[1130, 1600]} sizes="(min-width: 900px) 1130px, 140vw" loading="eager" fetchpriority="high" />
+      <Image src={editor} class="editor" alt="" widths={[1130, 2260]} sizes="(min-width: 900px) 1130px, 140vw" loading="eager" fetchpriority="high" />
     </div>
 
     <div class="bar-anchor">
       <div class="bar-crop">
-        <Image src={captureBar} class="bar" alt="" widths={[640, 1118]} sizes="(min-width: 900px) 640px, 80vw" loading="eager" />
+        <Image src={captureBar} class="bar" alt="" widths={[590, 1173]} sizes="(min-width: 900px) 590px, 74vw" loading="eager" />
       </div>
       <span class="mark-bar pop deco"><span class="counter pulse">1</span></span>
     </div>
@@ -55,20 +55,20 @@ import quickAccess from '../../../docs/media/quick-access.png';
   .editor-crop, .bar-crop, .quick-crop { position: relative; overflow: hidden; }
   .editor-crop :global(img), .bar-crop :global(img), .quick-crop :global(img) { position: absolute; max-width: none; height: auto; }
 
-  /* editor.png is 1600 × 1000; the window's top 821 px, from (220, 39), is shown. */
+  /* editor.png is 3200 × 2000; the window's top 1642 px, from (440, 78), is shown. */
   .editor-crop {
-    aspect-ratio: 1160 / 821;
+    aspect-ratio: 2320 / 1642;
     border-radius: 1.4% 1.4% 0 0 / 1.95% 1.95% 0 0;
     box-shadow: 0 30px 70px rgb(80 50 10 / 0.28);
   }
-  .editor-crop :global(img) { width: calc(1600 / 1160 * 100%); left: calc(-220 / 1160 * 100%); top: calc(-39 / 821 * 100%); }
+  .editor-crop :global(img) { width: calc(3200 / 2320 * 100%); left: calc(-440 / 2320 * 100%); top: calc(-78 / 1642 * 100%); }
 
-  /* capture-bar.png is 1118 × 150; the bar is 1058 × 90 from (30, 30). It straddles the editor's bottom edge. */
-  .bar-anchor { position: absolute; left: 50%; bottom: 0; width: 74%; translate: -50% 50%; }
-  .bar-crop { aspect-ratio: 1058 / 90; border-radius: 2.8% / 33%; box-shadow: 0 14px 30px rgb(0 0 0 / 0.3); }
-  .bar-crop :global(img) { width: calc(1118 / 1058 * 100%); left: calc(-30 / 1058 * 100%); top: calc(-30 / 90 * 100%); }
-  /* On the Area button, which runs from 21% to 35% of the bar. */
-  .mark-bar { position: absolute; left: 21.5%; top: 0; display: flex; margin: -16px 0 0 -16px; --delay: 1500ms; }
+  /* capture-bar.png is 1173 × 150; the bar is 1113 × 90 from (30, 30). It straddles the editor's bottom edge, at most 557 px wide so it stays 2x. */
+  .bar-anchor { position: absolute; left: 50%; bottom: 0; width: 68%; max-width: 557px; translate: -50% 50%; }
+  .bar-crop { aspect-ratio: 1113 / 90; border-radius: 2.7% / 33%; box-shadow: 0 14px 30px rgb(0 0 0 / 0.3); }
+  .bar-crop :global(img) { width: calc(1173 / 1113 * 100%); left: calc(-30 / 1113 * 100%); top: calc(-30 / 90 * 100%); }
+  /* On the Area button, which runs from 25% to 38% of the bar. */
+  .mark-bar { position: absolute; left: 25.5%; top: 0; display: flex; margin: -16px 0 0 -16px; --delay: 1500ms; }
   .mark-bar .counter { width: 34px; height: 34px; font-size: 17px; }
 
   /* quick-access.png is 648 × 400; the card is 558 × 316 from (46, 45). It hangs off the left into the panel's margin,
@@ -89,8 +89,8 @@ import quickAccess from '../../../docs/media/quick-access.png';
   /* A badge with a dark label, as the board draws them. */
   .mark { position: absolute; display: flex; align-items: center; gap: 6px; }
   .label { padding: 3px 9px; border-radius: 8px; background: #16161a; color: #fff; font: 700 13px/1.4 var(--font); white-space: nowrap; }
-  /* Below and left of the arrow's middle, which crosses (67.9%, 76%) of the crop. */
-  .mark-arrow { right: 33%; top: 77.5%; --delay: 1400ms; }
+  /* Below and left of the arrow's middle, which crosses (67.2%, 70.3%) of the crop. */
+  .mark-arrow { right: 33.7%; top: 71.8%; --delay: 1400ms; }
   /* Above Copy, whose centre is 96.2% across the crop. */
   .mark-copy { right: calc(3.8% - 22px); bottom: calc(100% + 8px); flex-direction: column; width: 44px; --delay: 1700ms; }
   .mark .counter { --delay: 2000ms; }

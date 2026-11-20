@@ -4,7 +4,7 @@ summary: "Capture an area, a window, just the page of a browser window, the whol
 group: Capture
 ---
 
-![Pressing Tab to step the capture bar from Area to Window and Full Screen and back to Area, dragging out an area around a support ticket, then the Quick Access card sliding into the corner](../../../docs/media/capture.gif)
+![Clicking through the capture bar from Area to Window and Full Screen and back to Area, dragging out an area around a support ticket, then the Quick Access card sliding into the corner](../../../docs/media/capture.gif)
 
 Every screenshot is saved, copied to the clipboard as a PNG, and shown in a [Quick Access](#quick-access) card, so you can paste it straight away.
 
