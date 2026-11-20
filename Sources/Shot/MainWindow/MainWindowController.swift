@@ -236,8 +236,9 @@ private struct MainWindowView: View {
         .environment(\.inMainWindow, true)
         .onGeometryChange(for: Double.self) { $0.size.width } action: { width in
             navigation.width = width
-            // Back to the sidebar button's own choice once the window is wide enough again.
-            if navigation.revealsSidebar, MainWindowLayout.sidebarFits(windowWidth: width, sidebarWidth: SettingsView.sidebarWidths.lowerBound) {
+            // Back to the sidebar button's own choice once the widest sidebar either page can have fits. Clearing it
+            // sooner would hide a sidebar someone showed before there's room for it.
+            if navigation.revealsSidebar, MainWindowLayout.sidebarFits(windowWidth: width, sidebarWidth: max(SettingsView.sidebarWidths.upperBound, GalleryModel.sidebarWidths.upperBound)) {
                 navigation.revealsSidebar = false
             }
         }
