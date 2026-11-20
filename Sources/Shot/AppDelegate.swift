@@ -114,7 +114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return false
         }
         log.notice("Reopened; showing Settings")
-        SettingsWindowController.show()
+        ShotWindowRouter.showSettings()
         return false
     }
 
@@ -142,14 +142,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .pause:
             coordinator.togglePause()
         case .gallery:
-            GalleryController.shared.show()
+            ShotWindowRouter.showLibrary()
         case let .settings(name):
             let section = name.flatMap(SettingsSection.init(rawValue:))
             if let name, section == nil {
                 Toast.error("Unknown settings section: \(name)")
                 return
             }
-            SettingsWindowController.show(section: section)
+            ShotWindowRouter.showSettings(section: section)
         case .welcome:
             WelcomeWindow.showAgain()
         case let .captureTimer(seconds):
@@ -217,6 +217,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showSettings() {
-        SettingsWindowController.show()
+        ShotWindowRouter.showSettings()
     }
 }

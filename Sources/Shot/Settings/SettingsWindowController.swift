@@ -16,7 +16,7 @@ private final class SettingsWindow: NSWindow {
 /// The Settings window, with every section picked from a sidebar. The gallery has its own window, `GalleryWindowController`.
 @MainActor
 enum SettingsWindowController {
-    private static var window: NSWindow?
+    private(set) static var window: NSWindow?
     private static var contentReleased = false
     static let size = NSSize(width: 1080, height: 720)
     /// Narrowest window that still shows every section.
@@ -55,7 +55,7 @@ enum SettingsWindowController {
             guard event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
                 return false
             }
-            return moveBetweenSections(keyCode: event.keyCode)
+            return moveBetweenSections(keyCode: event.keyCode, in: window)
         }
         // The window is kept when closed, so its views never disappear on their own: turn off any camera or microphone test, and
         // once closed drop the views. `show` builds them again.
@@ -75,10 +75,10 @@ enum SettingsWindowController {
     }
 
     /// ↑ and ↓ move between sections, as in a sidebar list, unless a text field, a shortcut recorder, a menu or a sheet has
-    /// the keyboard.
-    private static func moveBetweenSections(keyCode: UInt16) -> Bool {
+    /// the keyboard. The one Shot window uses it too, on its settings pages.
+    static func moveBetweenSections(keyCode: UInt16, in window: NSWindow) -> Bool {
         let navigation = SettingsNavigation.shared
-        guard let window, window.isKeyWindow, window.attachedSheet == nil, window.childWindows?.isEmpty ?? true,
+        guard window.isKeyWindow, window.attachedSheet == nil, window.childWindows?.isEmpty ?? true,
               !navigation.recordingShortcut, !(window.firstResponder is NSText) else {
             return false
         }

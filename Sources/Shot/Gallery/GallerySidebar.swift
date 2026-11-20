@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 /// Tags the captures with a tag. One row is picked at a time. At the foot, how much room the captures take.
 struct GallerySidebar: View {
     let model: GalleryModel
+    @Environment(\.inMainWindow) private var inMainWindow
     @State private var listTargeted = false
     @State private var managingTags = false
 
@@ -30,6 +31,9 @@ struct GallerySidebar: View {
             // folder's row lights up to show it.
             .modifier(FolderDrop(model: model, folder: "", targeted: $listTargeted))
             GalleryStorage(model: model)
+            if inMainWindow {
+                OpenSettingsRow()
+            }
         }
     }
 
@@ -551,6 +555,36 @@ private struct FolderDrop: ViewModifier {
             model.drop(urls, on: folder)
             return true
         } isTargeted: { targeted = $0 }
+    }
+}
+
+/// In the one Shot window, the way in to Settings, at the very foot of the library's sidebar.
+private struct OpenSettingsRow: View {
+    @State private var hovering = false
+
+    var body: some View {
+        Button {
+            MainWindowNavigation.shared.openSettings()
+        } label: {
+            SidebarRowLabel(title: String(localized: "Settings"), count: nil, selected: false) {
+                Image(systemName: "gearshape")
+                    .font(.scaled(13, weight: .medium))
+                    .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
+            }
+            .padding(.vertical, 5)
+            .padding(.horizontal, 8)
+            .contentShape(Rectangle())
+            .modifier(SidebarRowBackground(selected: false, hovering: hovering))
+        }
+        .buttonStyle(.halo)
+        .onHover { hovering = $0 }
+        .padding(.horizontal, 10)
+        .padding(.top, 6)
+        .padding(.bottom, 10)
+        .overlay(alignment: .top) {
+            Theme.hairline.frame(height: 1).padding(.horizontal, 10)
+        }
+        .accessibilityLabel(Text("Settings"))
     }
 }
 

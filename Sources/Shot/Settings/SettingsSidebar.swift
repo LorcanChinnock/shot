@@ -8,9 +8,14 @@ struct SettingsSidebar: View {
     var searchFocused: FocusState<Bool>.Binding
     /// While searching, the sections with a matching row. The others fade.
     let matching: Set<SettingsSection>?
+    @Environment(\.inMainWindow) private var inMainWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
+            if inMainWindow {
+                BackToLibraryRow()
+                    .padding(.bottom, 6)
+            }
             ThemeSearchField(prompt: "Search", text: Bindable(navigation).query, focus: searchFocused)
                 .onExitCommand {
                     // Esc clears the search and gives the keyboard back to the window, so the arrow keys move between sections.
@@ -30,7 +35,9 @@ struct SettingsSidebar: View {
                 }
             }
             Spacer(minLength: 12)
-            OpenGalleryRow()
+            if !inMainWindow {
+                OpenGalleryRow()
+            }
             SettingsSidebarFooter { navigation.open(.about) }
         }
         .padding(.horizontal, 10)
@@ -94,6 +101,35 @@ private struct SettingsSidebarRow: View {
         .accessibilityLabel(Text(section.title))
         .accessibilityValue(faded ? Text("No matches") : Text(verbatim: ""))
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// In the one Shot window, "‹ Library" at the top of the settings sidebar, back to the captures.
+private struct BackToLibraryRow: View {
+    @State private var hovering = false
+
+    var body: some View {
+        Button {
+            MainWindowNavigation.shared.openLibrary()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "chevron.left")
+                    .font(.scaled(12, weight: .semibold))
+                    .accessibilityHidden(true)
+                Text("Library")
+                    .font(.scaled(13))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
+            .padding(.vertical, 5)
+            .padding(.horizontal, 8)
+            .contentShape(Rectangle())
+            .modifier(SidebarRowBackground(selected: false, hovering: hovering))
+        }
+        .buttonStyle(.halo)
+        .onHover { hovering = $0 }
+        .accessibilityLabel(Text("Back to Library"))
     }
 }
 
