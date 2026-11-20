@@ -1068,22 +1068,31 @@ final class SelectionOverlayView: NSView {
         func placed(_ rect: CGRect) -> CGRect {
             rect.offsetBy(dx: frame.minX, dy: frame.minY)
         }
-        // The kind: a dot in the accent for a screenshot or record red for a recording, then its name.
+        // The kind: a dot in the accent for a screenshot or record red for a recording, then its name. With the switch, the name
+        // and the other kind's icon are one button: hovering either lights both, and clicking either switches.
         let kindBox = placed(layout.frames[0][0])
+        let switchBox = kindSwitch.map { _ in placed(layout.frames[0][1]) }
+        let switchHovered = kindSwitch != nil && hoveredChip == .switchKind
+        if let switchBox, switchHovered {
+            let pair = kindBox.union(switchBox)
+            let radius = min(Theme.Radius.group, pair.height / 2)
+            NSColor.white.withAlphaComponent(0.08).setFill()
+            NSBezierPath(roundedRect: pair, xRadius: radius, yRadius: radius).fill()
+        }
         (controller.recording ? FloatingPanel.recordNS : FloatingPanel.accentNS).setFill()
         NSBezierPath(ovalIn: CGRect(x: kindBox.minX + 8, y: (kindBox.midY - dot / 2).rounded(), width: dot, height: dot)).fill()
         kindText.draw(at: CGPoint(x: kindBox.minX + 8 + dot + 7, y: (kindBox.midY - kindText.size().height / 2).rounded()))
 
         var tip: (button: BarButton, box: CGRect)?
         var drawn: [BarButton] = []
-        if let kindSwitch {
-            let box = placed(layout.frames[0][1])
-            let hovered = hoveredChip == .switchKind
-            drawButton(kindSwitch, in: box, hovered: hovered, increased: increased, scale: scale, font: font(kindSwitch), icon: icon)
-            barHits.append((box, .switchKind))
+        if let kindSwitch, let switchBox {
+            // The pair's hover fill is drawn above, so the icon draws without its own.
+            drawButton(kindSwitch, in: switchBox, hovered: false, increased: increased, scale: scale, font: font(kindSwitch), icon: icon)
+            let pair = kindBox.union(switchBox)
+            barHits.append((pair, .switchKind))
             drawn.append(kindSwitch)
-            if hovered {
-                tip = (kindSwitch, box)
+            if switchHovered {
+                tip = (kindSwitch, pair)
             }
         }
         let modeRects = kindSwitch == nil ? Array(layout.frames[0].dropFirst()) : layout.frames[1]
