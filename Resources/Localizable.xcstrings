@@ -2698,6 +2698,64 @@
         }
       }
     },
+    "%lld · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        }
+      }
+    },
     "%lld%%" : {
       "localizations" : {
         "de" : {
@@ -9579,6 +9637,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "清除搜索"
+          }
+        }
+      }
+    },
+    "Clear what takes the most space. Anything you move to the Trash can be put back from Finder." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Räum auf, was am meisten Platz braucht. Was du in den Papierkorb legst, kannst du im Finder zurücklegen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libera lo que más espacio ocupa. Lo que traslades a la papelera se puede recuperar desde el Finder."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libérez ce qui prend le plus de place. Ce que vous placez dans la corbeille peut être remis en place depuis le Finder."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libera ciò che occupa più spazio. Quello che sposti nel Cestino si può ripristinare dal Finder."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最も容量を使っているものを整理します。ゴミ箱に入れたものはFinderで元に戻せます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가장 많은 공간을 차지하는 항목을 정리합니다. 휴지통으로 옮긴 항목은 Finder에서 되돌릴 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libere o que ocupa mais espaço. O que você mover para o Lixo pode ser recuperado pelo Finder."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清理占用空间最多的内容。移到废纸篓的内容可以在访达中放回。"
           }
         }
       }
@@ -18433,6 +18543,58 @@
         }
       }
     },
+    "Duplicates" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplikate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicados"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doublons"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重複"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "중복 항목"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicados"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重复项"
+          }
+        }
+      }
+    },
     "Dusk" : {
       "localizations" : {
         "de" : {
@@ -19681,6 +19843,58 @@
         }
       }
     },
+    "Exact copies. Shot keeps the oldest of each." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exakte Kopien. Shot behält jeweils die älteste."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copias exactas. Shot conserva la más antigua de cada una."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copies exactes. Shot garde la plus ancienne de chacune."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copie esatte. Shot tiene la più vecchia di ognuna."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完全なコピー。Shotはそれぞれ最も古いものを残します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "완전히 같은 사본입니다. Shot은 각각 가장 오래된 항목을 남깁니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cópias exatas. O Shot mantém a mais antiga de cada uma."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完全相同的副本。Shot 会保留每组中最早的一个。"
+          }
+        }
+      }
+    },
     "Exclude menu bar" : {
       "localizations" : {
         "de" : {
@@ -20671,6 +20885,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "填充"
+          }
+        }
+      }
+    },
+    "Find large captures and copies to clear" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Große Aufnahmen und Kopien zum Aufräumen finden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar capturas grandes y copias para liberar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trouver les grosses captures et les copies à libérer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trova catture grandi e copie da eliminare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "整理できる大きなキャプチャとコピーを探す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "정리할 큰 캡처와 사본 찾기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encontrar capturas grandes e cópias para liberar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查找可清理的大捕捉和副本"
           }
         }
       }
@@ -25008,16 +25274,6 @@
         }
       }
     },
-    "Key: %@ or %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Key: %1$@ or %2$@"
-          }
-        }
-      }
-    },
     "Keyframe" : {
 
     },
@@ -25173,6 +25429,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "大"
+          }
+        }
+      }
+    },
+    "Large captures" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Große Aufnahmen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capturas grandes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grosses captures"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catture grandi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大きなキャプチャ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "큰 캡처"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capturas grandes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大捕捉"
           }
         }
       }
@@ -26425,6 +26733,58 @@
         }
       }
     },
+    "Looking for copies…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suche nach Kopien …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando copias…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche de copies…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca di copie…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コピーを探しています…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사본을 찾는 중…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Procurando cópias…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在查找副本…"
+          }
+        }
+      }
+    },
     "Loud" : {
       "localizations" : {
         "de" : {
@@ -26917,6 +27277,58 @@
         }
       }
     },
+    "Make room" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Platz schaffen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liberar espacio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libérer de l’espace"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libera spazio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "空き領域を作る"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "공간 확보"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liberar espaço"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "腾出空间"
+          }
+        }
+      }
+    },
     "Make room…" : {
       "localizations" : {
         "de" : {
@@ -27400,6 +27812,58 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Move %lld to Trash" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld in den Papierkorb legen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trasladar %lld a la papelera"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Placer %lld dans la corbeille"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sposta %lld nel Cestino"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld個をゴミ箱に入れる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld개를 휴지통으로 이동"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover %lld para o Lixo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将 %lld 个移到废纸篓"
           }
         }
       }
@@ -29087,6 +29551,58 @@
         }
       }
     },
+    "No copies of the same capture." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Kopien derselben Aufnahme."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay copias de la misma captura."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune copie d’une même capture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna copia della stessa cattura."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同じキャプチャのコピーはありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "같은 캡처의 사본이 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma cópia da mesma captura."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有同一捕捉的副本。"
+          }
+        }
+      }
+    },
     "No idle time to trim" : {
       "localizations" : {
         "de" : {
@@ -29811,6 +30327,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "没有匹配项"
+          }
+        }
+      }
+    },
+    "Nothing over %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts über %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada de más de %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien au-delà de %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niente oltre %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@を超えるものはありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@을(를) 넘는 항목이 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada acima de %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有超过 %@ 的内容。"
           }
         }
       }
@@ -32091,6 +32659,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "聚光灯区域外"
+          }
+        }
+      }
+    },
+    "Over %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Über %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más de %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus de %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oltre %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@超"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 초과"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acima de %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "超过 %@"
           }
         }
       }
@@ -43936,6 +44556,58 @@
         }
       }
     },
+    "Show all, largest first" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle zeigen, größte zuerst"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar todo, lo más grande primero"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout afficher, les plus lourdes d’abord"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra tutto, prima le più grandi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてを大きい順に表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 보기, 큰 항목부터"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar tudo, maiores primeiro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示全部，最大的优先"
+          }
+        }
+      }
+    },
     "Show clicks" : {
       "localizations" : {
         "de" : {
@@ -44036,58 +44708,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示光标"
-          }
-        }
-      }
-    },
-    "Show every capture, largest first" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alle Aufnahmen zeigen, größte zuerst"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar todas las capturas, las más grandes primero"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher toutes les captures, les plus lourdes d’abord"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra tutte le catture, prima le più grandi"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "すべてのキャプチャをサイズの大きい順に表示"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "모든 캡처를 큰 항목부터 보기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar todas as capturas, maiores primeiro"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示所有捕捉，最大的优先"
           }
         }
       }

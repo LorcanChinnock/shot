@@ -279,3 +279,15 @@ private func item(_ name: String, _ date: Date, bytes: Int = 1) -> GalleryItem {
     let many = (0...Gallery.animatedChangeLimit).map { item("\($0).png", now) }
     #expect(Gallery.animatedArrivals(from: old, to: old + many) == nil)
 }
+
+@Test func zoomingScalesTheTileSizeWithinItsRange() {
+    #expect(abs(Gallery.tileSize(200, zoomedBy: 1.1) - 220) < 0.0001)
+    #expect(Gallery.tileSize(200, zoomedBy: 0.5) == Gallery.tileSizes.lowerBound)
+    #expect(Gallery.tileSize(300, zoomedBy: 2) == Gallery.tileSizes.upperBound)
+}
+
+@Test func commandScrollZoomsAMouseWheelMoreThanATrackpad() {
+    #expect(Gallery.zoomFactor(scrollDelta: 1, precise: false) == 1.1)
+    #expect(Gallery.zoomFactor(scrollDelta: -1, precise: false) == 0.9)
+    #expect(abs(Gallery.zoomFactor(scrollDelta: 10, precise: true) - 1.1) < 0.0001)
+}

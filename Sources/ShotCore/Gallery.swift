@@ -97,6 +97,17 @@ public enum Gallery {
     public static let tileSizes: ClosedRange<Double> = 120...320
     public static let defaultTileSize: Double = 190
 
+    /// The tile size after a pinch or ⌘-scroll scales it by `factor`, kept to `tileSizes`.
+    public static func tileSize(_ size: Double, zoomedBy factor: Double) -> Double {
+        min(max(size * factor, tileSizes.lowerBound), tileSizes.upperBound)
+    }
+
+    /// How much a ⌘-scroll of `delta` scales the tiles: a trackpad's fine deltas a little each, and a mouse wheel's notches,
+    /// one or so each, a tenth. Scrolling up makes them bigger.
+    public static func zoomFactor(scrollDelta delta: Double, precise: Bool) -> Double {
+        1 + delta * (precise ? 0.01 : 0.1)
+    }
+
     /// The most levels of folders the gallery looks through, which also stops a loop of links.
     static let maxFolderDepth = 16
 

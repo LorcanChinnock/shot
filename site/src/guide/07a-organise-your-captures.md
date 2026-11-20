@@ -33,7 +33,7 @@ Drag the thin strip between the sidebar and the thumbnails to change its width, 
 
 ## See how much room your captures take
 
-The foot of the sidebar shows your save folder, how much space the captures in it take, and a bar of that against your disk. Click **Make room…** to show every capture with the largest first, so you can choose which to move to the Trash.
+The foot of the sidebar shows your save folder, how much space the captures in it take, and a bar of that against your disk. Click **Make room…** to see what takes the most space: **Duplicates**, exact copies of the same capture (Shot keeps the oldest of each), and **Large captures**, anything over 25 MB. Each has a **Move to Trash** button, and you can put anything back from the Trash in Finder. **Show all, largest first** shows every capture with the biggest at the top, so you can choose for yourself.
 
 ## Move captures
 

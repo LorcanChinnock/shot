@@ -84,6 +84,19 @@ public struct GalleryGridLayout: Equatable, Sendable {
         return nil
     }
 
+    /// The item, among all the sections' items, whose tile is in the row at `y` and the column `column`, so zooming can keep
+    /// the tile under the pointer in place. A column past the row's last tile gives that tile. Nil over a header or a gap.
+    public func item(at y: CGFloat, column: Int) -> Int? {
+        for block in blocks(in: y..<y + 1) {
+            guard let items = block.items, y < block.top + rowHeight else {
+                continue
+            }
+            let start = sectionSizes.prefix(block.section).reduce(0, +)
+            return start + min(items.lowerBound + max(column, 0), items.upperBound - 1)
+        }
+        return nil
+    }
+
     private var headerRoom: CGFloat {
         titled ? headerHeight + spacing : 0
     }

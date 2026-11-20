@@ -155,7 +155,7 @@ These work while the content's app has the keyboard, so you can keep scrolling w
 | ⌘Delete | Move to the Trash without asking |
 | ⌘Z | Put back what you last moved to the Trash |
 | ⌘F | Search |
-| ⌘+, ⌘− | Thumbnail size |
+| ⌘+, ⌘− | Thumbnail size (or pinch, or ⌘ and scroll) |
 | Esc | Clear the selection, or go back to the grid from the preview |
 
 ## Any Shot window

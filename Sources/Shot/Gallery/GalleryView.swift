@@ -28,7 +28,11 @@ struct GalleryRootView: View {
                 GalleryPreviewView(model: model)
             }
         }
-        .sheet(item: Bindable(model).trashRequest) { request in
+        .sheet(isPresented: Bindable(model).showsMakeRoom) {
+            MakeRoomSheet(model: model)
+        }
+        // While Make room is open, it shows the Trash dialog itself, since a window shows one sheet at a time.
+        .sheet(item: Binding(get: { model.showsMakeRoom ? nil : model.trashRequest }, set: { model.trashRequest = $0 })) { request in
             TrashConfirmation(model: model, request: request)
         }
         .onChange(of: model.searchFocusRequest) {
@@ -250,16 +254,14 @@ private struct GalleryGrid: View {
     /// and header built correct them.
     @State private var captionHeight: CGFloat = 26
     @State private var headerHeight: CGFloat = 20
+    /// Where the pointer is over the grid, kept out of SwiftUI's sight so moving it doesn't redraw the grid.
+    @State private var pointer = HoverPoint()
 
     var body: some View {
         GeometryReader { geometry in
             // An overlay scroller needs the content's room; a legacy one takes the same width from the scroll view.
             let available = geometry.size.width - Theme.groupInset * 2 - SystemScroller.shared.width
-            let (columns, cellWidth) = Gallery.grid(available: available, tileSize: model.tileSize, spacing: Self.spacing)
-            let cell = CGFloat(cellWidth)
-            let layout = GalleryGridLayout(sectionSizes: model.sections.map(\.items.count), titled: model.sections.contains { !$0.title.isEmpty },
-                                           columns: columns, rowHeight: GalleryTile.thumbnailHeight(width: cell) + captionHeight,
-                                           headerHeight: headerHeight, spacing: Self.spacing)
+            let (layout, cell, columns) = layout(tileSize: model.tileSize, available: available)
             ScrollView {
                 ZStack(alignment: .topLeading) {
                     ForEach(placed(layout.blocks(in: built), cell: cell)) { place in
@@ -303,8 +305,21 @@ private struct GalleryGrid: View {
                 }
             }
             .scrollPosition($position)
+            .onContinuousHover { phase in
+                switch phase {
+                case let .active(location): pointer.location = location
+                case .ended: pointer.location = nil
+                }
+            }
+            .onChange(of: model.tileSize) { old, new in
+                keepTileUnderPointer(from: old, to: new, available: available)
+            }
             .onScrollGeometryChange(for: CGRect.self) { $0.visibleRect } action: { _, visible in
                 model.viewport = visible
+                // Mid-zoom, the scroll view can still report where it was before the last resize scrolled it.
+                if Date.now.timeIntervalSince(pointer.zoomedAt) > 0.3 {
+                    pointer.top = visible.minY
+                }
                 let lower = ((visible.minY - Self.margin - Self.overscan) / Self.overscan).rounded(.down) * Self.overscan
                 let upper = ((visible.maxY - Self.margin + Self.overscan) / Self.overscan).rounded(.up) * Self.overscan
                 if built != lower..<upper {
@@ -318,6 +333,38 @@ private struct GalleryGrid: View {
             }
         }
         .clipped()
+    }
+
+    private func layout(tileSize: Double, available: CGFloat) -> (GalleryGridLayout, cell: CGFloat, columns: Int) {
+        let (columns, cellWidth) = Gallery.grid(available: available, tileSize: tileSize, spacing: Self.spacing)
+        let cell = CGFloat(cellWidth)
+        let layout = GalleryGridLayout(sectionSizes: model.sections.map(\.items.count), titled: model.sections.contains { !$0.title.isEmpty },
+                                       columns: columns, rowHeight: GalleryTile.thumbnailHeight(width: cell) + captionHeight,
+                                       headerHeight: headerHeight, spacing: Self.spacing)
+        return (layout, cell, columns)
+    }
+
+    /// After a pinch or ⌘-scroll resizes the tiles, scrolls so the tile under the pointer stays under it, at the same point
+    /// of its row, rather than the grid zooming from its top.
+    private func keepTileUnderPointer(from old: Double, to new: Double, available: CGFloat) {
+        guard let point = pointer.location else {
+            return
+        }
+        let (before, oldCell, _) = layout(tileSize: old, available: available)
+        let (after, _, _) = layout(tileSize: new, available: available)
+        // The layout starts below the top margin and inside the group inset. A pinch resizes many times a second, faster than
+        // the scroll view reports where it scrolled, so this starts from where the last resize scrolled to.
+        let y = pointer.top + point.y - Self.margin
+        let column = Int(((point.x - Theme.groupInset) / (oldCell + Self.spacing)).rounded(.down))
+        guard let index = before.item(at: y, column: column), let was = before.rowSpan(ofItem: index), let now = after.rowSpan(ofItem: index) else {
+            return
+        }
+        let fraction = (y - was.lowerBound) / max(was.upperBound - was.lowerBound, 1)
+        let target = now.lowerBound + fraction * (now.upperBound - now.lowerBound)
+        let top = max(0, target + Self.margin - point.y)
+        pointer.top = top
+        pointer.zoomedAt = .now
+        position.scrollTo(y: top)
     }
 
     /// The headers and tiles of `blocks`, each where it goes in the grid.
@@ -546,6 +593,15 @@ private struct VoiceOverFollower: View {
             }
         }
     }
+}
+
+/// The pointer's place over the grid. A class, so updating it doesn't make SwiftUI redraw the grid on every move.
+private final class HoverPoint {
+    var location: CGPoint?
+    /// How far the grid is scrolled, as last reported or asked for.
+    var top: CGFloat = 0
+    /// When a resize last scrolled the grid.
+    var zoomedAt = Date.distantPast
 }
 
 /// Scrolls the grid to the lead item, unless it is already fully in view. It is a view of its own so the grid doesn't

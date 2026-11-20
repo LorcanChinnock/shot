@@ -16,7 +16,7 @@ Every screenshot is saved, copied to the clipboard as a PNG, and shown in a [Qui
 
 A small dark bar at the bottom of the screen starts with **Screenshot** or **Record**, then shows what you are about to capture. The one picked is yellow and shows its name: **Area**, **Window** or **Full Screen**. Press <kbd>Tab</kbd> to move between Area, Window and Full Screen (<kbd>⇧Tab</kbd> goes back), or click an icon. Point at an icon to see its name and key. Shot remembers the one you used last, for screenshots and recordings separately, and opens on it next time.
 
-Pressed the wrong shortcut? Press the other one, or <kbd>V</kbd>, or click the icon beside **Screenshot** or **Record** on the bar, and Shot switches to the other kind on the same Area, Window or Full Screen choice.
+Pressed the wrong shortcut? Press the other one, or <kbd>V</kbd>, or click **Screenshot** or **Record** at the left of the bar, and Shot switches to the other kind on the same Area, Window or Full Screen choice.
 
 The bar never appears in your screenshot, and it stays out of the way: it fades away about 4 seconds after it shows (it stays while the pointer is on it), so you can pick the area under it, and any of its keys brings it back. It also hides while you drag out an area, and moves to the top of the screen when the window you point at is under it. To start an area right under the bar, just drag from it: a click picks an icon, a drag starts the area.
 
