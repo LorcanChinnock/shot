@@ -10,7 +10,6 @@ struct GalleryEmptyLibrary: View {
     @Setting private var screenshotKeys: String
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.textSize) private var textSize
-    @Environment(\.inMainWindow) private var inMainWindow
 
     init(model: GalleryModel) {
         self.model = model
@@ -57,13 +56,11 @@ struct GalleryEmptyLibrary: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: (320 * CGFloat(textSize.scale)).rounded())
             HStack(spacing: 10) {
-                // In the one Shot window, the next step is a button too, for people who haven't learned the shortcut.
-                if inMainWindow {
-                    Button("Take a screenshot") {
-                        GalleryController.shared.onScreenshot?()
-                    }
-                    .buttonStyle(ThemeButtonStyle(.main))
+                // The next step is a button too, for people who haven't learned the shortcut.
+                Button("Take a screenshot") {
+                    GalleryController.shared.onScreenshot?()
                 }
+                .buttonStyle(ThemeButtonStyle(.main))
                 Button("Choose a different folder…") {
                     model.chooseFolder(in: NSApp.keyWindow)
                 }

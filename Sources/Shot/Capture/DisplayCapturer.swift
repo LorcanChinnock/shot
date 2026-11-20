@@ -87,7 +87,7 @@ enum DisplayCapturer {
                     throw CaptureError.displayNotFound
                 }
                 let ownApps = excludingShot ? content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier } : []
-                // Shot's overlays stay out of captures; the Settings and gallery windows stay in, so they can be screenshotted.
+                // Shot's overlays stay out of captures; the Shot window stays in, so it can be screenshotted.
                 let kept = content.windows.filter { keptIDs.contains($0.windowID) }
                 let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: kept)
                 let config = SCStreamConfiguration()

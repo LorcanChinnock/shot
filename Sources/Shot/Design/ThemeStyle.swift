@@ -54,7 +54,7 @@ enum Theme {
     static let fieldFill = Color(light: Color(hex: 0x16161A).opacity(0.06), dark: .white.opacity(0.07))
     /// Toolbar buttons on hover, and toolbar toggles that are on.
     static let hover = Color(light: Color(hex: 0x16161A).opacity(0.07), dark: .white.opacity(0.08))
-    /// The selected sidebar row in the one Shot window: a soft grey, a step darker than hover, since yellow is for the next action.
+    /// The selected sidebar row: a soft grey, a step darker than hover, since yellow is for the next action.
     static let selectedFill = Color(light: Color(hex: 0x16161A).opacity(0.09), dark: .white.opacity(0.12))
 
     /// A secondary button: white in light, the control fill in dark.
@@ -83,7 +83,7 @@ enum Theme {
     static let radius: CGFloat = 10
     static let shadow: CGFloat = 4
 
-    /// A sidebar icon's tile and glyph. Tints appear only behind a sidebar icon, never as a fill.
+    /// An icon's tile and glyph, such as recording recovery's. Tints appear only behind an icon, never as a fill.
     struct SidebarTint {
         let tile: Color
         let icon: Color
@@ -93,16 +93,7 @@ enum Theme {
             self.icon = Color(light: Color(hex: icon.light), dark: Color(hex: icon.dark))
         }
 
-        static let general = SidebarTint(tile: (0xF0EDE6, 0x3A3A3F), icon: (0x55545A, 0xCFCDD4))
-        static let capture = SidebarTint(tile: (0xFFE0EE, 0x4A2336), icon: (0xC2306E, 0xFF8DBE))
-        static let quickAccess = SidebarTint(tile: (0xDCEFFF, 0x1E3550), icon: (0x1D6FB8, 0x7DBBFF))
         static let recording = SidebarTint(tile: (0xFFE1DE, 0x4A2220), icon: (0xC4271E, 0xFF7B72))
-        static let shortcuts = SidebarTint(tile: (0xFFE9D3, 0x4A3118), icon: (0xB35A00, 0xFFB366))
-        static let about = SidebarTint(tile: (0xEAF6D2, 0x2E3D1A), icon: (0x4E7A0E, 0xA8D86A))
-        /// Open Gallery's tile, under a control edge.
-        static let gallery = SidebarTint(tile: (0xFFFFFF, 0x3A3A3F), icon: (0x3A393F, 0xCFCDD4))
-        /// The selected row's tile, in both appearances.
-        static let selected = SidebarTint(tile: (0xFFFFFF, 0xFFFFFF), icon: (0x16161A, 0x16161A))
     }
 
     /// The gallery sidebar's icons, drawn in these colours without a tile.

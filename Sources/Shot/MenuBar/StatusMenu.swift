@@ -108,14 +108,14 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             menu.addItem(action(.pickColor, symbol: ShotAction.pickColor.symbol))
         }
         menu.addItem(row(String(localized: "Gallery"), symbol: "square.grid.2x2") {
-            ShotWindowRouter.showLibrary()
+            MainWindowController.showLibrary()
         })
 
         recentItems.forEach(menu.addItem)
         showRecent()
 
         menu.addItem(.separator())
-        let settings = row(String(localized: "Settings…"), symbol: nil) { ShotWindowRouter.showSettings() }
+        let settings = row(String(localized: "Settings…"), symbol: nil) { MainWindowController.showSettings() }
         settings.keyEquivalent = ","
         menu.addItem(settings)
         menu.addItem(updateRow())

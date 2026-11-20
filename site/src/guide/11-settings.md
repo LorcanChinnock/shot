@@ -8,15 +8,15 @@ group: Reference
 
 ## Open Settings
 
-Click Shot's menu bar icon and choose **Settings…**, or press <kbd>⌘,</kbd> while a Shot window is in front. To open a particular section, use [`shot://settings?section=recording`](#url-scheme), or any section name below.
+Click Shot's menu bar icon and choose **Settings…**, press <kbd>⌘,</kbd> while a Shot window is in front, or click **Settings** at the foot of the [gallery](#find-your-captures)'s sidebar. To open a particular section, use [`shot://settings?section=recording`](#url-scheme), or any section name below.
 
-The [gallery](#find-your-captures) has its own window. **Open Gallery**, at the foot of the Settings sidebar, opens it.
+Settings and the gallery share one Shot window. **‹ Library**, at the top of the Settings sidebar, goes back to your captures.
 
-Use <kbd>↑</kbd> and <kbd>↓</kbd> to move between sections. The foot of the sidebar shows Shot's version, or **Up to date** once a check for updates has found nothing since Shot opened. Click it to open **About**.
+Use <kbd>↑</kbd> and <kbd>↓</kbd> to move between sections. **About**, at the foot of the sidebar, shows Shot's version and whether it's up to date.
 
 ## Find a setting
 
-Type in the **Search** field at the top of the sidebar, or press <kbd>⌘F</kbd>. Shot lists every setting whose name, description or a related word, such as "microphone" for **Input**, has the words you type, from all six sections, under each section's name. Sections with no match fade in the sidebar.
+Type in the search field at the top right of the window, or press <kbd>⌘F</kbd>. Shot lists every setting whose name, description or a related word, such as "microphone" for **Input**, has the words you type, from all six sections, under each section's name, with their controls right there. Sections with no match fade in the sidebar. The same search finds your captures by name or by the text in them, listed after the settings.
 
 Click **Show All** beside a section, or click a section in the sidebar, to clear the search and see the whole section. <kbd>Esc</kbd> clears the search too.
 

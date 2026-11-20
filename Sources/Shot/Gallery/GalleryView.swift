@@ -6,11 +6,10 @@ import UniformTypeIdentifiers
 struct GalleryRootView: View {
     let model: GalleryModel
     @FocusState private var searchFocused: Bool
-    @Environment(\.inMainWindow) private var inMainWindow
     private let mainWindow = MainWindowNavigation.shared
 
-    /// In the one Shot window, whether a setting matched, so search results cover the grid.
-    private var showsResults: Bool { inMainWindow && mainWindow.content == .results }
+    /// Whether a setting matched, so search results cover the grid.
+    private var showsResults: Bool { mainWindow.content == .results }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Room after the traffic lights for the sidebar button, which the toolbar keeps clear of while the sidebar is hidden.
@@ -42,8 +41,8 @@ struct GalleryRootView: View {
             searchFocused = false
         }
         .background {
-            // In the one Shot window, a search on the library also looks for settings that match.
-            if inMainWindow && model.isSearching {
+            // A search on the library also looks for settings that match.
+            if model.isSearching {
                 SettingsMatchProbe(query: model.query) { mainWindow.settingsMatch = $0 }
             }
         }
@@ -88,15 +87,15 @@ struct GalleryRootView: View {
         }
     }
 
-    /// Whether the sidebar shows: the sidebar button's choice, unless the one Shot window is too narrow for it (#1460).
+    /// Whether the sidebar shows: the sidebar button's choice, unless the window is too narrow for it (#1460).
     private var sidebarShown: Bool {
-        inMainWindow ? mainWindow.showsSidebar(wanted: model.showsSidebar, width: model.sidebarWidth) : model.showsSidebar
+        mainWindow.showsSidebar(wanted: model.showsSidebar, width: model.sidebarWidth)
     }
 
     private func setSidebar(shown: Bool) {
         withAnimation(Motion.animation(.panelArrive, reduceMotion: reduceMotion)) {
             // In a narrow window the button shows the sidebar for now, and keeps the choice for a wider one.
-            if inMainWindow && !mainWindow.sidebarFits(width: model.sidebarWidth) {
+            if !mainWindow.sidebarFits(width: model.sidebarWidth) {
                 mainWindow.revealsSidebar = shown
             } else {
                 model.showsSidebar = shown
@@ -165,23 +164,9 @@ struct GalleryRootView: View {
         .accessibilityAddTraits(sidebarShown ? .isSelected : [])
     }
 
-    /// Computed, so both strings are extracted for translation, which a ternary at the call site doesn't do.
-    private var searchPrompt: LocalizedStringResource {
-        if inMainWindow {
-            return "Search captures and settings"
-        }
-        return "Search names and text in screenshots"
-    }
-
-    private var searchTip: LocalizedStringResource {
-        if inMainWindow {
-            return "Search settings, and captures by name or text (⌘F)"
-        }
-        return "Search by file name or by text in screenshots (⌘F)"
-    }
-
     private var searchField: some View {
-        ThemeSearchField(prompt: searchPrompt, text: Bindable(model).query, focus: $searchFocused, tip: searchTip)
+        ThemeSearchField(prompt: "Search captures and settings", text: Bindable(model).query, focus: $searchFocused,
+                         tip: "Search settings, and captures by name or text (⌘F)")
             .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
     }
 

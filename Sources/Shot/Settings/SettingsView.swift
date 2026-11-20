@@ -33,17 +33,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The tile and glyph behind the section's icon in the sidebar.
-    var tint: Theme.SidebarTint {
-        switch self {
-        case .general: .general
-        case .capture: .capture
-        case .quickAccess: .quickAccess
-        case .recording: .recording
-        case .shortcuts: .shortcuts
-        case .about: .about
-        }
-    }
 }
 
 @MainActor
@@ -85,7 +74,6 @@ struct SettingsView: View {
     @Setting(PreferenceKey.appSidebarWidth) private var sidebarWidth: Double
     @Bindable private var navigation = SettingsNavigation.shared
     @FocusState private var searchFocused: Bool
-    @Environment(\.inMainWindow) private var inMainWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let mainWindow = MainWindowNavigation.shared
     /// The sections with a row that matches the search, which the sidebar keeps at full strength.
@@ -101,10 +89,8 @@ struct SettingsView: View {
                 header
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
-                        if navigation.isSearching && inMainWindow {
+                        if navigation.isSearching {
                             MainWindowResults()
-                        } else if navigation.isSearching {
-                            SettingsSearchResults(navigation: navigation)
                         } else {
                             SettingsSectionContent(section: navigation.section)
                         }
@@ -119,14 +105,14 @@ struct SettingsView: View {
             }
         }
         .overlay(alignment: .topLeading) {
-            // In a narrow one Shot window the sidebar hides, and this button brings it back, as on the library.
-            if inMainWindow && !mainWindow.sidebarFits(width: shownSidebarWidth) {
+            // In a narrow window the sidebar hides, and this button brings it back, as on the library.
+            if !mainWindow.sidebarFits(width: shownSidebarWidth) {
                 sidebarToggle
                     .frame(height: GlassWindow.titlebarHeight)
                     .padding(.leading, GlassWindow.trafficLightsWidth)
             }
         }
-        .frame(minWidth: inMainWindow ? MainWindowController.minSize.width : SettingsWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: MainWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
         .onPreferenceChange(MatchingSections.self) { matchingSections = $0 }
         .onChange(of: navigation.searchFocusRequest) {
             searchFocused = true
@@ -148,7 +134,7 @@ struct SettingsView: View {
     }
 
     private var sidebar: some View {
-        SettingsSidebar(navigation: navigation, searchFocused: $searchFocused, matching: navigation.isSearching ? matchingSections : nil)
+        SettingsSidebar(navigation: navigation, matching: navigation.isSearching ? matchingSections : nil)
             .padding(.top, GlassWindow.titlebarHeight - 6)
             .frame(width: shownSidebarWidth)
             .frame(maxHeight: .infinity)
@@ -164,10 +150,9 @@ struct SettingsView: View {
             .zIndex(1)
     }
 
-    /// Whether the sidebar shows: always in the Settings window, and in the one Shot window while it fits or the sidebar
-    /// button brings it back (#1460).
+    /// Whether the sidebar shows: while it fits, or the sidebar button brings it back (#1460).
     private var sidebarShown: Bool {
-        !inMainWindow || mainWindow.showsSidebar(wanted: true, width: shownSidebarWidth)
+        mainWindow.showsSidebar(wanted: true, width: shownSidebarWidth)
     }
 
     private var sidebarToggle: some View {
@@ -194,7 +179,7 @@ struct SettingsView: View {
 
     private func blurSearch() {
         searchFocused = false
-        for window in [SettingsWindowController.window, MainWindowController.window].compactMap(\.self) where window.firstResponder is NSText {
+        if let window = MainWindowController.window, window.firstResponder is NSText {
             window.makeFirstResponder(nil)
         }
     }
@@ -223,15 +208,13 @@ struct SettingsView: View {
                 RestoreShortcutsButton()
                     .padding(.trailing, -8)
             }
-            if inMainWindow {
-                // The one Shot window's search, which finds captures as well as settings, where the library has it.
-                SettingsSearchField(navigation: navigation, focus: $searchFocused, prompt: "Search captures and settings",
-                                    tip: "Search settings, and captures by name or text (⌘F)")
-                    .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
-            }
+            // The window's search, which finds captures as well as settings, where the library has it.
+            SettingsSearchField(navigation: navigation, focus: $searchFocused, prompt: "Search captures and settings",
+                                tip: "Search settings, and captures by name or text (⌘F)")
+                .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
         }
         .padding(.leading, sidebarShown ? 28 : GalleryRootView.sidebarButtonEnd)
-        .padding(.trailing, inMainWindow ? 16 : 28)
+        .padding(.trailing, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: GlassWindow.titlebarHeight)
         .overlay(alignment: .bottom) {
@@ -262,27 +245,6 @@ struct MatchingSections: SwiftUI.PreferenceKey {
 
     static func reduce(value: inout Set<SettingsSection>, nextValue: () -> Set<SettingsSection>) {
         value.formUnion(nextValue())
-    }
-}
-
-/// Every row that matches the search, under the name of its section, or a note when nothing does.
-private struct SettingsSearchResults: View {
-    let navigation: SettingsNavigation
-    @State private var matching: Set<SettingsSection>?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(SettingsSection.allCases) { section in
-                SectionResults(section: section) { navigation.open(section) }
-            }
-            if matching?.isEmpty == true {
-                EmptyState(symbol: "magnifyingglass", title: "No settings match", message: "Try another word, or clear the search to see every section.")
-                    .frame(maxWidth: .infinity)
-                    // Centred in what the scroll view shows, less the content's 18 pt padding above and below.
-                    .containerRelativeFrame(.vertical, alignment: .center) { height, _ in max(height - 36, 0) }
-            }
-        }
-        .onPreferenceChange(MatchingSections.self) { matching = $0 }
     }
 }
 
@@ -447,7 +409,7 @@ private struct GeneralSettings: View {
                 saveFolder = url.path
             }
         }
-        // A sheet on the Settings window, as the gallery's chooser opens, so the window stays put while you pick.
+        // A sheet on the Shot window, as the gallery's chooser opens, so the window stays put while you pick.
         if let window = NSApp.keyWindow {
             panel.beginSheetModal(for: window, completionHandler: picked)
         } else {
