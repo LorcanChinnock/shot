@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.7.0-beta.97](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.96...v0.7.0-beta.97) (2026-11-20)
+
+
+### Features
+
+* **capture:** add a Window shadow toggle to the capture bar, off by default ([#1451](https://github.com/LorcanChinnock/shot/issues/1451)) ([b86da78](https://github.com/LorcanChinnock/shot/commit/b86da782aa1e61431af0aa7aa202237955ae3026))
+* **capture:** switch between screenshot and recording from the capture bar ([#1453](https://github.com/LorcanChinnock/shot/issues/1453)) ([ca59c85](https://github.com/LorcanChinnock/shot/commit/ca59c857448c53e66cb43323c7305fececfdb992))
+* **editor:** drag a layer from anywhere on its row ([#1462](https://github.com/LorcanChinnock/shot/issues/1462)) ([efda432](https://github.com/LorcanChinnock/shot/commit/efda4326ac1f3485f3fdd007fe32095c2fe62eee))
+* find large captures and duplicates in Make room, pinch to resize the gallery, and tidy the capture bar ([#1479](https://github.com/LorcanChinnock/shot/issues/1479)) ([fb80189](https://github.com/LorcanChinnock/shot/commit/fb80189cdc87b2e6483152937fdd3d325bd88049))
+* **welcome:** draw Try it as the area picker and line up the Shortcuts picture ([#1452](https://github.com/LorcanChinnock/shot/issues/1452)) ([e1b0e5f](https://github.com/LorcanChinnock/shot/commit/e1b0e5f59be66a974d68f98f97b0e94598b75f43))
+* **window:** add Take a screenshot to the empty library and hide the sidebar when narrow ([#1470](https://github.com/LorcanChinnock/shot/issues/1470)) ([985c263](https://github.com/LorcanChinnock/shot/commit/985c263f31e8f80e6ecb1a806e27f7b8eda403ad))
+* **window:** give the one window's sidebars a quiet style ([#1468](https://github.com/LorcanChinnock/shot/issues/1468)) ([20667fd](https://github.com/LorcanChinnock/shot/commit/20667fd6b91cc7ea4334fbf24e92390d51e72d4d))
+* **window:** search settings and captures from one field ([#1469](https://github.com/LorcanChinnock/shot/issues/1469)) ([b1b6980](https://github.com/LorcanChinnock/shot/commit/b1b698096257b8bc42bc1ac5b7a2fa9815f73767))
+* **window:** show the library and Settings in one window behind a hidden switch ([#1467](https://github.com/LorcanChinnock/shot/issues/1467)) ([c538121](https://github.com/LorcanChinnock/shot/commit/c538121c232d8ce5e6bebfaa6019e0f3c90b65dc))
+
+
+### Bug Fixes
+
+* **capture:** switch between screenshot and recording by clicking the kind's name ([#1473](https://github.com/LorcanChinnock/shot/issues/1473)) ([8238329](https://github.com/LorcanChinnock/shot/commit/8238329b4112e6936534dab01d873bff78872d5d))
+* **updates:** open the update window on top of other windows ([#1444](https://github.com/LorcanChinnock/shot/issues/1444)) ([f0860a7](https://github.com/LorcanChinnock/shot/commit/f0860a714bb0424b5f32d10d5bd70f5ab80659fd))
+* write the screenshot shortcuts as ⇧⌘, the order macOS uses ([#1450](https://github.com/LorcanChinnock/shot/issues/1450)) ([1613a4e](https://github.com/LorcanChinnock/shot/commit/1613a4e54c34e1439f44f766f4d1c825928b5248))
+
 ## [0.7.0-beta.96](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.95...v0.7.0-beta.96) (2026-11-19)
 
 
