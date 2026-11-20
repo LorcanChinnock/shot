@@ -181,13 +181,22 @@ final class GalleryModel {
     private(set) var duplicateCopies: [GalleryItem]?
     @ObservationIgnored private var duplicatesTask: Task<Void, Never>?
 
+    /// The copies found last, which Large captures keeps leaving out while Make room checks again after a trash.
+    @ObservationIgnored private var lastCopies: [GalleryItem] = []
+
     /// The captures Make room calls large, less the copies it lists as duplicates.
-    var largeCaptures: [GalleryItem] { MakeRoom.large(items, excluding: duplicateCopies ?? []) }
+    var largeCaptures: [GalleryItem] { MakeRoom.large(items, excluding: duplicateCopies ?? lastCopies) }
 
     /// Opens Make room, and starts looking for copies, which reads files of the same size off the main thread.
     func makeRoom() {
         showsMakeRoom = true
         duplicateCopies = nil
+        lastCopies = []
+        findDuplicates()
+    }
+
+    /// Compares the captures there are now and replaces `duplicateCopies` once done.
+    private func findDuplicates() {
         let items = items
         duplicatesTask?.cancel()
         duplicatesTask = Task {
@@ -196,6 +205,7 @@ final class GalleryModel {
             }.value
             if !Task.isCancelled {
                 duplicateCopies = copies
+                lastCopies = copies
             }
         }
     }
@@ -953,7 +963,13 @@ final class GalleryModel {
         withAnimation(trashed.count <= Gallery.animatedChangeLimit ? Motion.animation(.gridShuffle) : nil) {
             self.items.removeAll { trashed.contains($0.url) }
         }
-        duplicateCopies = duplicateCopies?.filter { !trashed.contains($0.url) }
+        // Whatever went, Make room checks the copies again: if the copy it kept went, under Large captures, the oldest one
+        // left is kept now, rather than being listed with the rest and trashed too. Meanwhile Duplicates has no button.
+        lastCopies.removeAll { trashed.contains($0.url) }
+        duplicateCopies = nil
+        if showsMakeRoom {
+            findDuplicates()
+        }
         selection.subtract(trashed)
         if trashed.count < items.count {
             let failed = items.count - trashed.count
