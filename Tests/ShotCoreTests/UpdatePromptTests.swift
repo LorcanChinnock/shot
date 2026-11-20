@@ -49,6 +49,12 @@ private func offer(stage: UpdateOffer.Stage = .notDownloaded, critical: Bool = f
     #expect(same.versions == ("0.7.0 (700)", "0.7.0 (667)"))
 }
 
+@Test func updateOfferFromABetaToOnePointOh() {
+    // The build number counts commits, so Sparkle offers 1.0.0 over any beta; the window shows both versions as they are.
+    let release = UpdateOffer(version: "1.0.0", build: "1910", installedVersion: "0.7.0-beta.92", installedBuild: "1896")
+    #expect(release.versions == ("1.0.0", "0.7.0-beta.92"))
+}
+
 @Test func updateDownloadProgressCountsBytes() {
     var progress = UpdateDownloadProgress()
     #expect(progress.fraction == nil)
@@ -87,6 +93,18 @@ private func offer(stage: UpdateOffer.Stage = .notDownloaded, critical: Bool = f
         "Let the main window shrink and keep tiles one size",
         "Keep Copy Path working",
     ])
+}
+
+@Test func releaseHighlightsReadTheFirstStableRelease() {
+    let notes = """
+    ## [1.0.0](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.92...v1.0.0) (2026-12-01)
+
+
+    ### Bug Fixes
+
+    * **update:** let the update window be dragged ([#1399](https://github.com/LorcanChinnock/shot/issues/1399)) ([a6fbf45](https://github.com/LorcanChinnock/shot/commit/a6fbf45))
+    """
+    #expect(ReleaseHighlights.parse(notes, format: .markdown) == ["Let the update window be dragged"])
 }
 
 @Test func releaseHighlightsReadHTMLLists() {
