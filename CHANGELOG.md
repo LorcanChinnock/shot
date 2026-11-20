@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.98](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.97...v0.7.0-beta.98) (2026-11-20)
+
+
+### Features
+
+* **window:** make one Shot window the only window ([#1483](https://github.com/LorcanChinnock/shot/issues/1483)) ([48e6c44](https://github.com/LorcanChinnock/shot/commit/48e6c44e9d9d93d060b542db0f2065833ac19e3c))
+
 ## [0.7.0-beta.97](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.96...v0.7.0-beta.97) (2026-11-20)
 
 
