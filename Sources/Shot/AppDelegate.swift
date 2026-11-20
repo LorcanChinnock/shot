@@ -40,6 +40,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         GalleryController.shared.onExportGIF = { [weak self] url in
             self?.coordinator.exportGIF(url)
         }
+        GalleryController.shared.onScreenshot = { [weak self] in
+            self?.coordinator.perform(.screenshot)
+        }
         LegacyAgentCleanup.run(bundleID: Bundle.main.bundleIdentifier ?? "dev.lorcan.Shot.dev")
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {

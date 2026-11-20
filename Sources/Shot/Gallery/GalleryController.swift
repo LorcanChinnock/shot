@@ -19,6 +19,9 @@ final class GalleryController {
         set { model.onExportGIF = newValue }
     }
 
+    /// Takes a screenshot, for the empty library's Take a Screenshot button in the one Shot window.
+    var onScreenshot: (() -> Void)?
+
     let model = GalleryModel()
 
     func show() {

@@ -14,7 +14,7 @@ struct GalleryRootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Room after the traffic lights for the sidebar button, which the toolbar keeps clear of while the sidebar is hidden.
-    private static let sidebarButtonEnd = GlassWindow.trafficLightsWidth + 34
+    static let sidebarButtonEnd = GlassWindow.trafficLightsWidth + 34
 
     var body: some View {
         // The preview covers the grid rather than replacing it, so the grid keeps its scroll position for the way back.
@@ -48,7 +48,7 @@ struct GalleryRootView: View {
     /// The sidebar, the toolbar and the grid.
     private var browser: some View {
         HStack(spacing: 0) {
-            if model.showsSidebar {
+            if sidebarShown {
                 // The see-through sidebar runs the window's full height, under the traffic lights.
                 GallerySidebar(model: model)
                     .padding(.top, GlassWindow.titlebarHeight)
@@ -84,9 +84,19 @@ struct GalleryRootView: View {
         }
     }
 
+    /// Whether the sidebar shows: the sidebar button's choice, unless the one Shot window is too narrow for it (#1460).
+    private var sidebarShown: Bool {
+        inMainWindow ? mainWindow.showsSidebar(wanted: model.showsSidebar, width: model.sidebarWidth) : model.showsSidebar
+    }
+
     private func setSidebar(shown: Bool) {
         withAnimation(Motion.animation(.panelArrive, reduceMotion: reduceMotion)) {
-            model.showsSidebar = shown
+            // In a narrow window the button shows the sidebar for now, and keeps the choice for a wider one.
+            if inMainWindow && !mainWindow.sidebarFits(width: model.sidebarWidth) {
+                mainWindow.revealsSidebar = shown
+            } else {
+                model.showsSidebar = shown
+            }
         }
     }
 
@@ -122,7 +132,7 @@ struct GalleryRootView: View {
             }
             .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
         }
-        .padding(.leading, model.showsSidebar ? 22 : Self.sidebarButtonEnd)
+        .padding(.leading, sidebarShown ? 22 : Self.sidebarButtonEnd)
         .padding(.trailing, 16)
         .frame(minWidth: 0, maxWidth: .infinity)
         .frame(height: GlassWindow.titlebarHeight)
@@ -131,11 +141,16 @@ struct GalleryRootView: View {
         }
     }
 
-    private var sidebarTip: LocalizedStringResource { model.showsSidebar ? "Hide sidebar" : "Show sidebar" }
+    private var sidebarTip: LocalizedStringResource {
+        if sidebarShown {
+            return "Hide sidebar"
+        }
+        return "Show sidebar"
+    }
 
     private var sidebarToggle: some View {
         Button {
-            setSidebar(shown: !model.showsSidebar)
+            setSidebar(shown: !sidebarShown)
         } label: {
             Image(systemName: "sidebar.left")
                 .font(.scaled(13, weight: .medium))
@@ -143,7 +158,7 @@ struct GalleryRootView: View {
         .buttonStyle(ThemeButtonStyle(.toolbar))
         .themeTip(sidebarTip)
         .accessibilityLabel(Text("Sidebar"))
-        .accessibilityAddTraits(model.showsSidebar ? .isSelected : [])
+        .accessibilityAddTraits(sidebarShown ? .isSelected : [])
     }
 
     /// Computed, so both strings are extracted for translation, which a ternary at the call site doesn't do.

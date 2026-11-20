@@ -86,25 +86,17 @@ struct SettingsView: View {
     @Bindable private var navigation = SettingsNavigation.shared
     @FocusState private var searchFocused: Bool
     @Environment(\.inMainWindow) private var inMainWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let mainWindow = MainWindowNavigation.shared
     /// The sections with a row that matches the search, which the sidebar keeps at full strength.
     @State private var matchingSections: Set<SettingsSection> = []
 
     var body: some View {
         HStack(spacing: 0) {
             // The see-through sidebar runs the window's full height, under the traffic lights.
-            SettingsSidebar(navigation: navigation, searchFocused: $searchFocused, matching: navigation.isSearching ? matchingSections : nil)
-                .padding(.top, GlassWindow.titlebarHeight - 6)
-                .frame(width: shownSidebarWidth)
-                .frame(maxHeight: .infinity)
-                .background { SidebarMaterial() }
-                .overlay(alignment: .trailing) {
-                    Theme.separator.frame(width: 1)
-                }
-                .overlay(alignment: .trailing) {
-                    PanelResizeHandle(width: $sidebarWidth, range: Self.sidebarWidths, defaultWidth: Self.defaultSidebarWidth)
-                        .offset(x: 7)
-                }
-                .zIndex(1)
+            if sidebarShown {
+                sidebar
+            }
             VStack(spacing: 0) {
                 header
                 ScrollView {
@@ -126,7 +118,15 @@ struct SettingsView: View {
                 .environment(\.settingsQuery, navigation.query)
             }
         }
-        .frame(minWidth: SettingsWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .topLeading) {
+            // In a narrow one Shot window the sidebar hides, and this button brings it back, as on the library.
+            if inMainWindow && !mainWindow.sidebarFits(width: shownSidebarWidth) {
+                sidebarToggle
+                    .frame(height: GlassWindow.titlebarHeight)
+                    .padding(.leading, GlassWindow.trafficLightsWidth)
+            }
+        }
+        .frame(minWidth: inMainWindow ? MainWindowController.minSize.width : SettingsWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
         .onPreferenceChange(MatchingSections.self) { matchingSections = $0 }
         .onChange(of: navigation.searchFocusRequest) {
             searchFocused = true
@@ -145,6 +145,51 @@ struct SettingsView: View {
                 .hidden()
                 .accessibilityHidden(true)
         }
+    }
+
+    private var sidebar: some View {
+        SettingsSidebar(navigation: navigation, searchFocused: $searchFocused, matching: navigation.isSearching ? matchingSections : nil)
+            .padding(.top, GlassWindow.titlebarHeight - 6)
+            .frame(width: shownSidebarWidth)
+            .frame(maxHeight: .infinity)
+            .background { SidebarMaterial() }
+            .overlay(alignment: .trailing) {
+                Theme.separator.frame(width: 1)
+            }
+            .overlay(alignment: .trailing) {
+                PanelResizeHandle(width: $sidebarWidth, range: Self.sidebarWidths, defaultWidth: Self.defaultSidebarWidth)
+                    .offset(x: 7)
+            }
+            .transition(reduceMotion ? .opacity : .move(edge: .leading))
+            .zIndex(1)
+    }
+
+    /// Whether the sidebar shows: always in the Settings window, and in the one Shot window while it fits or the sidebar
+    /// button brings it back (#1460).
+    private var sidebarShown: Bool {
+        !inMainWindow || mainWindow.showsSidebar(wanted: true, width: shownSidebarWidth)
+    }
+
+    private var sidebarToggle: some View {
+        Button {
+            withAnimation(Motion.animation(.panelArrive, reduceMotion: reduceMotion)) {
+                mainWindow.revealsSidebar.toggle()
+            }
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.scaled(13, weight: .medium))
+        }
+        .buttonStyle(ThemeButtonStyle(.toolbar))
+        .themeTip(sidebarTip)
+        .accessibilityLabel(Text("Sidebar"))
+        .accessibilityAddTraits(sidebarShown ? .isSelected : [])
+    }
+
+    private var sidebarTip: LocalizedStringResource {
+        if sidebarShown {
+            return "Hide sidebar"
+        }
+        return "Show sidebar"
     }
 
     private func blurSearch() {
@@ -185,7 +230,7 @@ struct SettingsView: View {
                     .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
             }
         }
-        .padding(.leading, 28)
+        .padding(.leading, sidebarShown ? 28 : GalleryRootView.sidebarButtonEnd)
         .padding(.trailing, inMainWindow ? 16 : 28)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: GlassWindow.titlebarHeight)

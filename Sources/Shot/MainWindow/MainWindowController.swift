@@ -16,6 +16,18 @@ final class MainWindowNavigation {
     var showAllCaptures = false
     /// Whether a setting matches the search, which the library learns from `SettingsMatchProbe`.
     var settingsMatch = false
+    /// The window's width, for whether the sidebar fits.
+    var width = MainWindowLayout.minWidth
+    /// Set when the sidebar button shows the sidebar in a window too narrow for it. Widening the window clears it.
+    var revealsSidebar = false
+
+    func sidebarFits(width sidebarWidth: Double) -> Bool {
+        MainWindowLayout.sidebarFits(windowWidth: width, sidebarWidth: sidebarWidth)
+    }
+
+    func showsSidebar(wanted: Bool, width sidebarWidth: Double) -> Bool {
+        MainWindowLayout.showsSidebar(windowWidth: width, sidebarWidth: sidebarWidth, wanted: wanted, revealed: revealsSidebar)
+    }
 
     /// The search, which the library's field and the settings pages' field share: `MainWindowView` keeps the gallery's
     /// query and the settings query the same.
@@ -102,8 +114,8 @@ enum MainWindowController {
     private(set) static var window: NSWindow?
     private static var contentReleased = false
     static let size = GalleryWindowController.size
-    /// Settings' narrowest, so every section still fits.
-    static let minSize = SettingsWindowController.minSize
+    /// The toolbar and two columns of thumbnails, with the sidebar hidden.
+    static let minSize = NSSize(width: MainWindowLayout.minWidth, height: SettingsWindowController.minSize.height)
     /// The user defaults name AppKit saves the window's frame under.
     private static let frameName = "Shot"
 
@@ -222,6 +234,14 @@ private struct MainWindowView: View {
             }
         }
         .environment(\.inMainWindow, true)
+        .onGeometryChange(for: Double.self) { $0.size.width } action: { width in
+            navigation.width = width
+            // Back to the sidebar button's own choice once the widest sidebar either page can have fits. Clearing it
+            // sooner would hide a sidebar someone showed before there's room for it.
+            if navigation.revealsSidebar, MainWindowLayout.sidebarFits(windowWidth: width, sidebarWidth: max(SettingsView.sidebarWidths.upperBound, GalleryModel.sidebarWidths.upperBound)) {
+                navigation.revealsSidebar = false
+            }
+        }
         // One search: typing on either page searches both captures and settings.
         .onChange(of: model.query) {
             if settings.query != model.query {
