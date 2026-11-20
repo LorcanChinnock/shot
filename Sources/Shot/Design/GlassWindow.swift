@@ -197,20 +197,26 @@ private struct SidebarEffect: NSViewRepresentable {
 }
 
 /// The fill behind a row: yellow with an ink edge when it's picked, selection blue while something is held over a folder, and
-/// a quiet fill under the pointer.
+/// a quiet fill under the pointer. In the one Shot window the picked row is a soft grey instead, with an ink edge under
+/// Increase Contrast.
 struct SidebarRowBackground: ViewModifier {
     let selected: Bool
     var hovering = false
     var targeted = false
+    @Environment(\.inMainWindow) private var quiet
+    @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         content
-            .inkOnFill(selected && !targeted ? Theme.accent : nil)
+            .inkOnFill(selected && !targeted && !quiet ? Theme.accent : nil)
             .background {
                 if targeted {
                     shape.fill(Theme.selection.opacity(0.18))
                         .inkBorder(shape, width: 1.5, color: Theme.selection)
+                } else if selected && quiet {
+                    shape.fill(Theme.selectedFill)
+                        .inkBorder(shape, width: 1, color: contrast == .increased ? Theme.line : .clear)
                 } else if selected {
                     shape.fill(Theme.accent)
                         .inkBorder(shape, width: 1.5, color: Theme.line)
