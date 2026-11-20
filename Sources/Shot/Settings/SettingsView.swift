@@ -146,7 +146,7 @@ struct SettingsView: View {
 
     private func blurSearch() {
         searchFocused = false
-        if let window = NSApp.windows.first(where: { $0.firstResponder is NSText && $0.title == String(localized: "Settings") }) {
+        for window in [SettingsWindowController.window, MainWindowController.window].compactMap(\.self) where window.firstResponder is NSText {
             window.makeFirstResponder(nil)
         }
     }

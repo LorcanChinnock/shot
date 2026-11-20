@@ -4,6 +4,6 @@ import AppKit
 @MainActor
 enum ShotWindows {
     static var capturable: Set<CGWindowID> {
-        Set([SettingsWindowController.windowID, GalleryWindowController.windowID].compactMap(\.self))
+        Set([SettingsWindowController.windowID, GalleryWindowController.windowID, MainWindowController.windowID].compactMap(\.self))
     }
 }
