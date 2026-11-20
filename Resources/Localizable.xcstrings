@@ -24904,6 +24904,16 @@
         }
       }
     },
+    "Key: %@ or %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Key: %1$@ or %2$@"
+          }
+        }
+      }
+    },
     "Keyframe" : {
 
     },
@@ -47209,6 +47219,15 @@
         }
       }
     },
+    "Switch between screenshot and record" : {
+
+    },
+    "Switch to Record" : {
+
+    },
+    "Switch to Screenshot" : {
+
+    },
     "Switch what to record" : {
       "localizations" : {
         "de" : {
@@ -51736,6 +51755,12 @@
           }
         }
       }
+    },
+    "V: switch to record" : {
+
+    },
+    "V: switch to screenshot" : {
+
     },
     "Version %@" : {
       "localizations" : {

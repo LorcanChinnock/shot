@@ -15,6 +15,7 @@ extension PickingKey {
         let ratios = AspectRatio.allCases.filter { $0 != .free }.map(\.label).joined(separator: ", ")
         return [
             PickingKey(key: "Tab", label: targets),
+            PickingKey(key: "V", label: String(localized: "Switch between screenshot and record")),
             PickingKey(key: "B", label: String(localized: "Leave out browser toolbars")),
             PickingKey(key: "W", label: String(localized: "Window shadow")),
             PickingKey(key: "D", label: String(localized: "Delay \(delays) s")),

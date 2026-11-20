@@ -69,6 +69,12 @@ final class CaptureCoordinator {
             scrolling.finish()
             return
         }
+        // Pressed the wrong shortcut? The other one switches the open overlay to its kind rather than being ignored.
+        if action == .screenshot || action == .record, let overlay = SelectionOverlayController.current, overlay.offersKindSwitch,
+           overlay.recording != action.isRecording {
+            overlay.switchKind()
+            return
+        }
         guard !busy else {
             return
         }
@@ -85,10 +91,8 @@ final class CaptureCoordinator {
                 switch action {
                 case .screenshot where target == .screen:
                     try await captureFullscreen()
-                case .screenshot:
-                    try await captureWithOverlay(target: target ?? Preferences().screenshotTarget, remembering: target == nil)
-                case .record:
-                    try await startRecording(mode: target ?? Preferences().recordTarget, remembering: target == nil)
+                case .screenshot, .record:
+                    try await capture(action, target: target)
                 case .pickColor, .copyPath:
                     break
                 }
@@ -186,29 +190,61 @@ final class CaptureCoordinator {
         try await finish(image: image, scale: frozen.scale, from: screen.fullCaptureFrame)
     }
 
-    private func captureWithOverlay(target: CaptureTarget, remembering: Bool) async throws {
+    /// A screenshot or recording picked on the overlay, then the other kind each time the overlay switches to it, on the
+    /// target it was left on.
+    private func capture(_ action: ShotAction, target: CaptureTarget?) async throws {
+        let remembering = target == nil
+        var recording = action.isRecording
+        var switchedTo: CaptureTarget?
+        while true {
+            let next: CaptureTarget?
+            if recording {
+                // After a switch the overlay opens even on Full Screen, since the person is mid-pick.
+                next = try await startRecording(
+                    mode: switchedTo ?? target ?? Preferences().recordTarget, remembering: remembering, opensOverlayOnScreen: remembering || switchedTo != nil
+                )
+            } else {
+                next = try await captureWithOverlay(target: switchedTo ?? target ?? Preferences().screenshotTarget, remembering: remembering)
+            }
+            guard let next else {
+                return
+            }
+            switchedTo = next
+            recording.toggle()
+        }
+    }
+
+    /// Returns the target to open a recording on when the overlay switched to recording, and nil otherwise.
+    private func captureWithOverlay(target: CaptureTarget, remembering: Bool) async throws -> CaptureTarget? {
         let start = ContinuousClock.now
         let windows = WindowCapturer.onScreenWindows()
         let frozen = try await DisplayCapturer.captureAll()
         log.debug("Freeze capture of \(frozen.count) displays took \(ContinuousClock.now - start, privacy: .public)")
         let displays = frozen.map { OverlayDisplay(frame: $0.frame, scale: $0.scale, image: $0.image) }
-        let result = await SelectionOverlayController.select(displays: displays, target: target, offersDelay: true, offersScrolling: true, windows: windows)
+        // A recording can't start while one runs, so the switch to it is only offered when none is.
+        let result = await SelectionOverlayController.select(
+            displays: displays, target: target, offersDelay: true, offersScrolling: true, offersKindSwitch: !recorder.isRecording, windows: windows
+        )
         if remembering {
             Preferences().screenshotTarget = result.target
         }
+        if result.switchesKind {
+            return result.target
+        }
         guard let selection = result.selection else {
-            return
+            return nil
         }
         if result.scrolling, let scroll = scrollRegion(of: selection, frozen: frozen) {
             try await captureScrolling(on: scroll.screen, region: scroll.region)
-            return
+            return nil
         }
         if result.delay > 0 {
             try await captureAfterDelay(result.delay, selection: selection, frozen: frozen, windowShadow: result.windowShadow)
-            return
+            return nil
         }
         let picked = try await picture(of: selection, frozen: frozen, windowShadow: result.windowShadow)
         try await finish(image: picked.image, scale: picked.scale, from: picked.frame, windowShadow: picked.windowShadow)
+        return nil
     }
 
     /// Counts down on screen, then takes the picked area, window or screen as it looks by then, so a menu or hover state
@@ -348,9 +384,16 @@ final class CaptureCoordinator {
     }
 
     /// Picks the area, then starts recording, first showing the setup panel or a countdown if Settings asks for them.
-    private func startRecording(mode: CaptureTarget, remembering: Bool) async throws {
-        guard let pick = await RecordingSetupController.pickRegion(mode: mode, remembering: remembering, opensOverlayOnScreen: remembering) else {
-            return
+    /// Returns the target to open a screenshot on when the overlay switched to a screenshot, and nil otherwise.
+    private func startRecording(mode: CaptureTarget, remembering: Bool, opensOverlayOnScreen: Bool) async throws -> CaptureTarget? {
+        let pick: RecordingSetupController.Pick
+        switch await RecordingSetupController.pickRegion(mode: mode, remembering: remembering, opensOverlayOnScreen: opensOverlayOnScreen, offersKindSwitch: true) {
+        case let .picked(picked):
+            pick = picked
+        case let .switchKind(target):
+            return target
+        case .cancelled:
+            return nil
         }
         let prefs = Preferences()
         // Record Fullscreen has no pick to end, so `pickRegion` never reports ⌥ for it; its hotkey may itself hold ⌥.
@@ -362,10 +405,11 @@ final class CaptureCoordinator {
         let result = await controller.run()
         setup = nil
         guard case let .start(screen, region, options) = result else {
-            return
+            return nil
         }
         recordingRegion = region
         try await recorder.start(screen: screen, region: region, options: options)
+        return nil
     }
 
     private func recordingFinished(_ url: URL) {

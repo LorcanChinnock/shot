@@ -118,37 +118,52 @@ final class RecordingSetupController {
         var target = CaptureTarget.area
     }
 
+    /// What the overlay ended with: a pick, a switch to a screenshot on the target it was left on, or nothing.
+    enum PickOutcome {
+        case picked(Pick)
+        case switchKind(CaptureTarget)
+        case cancelled
+    }
+
     /// Lets the user pick an area or window with the live overlay, or takes the screen under the pointer.
     /// `remembering` keeps the target the overlay ends on, for the next recording to open on. `mode` of `.screen` takes
     /// the screen at once unless `opensOverlayOnScreen`, as when Full Screen was only the last thing picked.
-    static func pickRegion(mode: CaptureTarget, offersDelay: Bool = true, remembering: Bool = false, opensOverlayOnScreen: Bool = false) async -> Pick? {
+    /// `offersKindSwitch` lets the overlay switch to a screenshot instead.
+    static func pickRegion(
+        mode: CaptureTarget, offersDelay: Bool = true, remembering: Bool = false, opensOverlayOnScreen: Bool = false, offersKindSwitch: Bool = false
+    ) async -> PickOutcome {
         let screens = NSScreen.screens
         if mode == .screen, !opensOverlayOnScreen {
             let screen = NSScreen.underPointer ?? screens[0]
-            return Pick(screen: screen, region: screen.fullCaptureFrame, windowID: nil, ratio: nil, target: .screen)
+            return .picked(Pick(screen: screen, region: screen.fullCaptureFrame, windowID: nil, ratio: nil, target: .screen))
         }
         let displays = screens.map { OverlayDisplay(frame: $0.frame, scale: $0.backingScaleFactor, image: nil) }
         let windows = WindowCapturer.onScreenWindows()
-        let result = await SelectionOverlayController.select(displays: displays, target: mode, offersDelay: offersDelay, recording: true, windows: windows, isLive: true)
+        let result = await SelectionOverlayController.select(
+            displays: displays, target: mode, offersDelay: offersDelay, recording: true, offersKindSwitch: offersKindSwitch, windows: windows, isLive: true
+        )
         if remembering {
             Preferences().recordTarget = result.target
         }
+        if result.switchesKind {
+            return .switchKind(result.target)
+        }
         guard let selection = result.selection else {
-            return nil
+            return .cancelled
         }
         let optionHeld = result.modifiers.contains(.option)
         switch selection {
         case let .area(index, rect, ratio):
             let screen = screens[index]
-            return Pick(screen: screen, region: rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), windowID: nil, ratio: ratio, optionHeld: optionHeld, delay: result.delay, target: .area)
+            return .picked(Pick(screen: screen, region: rect.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), windowID: nil, ratio: ratio, optionHeld: optionHeld, delay: result.delay, target: .area))
         case let .window(info):
             let (screen, region) = region(of: info)
-            return Pick(screen: screen, region: region, windowID: info.windowID, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .window)
+            return .picked(Pick(screen: screen, region: region, windowID: info.windowID, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .window))
         case let .page(info, insets):
             let (screen, region) = region(of: info, insets: insets)
-            return Pick(screen: screen, region: region, windowID: info.windowID, pageInsets: insets, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .window)
+            return .picked(Pick(screen: screen, region: region, windowID: info.windowID, pageInsets: insets, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .window))
         case let .fullDisplay(index):
-            return Pick(screen: screens[index], region: screens[index].fullCaptureFrame, windowID: nil, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .screen)
+            return .picked(Pick(screen: screens[index], region: screens[index].fullCaptureFrame, windowID: nil, ratio: nil, optionHeld: optionHeld, delay: result.delay, target: .screen))
         }
     }
 
@@ -243,7 +258,7 @@ final class RecordingSetupController {
             return
         }
         setSetupVisible(false)
-        if let picked = await Self.pickRegion(mode: mode, remembering: true) {
+        if case let .picked(picked) = await Self.pickRegion(mode: mode, remembering: true) {
             model.mode = picked.target
             model.countdownSeconds = RecordingStart.after(adjustBeforeRecording: false, countdown: picked.delay, optionHeld: false).countdown
             screen = picked.screen
