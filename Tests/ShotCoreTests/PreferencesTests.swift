@@ -88,18 +88,6 @@ import Testing
         #expect(prefs.filePrefix == "Shot")
     }
 
-    @Test func oneWindowStartsOffAndSurvivesAReset() throws {
-        let suite = try TestDefaults()
-        let store = suite.store
-        defer { suite.remove() }
-        Preferences.registerDefaults(in: store)
-        let prefs = Preferences(store: store)
-        #expect(!prefs.oneWindow)
-        store.set(true, forKey: PreferenceKey.oneWindow)
-        Preferences.resetAll(in: store)
-        #expect(prefs.oneWindow)
-    }
-
     @Test func capturesGoToTheSaveFolderOnlyWhenSavingIsOn() throws {
         let suite = try TestDefaults()
         let store = suite.store

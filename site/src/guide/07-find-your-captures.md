@@ -8,7 +8,7 @@ group: Edit and share
 
 ## Open the gallery
 
-Choose **Gallery** in Shot's menu bar menu, click **Open Gallery** at the foot of the Settings sidebar, or open [`shot://gallery`](#url-scheme). The gallery has its own window, which opens where you last left it and at the same size.
+Choose **Gallery** in Shot's menu bar menu, click **‹ Library** at the top of the Settings sidebar, or open [`shot://gallery`](#url-scheme). The gallery and [Settings](#settings) share one Shot window, which opens where you last left it and at the same size. **Settings**, at the foot of the gallery's sidebar, switches the window to Settings. In a narrow window the sidebar hides; the sidebar button in the toolbar brings it back.
 
 For your last few captures you don't need the gallery. The menu bar menu shows your four newest under **Recent**: click one to open it in its editor, or drag it into another app. With the keyboard, press <kbd>↓</kbd> until the row is highlighted, then <kbd>→</kbd> for a list of them.
 
@@ -17,7 +17,7 @@ It shows every image, movie and GIF in your save folder and the folders inside i
 ## Search, filter and sort
 
 - **Filter** by picking **All Captures**, **Screenshots**, **Recordings** or **GIFs** under Library in the sidebar. Each shows how many captures it holds.
-- **Search** (<kbd>⌘F</kbd>) by file name, and for a screenshot, by the text in it too. Case and accents don't matter. While you search, the heading above the grid says how many captures match, such as "2 of 11".
+- **Search** (<kbd>⌘F</kbd>) by file name, and for a screenshot, by the text in it too. Case and accents don't matter. While you search, the heading above the grid says how many captures match, such as "2 of 11". The same field finds settings: when a setting matches too, Shot shows the matching settings, with their controls, above the first few matching captures. **Show all in library** goes back to the grid of every match, and <kbd>Esc</kbd> ends the search.
 - **Sort** by **Newest first**, **Oldest first**, **Name** or **Largest first**. Sorted by date, captures are grouped into Today, Yesterday, This Week, This Month and then each older month.
 - **Resize thumbnails** with the slider, <kbd>⌘+</kbd> and <kbd>⌘−</kbd>, a pinch on the trackpad, or <kbd>⌘</kbd> and the scroll wheel.
 
@@ -49,7 +49,7 @@ A GIF opens in an editor only if the video editor exported it, and then opens it
 
 ## Preview a capture
 
-Select a capture and press <kbd>Space</kbd> to see it large in the gallery window, with a details panel beside it. The toolbar shows its name and where it is in the grid, such as "3 of 248", with **Edit** and **Copy**. Recordings play, and GIFs animate.
+Select a capture and press <kbd>Space</kbd> to see it large in the gallery, with a details panel beside it. The toolbar shows its name and where it is in the grid, such as "3 of 248", with **Edit** and **Copy**. Recordings play, and GIFs animate.
 
 - Press <kbd>←</kbd> or <kbd>→</kbd> for the previous or next capture in the grid, or <kbd>Home</kbd> and <kbd>End</kbd> for the first and last. Press <kbd>Space</kbd> or <kbd>Esc</kbd>, or the back arrow, to go back to the grid. The capture you were on stays selected.
 - <kbd>Return</kbd>, <kbd>⌘C</kbd>, <kbd>⌘R</kbd> and <kbd>⌘⌫</kbd> work on the capture shown, as they do on a selection.

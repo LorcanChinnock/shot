@@ -591,7 +591,7 @@ final class GalleryModel {
         Gallery.folderPath(folder, home: FileManager.default.homeDirectoryForCurrentUser) { FileManager.default.displayName(atPath: $0) }
     }
 
-    /// Lets you pick another save folder, as Settings › General does, then lists it. The panel opens on the gallery window.
+    /// Lets you pick another save folder, as Settings › General does, then lists it. The panel opens on the Shot window.
     func chooseFolder(in window: NSWindow?) {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
