@@ -406,6 +406,12 @@ final class GalleryModel {
         previewing.flatMap { url in visible.first { $0.url == url } }
     }
 
+    /// The words around the search in `item`'s text, as the one Shot window's results show them, or `nil` when it matched by
+    /// name.
+    func searchSnippet(for item: GalleryItem) -> String? {
+        texts[item.url].flatMap { MainWindowSearch.snippet(of: query, in: $0) }
+    }
+
     /// Previews `item` over the grid, selecting it alone, so Copy, Edit and the other shortcuts act on what's shown.
     func preview(_ item: GalleryItem) {
         click(item, command: false, shift: false)

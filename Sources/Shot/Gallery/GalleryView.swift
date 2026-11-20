@@ -6,6 +6,11 @@ import UniformTypeIdentifiers
 struct GalleryRootView: View {
     let model: GalleryModel
     @FocusState private var searchFocused: Bool
+    @Environment(\.inMainWindow) private var inMainWindow
+    private let mainWindow = MainWindowNavigation.shared
+
+    /// In the one Shot window, whether a setting matched, so search results cover the grid.
+    private var showsResults: Bool { inMainWindow && mainWindow.content == .results }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Room after the traffic lights for the sidebar button, which the toolbar keeps clear of while the sidebar is hidden.
@@ -31,6 +36,12 @@ struct GalleryRootView: View {
         }
         .onChange(of: model.searchBlurRequest) {
             searchFocused = false
+        }
+        .background {
+            // In the one Shot window, a search on the library also looks for settings that match.
+            if inMainWindow && model.isSearching {
+                SettingsMatchProbe(query: model.query) { mainWindow.settingsMatch = $0 }
+            }
         }
     }
 
@@ -84,7 +95,17 @@ struct GalleryRootView: View {
     /// The toolbar, in the title bar beside the sidebar: what's shown and how many, then search, sort and thumbnail size.
     private var header: some View {
         HStack(spacing: 12) {
-            GalleryHeading(model: model)
+            if showsResults {
+                Text("Results for “\(model.query.trimmingCharacters(in: .whitespacesAndNewlines))”")
+                    .font(.scaled(15, weight: .bold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .accessibilityAddTraits(.isHeader)
+                    .allowsHitTesting(false)
+            } else {
+                GalleryHeading(model: model)
+            }
             Spacer(minLength: 8)
             searchField
             sortMenu
@@ -125,9 +146,23 @@ struct GalleryRootView: View {
         .accessibilityAddTraits(model.showsSidebar ? .isSelected : [])
     }
 
+    /// Computed, so both strings are extracted for translation, which a ternary at the call site doesn't do.
+    private var searchPrompt: LocalizedStringResource {
+        if inMainWindow {
+            return "Search captures and settings"
+        }
+        return "Search names and text in screenshots"
+    }
+
+    private var searchTip: LocalizedStringResource {
+        if inMainWindow {
+            return "Search settings, and captures by name or text (⌘F)"
+        }
+        return "Search by file name or by text in screenshots (⌘F)"
+    }
+
     private var searchField: some View {
-        ThemeSearchField(prompt: "Search names and text in screenshots", text: Bindable(model).query, focus: $searchFocused,
-                         tip: "Search by file name or by text in screenshots (⌘F)")
+        ThemeSearchField(prompt: searchPrompt, text: Bindable(model).query, focus: $searchFocused, tip: searchTip)
             .frame(minWidth: 120, idealWidth: 290, maxWidth: 290, minHeight: 28, maxHeight: 28)
     }
 
@@ -142,7 +177,15 @@ struct GalleryRootView: View {
 
     @ViewBuilder
     private var content: some View {
-        if model.hasLoaded, model.items.isEmpty {
+        if showsResults {
+            ScrollView {
+                MainWindowResults()
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 18)
+                    .padding(.trailing, SystemScroller.shared.overlayRoom)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else if model.hasLoaded, model.items.isEmpty {
             // Nothing saved yet: the empty library runs edge to edge, under its dot grid.
             GalleryEmptyLibrary(model: model)
         } else if model.sections.isEmpty {

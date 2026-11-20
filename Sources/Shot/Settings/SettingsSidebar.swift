@@ -16,15 +16,14 @@ struct SettingsSidebar: View {
                 BackToLibraryRow()
                     .padding(.bottom, 6)
             }
-            ThemeSearchField(prompt: "Search", text: Bindable(navigation).query, focus: searchFocused)
-                .onExitCommand {
-                    // Esc clears the search and gives the keyboard back to the window, so the arrow keys move between sections.
-                    navigation.query = ""
-                    navigation.searchBlurRequest += 1
-                }
-                .themeTip("Search every setting by name or description (⌘F)")
-                .padding(.horizontal, 4)
-                .padding(.bottom, 12)
+            // In the one Shot window, the search is in the title bar, where the library has it.
+            if !inMainWindow {
+                SettingsSearchField(navigation: navigation, focus: searchFocused, prompt: "Search")
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 12)
+            } else {
+                Spacer().frame(height: 6)
+            }
             // In the one Shot window, About sits at the foot in place of the version footer, since it shows the version.
             ForEach(inMainWindow ? SettingsSection.allCases.filter { $0 != .about } : SettingsSection.allCases) { section in
                 row(section)
@@ -54,6 +53,23 @@ struct SettingsSidebar: View {
         ) {
             navigation.open(section)
         }
+    }
+}
+
+/// The search field for settings. Esc clears it and gives the keyboard back to the window, so the arrow keys move between
+/// sections.
+struct SettingsSearchField: View {
+    let navigation: SettingsNavigation
+    var focus: FocusState<Bool>.Binding
+    let prompt: LocalizedStringResource
+    var tip: LocalizedStringResource = "Search every setting by name or description (⌘F)"
+
+    var body: some View {
+        ThemeSearchField(prompt: prompt, text: Bindable(navigation).query, focus: focus, tip: tip)
+            .onExitCommand {
+                navigation.query = ""
+                navigation.searchBlurRequest += 1
+            }
     }
 }
 
