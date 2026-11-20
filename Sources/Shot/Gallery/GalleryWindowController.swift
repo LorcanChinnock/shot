@@ -6,6 +6,7 @@ import SwiftUI
 private final class GalleryWindow: NSWindow {
     var onCommand: ((String, Bool) -> Bool)?
     var onKey: ((NSEvent) -> Bool)?
+    var onZoom: ((NSEvent) -> Bool)?
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
@@ -18,6 +19,10 @@ private final class GalleryWindow: NSWindow {
     /// Esc leaves the search field before the field sees it, so the next arrow moves through the grid.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, firstResponder is NSText, onKey?(event) == true {
+            return
+        }
+        // A pinch or ⌘-scroll resizes the tiles, before the grid's scroll view would scroll.
+        if event.type == .magnify || event.type == .scrollWheel, onZoom?(event) == true {
             return
         }
         super.sendEvent(event)
@@ -80,6 +85,9 @@ enum GalleryWindowController {
         }
         window.onKey = { event in
             GalleryController.shared.handleKey(event, in: window)
+        }
+        window.onZoom = { event in
+            GalleryController.shared.handleZoom(event)
         }
         NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { _ in
             MainActor.assumeIsolated {

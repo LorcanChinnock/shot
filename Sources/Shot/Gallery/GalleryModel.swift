@@ -175,10 +175,43 @@ final class GalleryModel {
     }
 
     /// Shows every capture, largest first, so the ones taking the most room are at the top to trash.
+    /// Whether the Make room panel is open.
+    var showsMakeRoom = false
+    /// The extra copies Make room offers to clear, or `nil` while it's still comparing files.
+    private(set) var duplicateCopies: [GalleryItem]?
+    @ObservationIgnored private var duplicatesTask: Task<Void, Never>?
+
+    /// The captures Make room calls large, less the copies it lists as duplicates.
+    var largeCaptures: [GalleryItem] { MakeRoom.large(items, excluding: duplicateCopies ?? []) }
+
+    /// Opens Make room, and starts looking for copies, which reads files of the same size off the main thread.
     func makeRoom() {
+        showsMakeRoom = true
+        duplicateCopies = nil
+        let items = items
+        duplicatesTask?.cancel()
+        duplicatesTask = Task {
+            let copies = await Task.detached(priority: .userInitiated) {
+                MakeRoom.duplicateCopies(items, fingerprint: MakeRoom.fingerprint(of:))
+            }.value
+            if !Task.isCancelled {
+                duplicateCopies = copies
+            }
+        }
+    }
+
+    /// Make room's "Show all, largest first": every capture in the grid, the biggest at the top.
+    func showLargestFirst() {
+        showsMakeRoom = false
         query = ""
         source = .all
         sort = .size
+    }
+
+    /// Asks to move `items` to the Trash. Make room shows the usual dialog in its own panel, as macOS shows one sheet at a
+    /// time, and goes back to its groups afterwards.
+    func trashFromMakeRoom(_ items: [GalleryItem]) {
+        askToTrash(items)
     }
 
     private func refilter() {
@@ -920,6 +953,7 @@ final class GalleryModel {
         withAnimation(trashed.count <= Gallery.animatedChangeLimit ? Motion.animation(.gridShuffle) : nil) {
             self.items.removeAll { trashed.contains($0.url) }
         }
+        duplicateCopies = duplicateCopies?.filter { !trashed.contains($0.url) }
         selection.subtract(trashed)
         if trashed.count < items.count {
             let failed = items.count - trashed.count
@@ -957,6 +991,14 @@ final class GalleryModel {
 
     func zoom(by step: Double) {
         tileSize = min(max(tileSize + step, Gallery.tileSizes.lowerBound), Gallery.tileSizes.upperBound)
+    }
+
+    /// A pinch or ⌘-scroll: scales the tiles by `factor`.
+    func zoom(scaledBy factor: Double) {
+        let size = Gallery.tileSize(tileSize, zoomedBy: factor)
+        if size != tileSize {
+            tileSize = size
+        }
     }
 }
 

@@ -45,3 +45,16 @@ import Testing
     #expect(Gallery.grid(available: 150, tileSize: 190, spacing: 10).cell == 150)
     #expect(Gallery.grid(available: 0, tileSize: 190, spacing: 10).cell == 1)
 }
+
+@Test func gridLayoutFindsTheItemUnderAPoint() {
+    // Header 0, rows 30 140 250 for items 0-4, header 360, rows 390 500 for items 5-7.
+    let layout = GalleryGridLayout(sectionSizes: [5, 3], titled: true, columns: 2, rowHeight: 100, headerHeight: 20, spacing: 10)
+    #expect(layout.item(at: 50, column: 0) == 0)
+    #expect(layout.item(at: 150, column: 1) == 3)
+    // Past the last tile of a short row, the last tile.
+    #expect(layout.item(at: 300, column: 1) == 4)
+    #expect(layout.item(at: 395, column: 1) == 6)
+    // A header and the gap between rows hold no item.
+    #expect(layout.item(at: 10, column: 0) == nil)
+    #expect(layout.item(at: 135, column: 0) == nil)
+}

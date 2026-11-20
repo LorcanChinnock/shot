@@ -892,8 +892,6 @@ final class SelectionOverlayView: NSView {
         let name: String
         let key: String
         let action: BarAction
-        /// A second key that does the same, shown in its own keycap: the other kind's shortcut, for the kind switch.
-        var altKey: String?
     }
 
     /// The bar's buttons in their three groups: the modes, then Delay, Scroll and the mode's own option, then the toggles.
@@ -943,7 +941,8 @@ final class SelectionOverlayView: NSView {
         return [modes, options, aids]
     }
 
-    /// The other kind, as an icon beside the kind's name, when the overlay offers switching to it.
+    /// Switching to the other kind, when the overlay offers it: not drawn itself, but it names the kind's button for its tip,
+    /// the hint line and VoiceOver.
     private var kindSwitch: BarButton? {
         guard controller.offersKindSwitch else {
             return nil
@@ -951,8 +950,7 @@ final class SelectionOverlayView: NSView {
         let toRecord = !controller.recording
         return BarButton(
             symbol: toRecord ? "record.circle" : "camera", label: nil, on: false, look: .plain,
-            name: toRecord ? String(localized: "Switch to Record") : String(localized: "Switch to Screenshot"), key: "V", action: .switchKind,
-            altKey: Preferences().hotkey(for: toRecord ? .record : .screenshot)?.displayString
+            name: toRecord ? String(localized: "Switch to Record") : String(localized: "Switch to Screenshot"), key: "V", action: .switchKind
         )
     }
 
@@ -1025,13 +1023,17 @@ final class SelectionOverlayView: NSView {
         let kindText = NSAttributedString(string: kind, attributes: [
             .font: kindFont, .foregroundColor: NSColor.white.withAlphaComponent(increased ? 1 : 0.8),
         ])
-        let dot: CGFloat = 8
-        let kindWidth = 8 + dot + 7 + kindText.size().width.rounded(.up) + 10
+        // The kind's own icon, a camera or the record button, in the accent or record red, before its name.
+        let kindConfig = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: .semibold)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [controller.recording ? FloatingPanel.recordNS : FloatingPanel.accentNS]))
+        let kindIcon = NSImage(systemSymbolName: controller.recording ? "record.circle" : "camera", accessibilityDescription: nil)?.withSymbolConfiguration(kindConfig)
+        let kindIconWidth = kindIcon?.size.width.rounded(.up) ?? 0
+        let kindWidth = 10 + kindIconWidth + 7 + kindText.size().width.rounded(.up) + 10
         let widths = groups.map { $0.map(width) }
-        // With the switch, the kind and the other kind's icon are a group of their own, so the icon doesn't read as a mode.
+        // With the switch, the kind is a button in a group of its own, so it doesn't read as a mode.
         let kindSwitch = kindSwitch
         let layout = CaptureBarLayout(
-            groups: kindSwitch.map { [[kindWidth, width($0)]] + widths } ?? [[kindWidth] + widths[0]] + widths.dropFirst(), height: height
+            groups: kindSwitch != nil ? [[kindWidth]] + widths : [[kindWidth] + widths[0]] + widths.dropFirst(), height: height
         )
         let size = layout.size
 
@@ -1068,31 +1070,27 @@ final class SelectionOverlayView: NSView {
         func placed(_ rect: CGRect) -> CGRect {
             rect.offsetBy(dx: frame.minX, dy: frame.minY)
         }
-        // The kind: a dot in the accent for a screenshot or record red for a recording, then its name. With the switch, the name
-        // and the other kind's icon are one button: hovering either lights both, and clicking either switches.
+        // The kind: its icon, then its name. With the switch, the two are one button that switches to the other kind.
         let kindBox = placed(layout.frames[0][0])
-        let switchBox = kindSwitch.map { _ in placed(layout.frames[0][1]) }
         let switchHovered = kindSwitch != nil && hoveredChip == .switchKind
-        if let switchBox, switchHovered {
-            let pair = kindBox.union(switchBox)
-            let radius = min(Theme.Radius.group, pair.height / 2)
+        if switchHovered {
+            let radius = min(Theme.Radius.group, kindBox.height / 2)
             NSColor.white.withAlphaComponent(0.08).setFill()
-            NSBezierPath(roundedRect: pair, xRadius: radius, yRadius: radius).fill()
+            NSBezierPath(roundedRect: kindBox, xRadius: radius, yRadius: radius).fill()
         }
-        (controller.recording ? FloatingPanel.recordNS : FloatingPanel.accentNS).setFill()
-        NSBezierPath(ovalIn: CGRect(x: kindBox.minX + 8, y: (kindBox.midY - dot / 2).rounded(), width: dot, height: dot)).fill()
-        kindText.draw(at: CGPoint(x: kindBox.minX + 8 + dot + 7, y: (kindBox.midY - kindText.size().height / 2).rounded()))
+        if let kindIcon {
+            let size = kindIcon.size
+            kindIcon.draw(in: CGRect(x: kindBox.minX + 10, y: (kindBox.midY - size.height / 2).rounded(), width: size.width, height: size.height))
+        }
+        kindText.draw(at: CGPoint(x: kindBox.minX + 10 + kindIconWidth + 7, y: (kindBox.midY - kindText.size().height / 2).rounded()))
 
         var tip: (button: BarButton, box: CGRect)?
         var drawn: [BarButton] = []
-        if let kindSwitch, let switchBox {
-            // The pair's hover fill is drawn above, so the icon draws without its own.
-            drawButton(kindSwitch, in: switchBox, hovered: false, increased: increased, scale: scale, font: font(kindSwitch), icon: icon)
-            let pair = kindBox.union(switchBox)
-            barHits.append((pair, .switchKind))
+        if let kindSwitch {
+            barHits.append((kindBox, .switchKind))
             drawn.append(kindSwitch)
             if switchHovered {
-                tip = (kindSwitch, pair)
+                tip = (kindSwitch, kindBox)
             }
         }
         let modeRects = kindSwitch == nil ? Array(layout.frames[0].dropFirst()) : layout.frames[1]
@@ -1326,12 +1324,10 @@ final class SelectionOverlayView: NSView {
         let key = NSAttributedString(string: button.key, attributes: [
             .font: NSFont.monospacedSystemFont(ofSize: textSize.points(10.5), weight: .bold), .foregroundColor: NSColor.white,
         ])
-        let alt = button.altKey.map { NSAttributedString(string: $0, attributes: key.attributes(at: 0, effectiveRange: nil)) }
         let nameSize = name.size()
         let keySize = key.size()
         let capWidth = keySize.width.rounded(.up) + 10
-        let altWidth = alt.map { $0.size().width.rounded(.up) + 10 }
-        let width = 9 + nameSize.width.rounded(.up) + 8 + capWidth + (altWidth.map { $0 + 4 } ?? 0) + 9
+        let width = 9 + nameSize.width.rounded(.up) + 8 + capWidth + 9
         let height = max(nameSize.height, keySize.height).rounded(.up) + 8
         let x = min(max(box.midX - width / 2, 8), bounds.width - width - 8).rounded()
         let y = barPlacement == .top ? bar.minY - 8 - height : bar.maxY + 8
@@ -1344,11 +1340,6 @@ final class SelectionOverlayView: NSView {
         NSColor.white.withAlphaComponent(0.16).setFill()
         NSBezierPath(roundedRect: cap, xRadius: 4, yRadius: 4).fill()
         key.draw(at: CGPoint(x: cap.minX + 5, y: cap.minY))
-        if let alt, let altWidth {
-            let altCap = CGRect(x: cap.maxX + 4, y: capY, width: altWidth, height: cap.height)
-            NSBezierPath(roundedRect: altCap, xRadius: 4, yRadius: 4).fill()
-            alt.draw(at: CGPoint(x: altCap.minX + 5, y: altCap.minY))
-        }
     }
 
     /// The bar's tooltip is a touch more solid than the bar, as the board draws it.
@@ -1386,11 +1377,7 @@ final class SelectionOverlayView: NSView {
                 element.setAccessibilityRole(.button)
             }
             element.setAccessibilityLabel(button.name)
-            if let altKey = button.altKey {
-                element.setAccessibilityHelp(String(localized: "Key: \(button.key) or \(altKey)"))
-            } else {
-                element.setAccessibilityHelp(String(localized: "Key: \(button.key)"))
-            }
+            element.setAccessibilityHelp(String(localized: "Key: \(button.key)"))
             element.setAccessibilityFrameInParentSpace(frame)
             element.setAccessibilityParent(self)
             return element

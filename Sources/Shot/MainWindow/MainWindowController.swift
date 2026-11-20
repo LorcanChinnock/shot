@@ -81,6 +81,7 @@ private final class MainWindow: NSWindow {
     var onCommand: ((String, Bool) -> Bool)?
     var onKey: ((NSEvent) -> Bool)?
     var onTextKey: ((NSEvent) -> Bool)?
+    var onZoom: ((NSEvent) -> Bool)?
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
@@ -93,6 +94,10 @@ private final class MainWindow: NSWindow {
     /// Esc leaves the gallery's search field before the field sees it, so the next arrow moves through the grid.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, firstResponder is NSText, onTextKey?(event) == true {
+            return
+        }
+        // A pinch or ⌘-scroll resizes the library's tiles, before the grid's scroll view would scroll.
+        if event.type == .magnify || event.type == .scrollWheel, onZoom?(event) == true {
             return
         }
         super.sendEvent(event)
@@ -181,6 +186,9 @@ enum MainWindowController {
                 return true
             }
             return gallery.handleKey(event, in: window)
+        }
+        window.onZoom = { event in
+            navigation.page == .library && !showingResults() && gallery.handleZoom(event)
         }
         window.onKey = { event in
             switch navigation.page {

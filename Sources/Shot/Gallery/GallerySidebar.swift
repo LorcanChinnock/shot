@@ -566,15 +566,10 @@ private struct OpenSettingsRow: View {
         Button {
             MainWindowNavigation.shared.openSettings()
         } label: {
-            HStack(spacing: 4) {
-                SidebarRowLabel(title: String(localized: "Settings"), count: nil, selected: false) {
-                    Image(systemName: "gearshape")
-                        .font(.scaled(13, weight: .medium))
-                        .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
-                }
-                // Teaches the shortcut, which opens this same page from anywhere.
-                Keycap("⌘,")
-                    .accessibilityHidden(true)
+            SidebarRowLabel(title: String(localized: "Settings"), count: nil, selected: false) {
+                Image(systemName: "gearshape")
+                    .font(.scaled(13, weight: .medium))
+                    .foregroundStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink))
             }
             .padding(.vertical, 5)
             .padding(.horizontal, 8)
@@ -590,7 +585,6 @@ private struct OpenSettingsRow: View {
             Theme.hairline.frame(height: 1).padding(.horizontal, 10)
         }
         .accessibilityLabel(Text("Settings"))
-        .accessibilityHint(Text(verbatim: "⌘,"))
     }
 }
 
@@ -635,7 +629,7 @@ private struct GalleryStorage: View {
             if bytes > 0 {
                 Button("Make room…") { model.makeRoom() }
                     .buttonStyle(PanelLinkStyle())
-                    .themeTip("Show every capture, largest first")
+                    .themeTip("Find large captures and copies to clear")
             }
         }
         .padding(.horizontal, 18)

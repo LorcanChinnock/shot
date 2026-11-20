@@ -29,6 +29,23 @@ final class GalleryController {
         log.notice("Gallery opened")
     }
 
+    /// A pinch on the trackpad, or ⌘ and the scroll wheel, resizes the grid's tiles, as the slider and ⌘+ and ⌘− do. Plain
+    /// scrolling still scrolls. Not while the preview or a dialog covers the grid.
+    func handleZoom(_ event: NSEvent) -> Bool {
+        guard model.previewing == nil, model.trashRequest == nil else {
+            return false
+        }
+        switch event.type {
+        case .magnify:
+            model.zoom(scaledBy: 1 + event.magnification)
+        case .scrollWheel where event.modifierFlags.contains(.command) && event.scrollingDeltaY != 0:
+            model.zoom(scaledBy: Gallery.zoomFactor(scrollDelta: event.scrollingDeltaY, precise: event.hasPreciseScrollingDeltas))
+        default:
+            return false
+        }
+        return true
+    }
+
     private func isTyping(in window: NSWindow) -> Bool {
         window.firstResponder is NSText
     }
