@@ -1,40 +1,23 @@
 import ShotCore
 import SwiftUI
 
-/// The Settings window's see-through sidebar: a search field, the six sections with their tinted icons, Open Gallery, and
-/// Shot's icon with whether it's up to date.
+/// The settings pages' see-through sidebar: "‹ Library" back to the captures, then the sections, with About at the foot. The
+/// search is in the title bar, where the library has it.
 struct SettingsSidebar: View {
     let navigation: SettingsNavigation
-    var searchFocused: FocusState<Bool>.Binding
     /// While searching, the sections with a matching row. The others fade.
     let matching: Set<SettingsSection>?
-    @Environment(\.inMainWindow) private var inMainWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            if inMainWindow {
-                BackToLibraryRow()
-                    .padding(.bottom, 6)
-            }
-            // In the one Shot window, the search is in the title bar, where the library has it.
-            if !inMainWindow {
-                SettingsSearchField(navigation: navigation, focus: searchFocused, prompt: "Search")
-                    .padding(.horizontal, 4)
-                    .padding(.bottom, 12)
-            } else {
-                Spacer().frame(height: 6)
-            }
-            // In the one Shot window, About sits at the foot in place of the version footer, since it shows the version.
-            ForEach(inMainWindow ? SettingsSection.allCases.filter { $0 != .about } : SettingsSection.allCases) { section in
+            BackToLibraryRow()
+                .padding(.bottom, 6)
+            Spacer().frame(height: 6)
+            ForEach(SettingsSection.allCases.filter { $0 != .about }) { section in
                 row(section)
             }
             Spacer(minLength: 12)
-            if inMainWindow {
-                row(.about)
-            } else {
-                OpenGalleryRow()
-                SettingsSidebarFooter { navigation.open(.about) }
-            }
+            row(.about)
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 14)
@@ -73,39 +56,16 @@ struct SettingsSearchField: View {
     }
 }
 
-/// A section's icon on its tinted tile, or on white with an ink glyph when it's the selected row. In the one Shot window, the
-/// glyph alone in one colour, ink when selected.
+/// A section's icon: the glyph alone in one colour, ink when selected.
 struct SettingsSectionTile: View {
     let section: SettingsSection
     let selected: Bool
-    @Environment(\.inMainWindow) private var quiet
 
     var body: some View {
-        if quiet {
-            Image(systemName: section.symbol)
-                .font(.scaled(13, weight: .medium))
-                .foregroundStyle(selected ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink)))
-                .frame(width: 22, height: 22)
-                .accessibilityHidden(true)
-        } else {
-            tile
-        }
-    }
-
-    @ViewBuilder
-    private var tile: some View {
-        let tint = selected ? Theme.SidebarTint.selected : section.tint
-        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
         Image(systemName: section.symbol)
-            .font(.scaled(12, weight: .semibold))
-            .foregroundStyle(tint.icon)
+            .font(.scaled(13, weight: .medium))
+            .foregroundStyle(selected ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(ContrastAware(standard: Theme.secondaryText, increased: Theme.ink)))
             .frame(width: 22, height: 22)
-            .background(tint.tile, in: shape)
-            .overlay {
-                if selected {
-                    Color.clear.inkBorder(shape, width: 1, color: Color(hex: 0x16161A).opacity(0.2))
-                }
-            }
             .accessibilityHidden(true)
     }
 }
@@ -142,7 +102,7 @@ private struct SettingsSidebarRow: View {
     }
 }
 
-/// In the one Shot window, "‹ Library" at the top of the settings sidebar, back to the captures.
+/// "‹ Library" at the top of the settings sidebar, back to the captures.
 private struct BackToLibraryRow: View {
     @State private var hovering = false
 
@@ -168,106 +128,5 @@ private struct BackToLibraryRow: View {
         .buttonStyle(.halo)
         .onHover { hovering = $0 }
         .accessibilityLabel(Text("Back to Library"))
-    }
-}
-
-/// Opens the gallery's own window, with an arrow that says it opens somewhere else.
-private struct OpenGalleryRow: View {
-    @State private var hovering = false
-
-    private var label: some View {
-        Text("Open Gallery")
-            .font(.scaled(13))
-            .foregroundStyle(Theme.ink)
-            .lineLimit(1)
-    }
-
-    var body: some View {
-        Button {
-            GalleryController.shared.show()
-        } label: {
-            HStack(spacing: 10) {
-                let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .circular)
-                Image(systemName: "square.grid.2x2")
-                    .font(.scaled(12, weight: .semibold))
-                    .foregroundStyle(Theme.SidebarTint.gallery.icon)
-                    .frame(width: 22, height: 22)
-                    .background(Theme.SidebarTint.gallery.tile, in: shape)
-                    .inkBorder(shape, width: 1, color: Theme.controlEdge)
-                // At larger text sizes, or in a long translation, the arrow gives way so the label stays on one line.
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 10) {
-                        label
-                        Spacer(minLength: 0)
-                        Image(systemName: "arrow.up.right")
-                            .font(.scaled(10, weight: .semibold))
-                            .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
-                            .accessibilityHidden(true)
-                    }
-                    label.frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .contentShape(Rectangle())
-            .modifier(SidebarRowBackground(selected: false, hovering: hovering))
-        }
-        .buttonStyle(.halo)
-        .onHover { hovering = $0 }
-        .accessibilityLabel(Text("Open Gallery"))
-    }
-}
-
-/// Shot's icon and name over whether it's up to date, under a hairline. It opens About, where updates are.
-private struct SettingsSidebarFooter: View {
-    let action: () -> Void
-    @Bindable private var updater = Updater.shared
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                AppIconView(size: 28)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(verbatim: "Shot")
-                        .font(.scaled(12, weight: .bold))
-                        .foregroundStyle(Theme.ink)
-                    Text(status)
-                        .font(.scaled(11))
-                        .foregroundStyle(updater.status.availableVersion == nil
-                            ? ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink)
-                            : ContrastAware(standard: Theme.accentText, increased: Theme.ink))
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(.top, 10)
-            .padding(.horizontal, 8)
-            .padding(.bottom, 2)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.halo)
-        .overlay(alignment: .top) {
-            Theme.hairline.frame(height: 1)
-        }
-        .padding(.top, 6)
-        .themeTip("Updates and more in About")
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(verbatim: "Shot"))
-        .accessibilityValue(Text(status))
-        .accessibilityHint(Text("Opens About"))
-    }
-
-    /// "Up to date" only when a check in this session found nothing; otherwise the version, since Shot can't say.
-    private var status: String {
-        switch updater.status {
-        case .available(let version):
-            return String(localized: "Shot \(version) is available")
-        case .upToDate:
-            return String(localized: "Up to date")
-        case .off, .lastChecked, .notChecked:
-            let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-            return String(localized: "Version \(version)")
-        }
     }
 }

@@ -49,19 +49,10 @@ From **Foundations › Design language**, **Components**, **Capture bar** and **
 | Separator | `rgba(22,22,26,0.07)` | `rgba(255,255,255,0.08)` | Rows inside a group |
 | Field fill | `rgba(22,22,26,0.06)` | `rgba(255,255,255,0.07)` | Search fields, segmented tracks, tag chips |
 | Hover | `rgba(22,22,26,0.07)` | `rgba(255,255,255,0.08)` | Toolbar buttons on hover |
-| Selected fill | `rgba(22,22,26,0.09)` | `rgba(255,255,255,0.12)` | The selected sidebar row in the one Shot window (#1460) |
+| Selected fill | `rgba(22,22,26,0.09)` | `rgba(255,255,255,0.12)` | The selected sidebar row (#1460) |
 | Disabled text | `rgba(22,22,26,0.35)` | `rgba(237,235,230,0.35)` | Disabled controls |
 
-**Sidebar icon tints** appear only as the tile behind a sidebar icon, never as a fill. The selected row's tile is `#FFFFFF` with a `#16161A` icon in both appearances. In the one Shot window (#1460, behind its switch) the settings sidebar drops the tiles: each icon is a bare glyph in secondary text, ink when selected, and the selected row is the Selected fill with no yellow or ink edge (an ink edge under Increase Contrast). The library's Screenshots, Recordings and GIFs icons keep their colours.
-
-| Section | Light tile | Light icon | Dark tile | Dark icon |
-| --- | --- | --- | --- | --- |
-| General | `#F0EDE6` | `#55545A` | `#3A3A3F` | `#CFCDD4` |
-| Capture | `#FFE0EE` | `#C2306E` | `#4A2336` | `#FF8DBE` |
-| Quick Access | `#DCEFFF` | `#1D6FB8` | `#1E3550` | `#7DBBFF` |
-| Recording | `#FFE1DE` | `#C4271E` | `#4A2220` | `#FF7B72` |
-| Shortcuts | `#FFE9D3` | `#B35A00` | `#4A3118` | `#FFB366` |
-| About | `#EAF6D2` | `#4E7A0E` | `#2E3D1A` | `#A8D86A` |
+**Sidebar icons.** Since the one Shot window (#1460, the only window since #1471) the settings sidebar has no tiles: each icon is a bare glyph in secondary text, ink when selected, and the selected row is the Selected fill with no yellow or ink edge (an ink edge under Increase Contrast). The library's Screenshots, Recordings and GIFs icons keep their colours. The one tint left is Recording's, a tile `#FFE1DE` (dark `#4A2220`) behind a `#C4271E` (dark `#FF7B72`) icon, which recording recovery shows; tints appear only behind an icon, never as a fill. The per-section tiles the separate Settings window used are gone with it.
 
 The gallery sidebar draws its icons in the same colours without a tile: Screenshots `#5B4BD6` (dark `#A99BFF`), Recordings `#C4271E` (dark `#FF7B72`), GIFs `#1D6FB8` (dark `#7DBBFF`), folders in secondary text.
 
@@ -981,6 +972,8 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 
 ### Gallery window
 
+*#1471 replaced this window and the Settings window with the one Shot window (#1460). This section records the design as it was.*
+
 #1106 moves the gallery out of the Settings window into a window of its own, from Library & Settings › Gallery and the Settings sidebar's "Open Gallery". The gallery used to be the first section of Settings, so opening Settings showed the gallery and its folder watching started with it. Now Settings opens on General, and the gallery window does the gallery's work only while it's open. The grid, sidebar, preview and empty state inside it are unchanged until #1107–#1110, so this section covers the window and the ways in.
 
 | Part | Look |
@@ -1125,6 +1118,8 @@ Edits and drags are always instant. Sounds follow the capture sound setting.
 - **Increase Contrast** takes the box's line to 60% ink, the note and secondary text to ink, the cards' edge to 60% ink, and darkens Move to Trash's red, as every destructive main button does.
 
 ### Settings window and sidebar
+
+*#1471 replaced this window with the one Shot window (#1460): the sidebar now opens with "‹ Library", has no search field, Open Gallery or footer, and puts About at the foot. This section records the design as it was.*
 
 #1111 redraws the Settings window from Library & Settings › Settings sidebar and Settings · General, in light and dark. The sidebar used to be a column of 28 pt colour tiles with 2 pt ink edges under the app icon and "Shot", with a "Show icons only" button, and the content opened under a 30 pt title over a yellow marker and a subtitle. Now the sidebar is the board's: a search field, six rows with tinted icons, Open Gallery, and Shot's icon with its update status. The content has a 15 pt title in the title bar and grouped white panels. The panes' rows are unchanged until #1112–#1117, so this section covers the window, the sidebar, the search and the shared groups and rows. Nothing here runs during a capture, so the capture → copy path is unchanged.
 

@@ -1,10 +1,7 @@
 import AppKit
-import os
 import ShotCore
 
-private let log = Logger.shot("gallery")
-
-/// The gallery's model and its keyboard handling in the gallery window.
+/// The gallery's model and its keyboard handling in the library.
 @MainActor
 final class GalleryController {
     static let shared = GalleryController()
@@ -19,15 +16,10 @@ final class GalleryController {
         set { model.onExportGIF = newValue }
     }
 
-    /// Takes a screenshot, for the empty library's Take a Screenshot button in the one Shot window.
+    /// Takes a screenshot, for the empty library's Take a Screenshot button.
     var onScreenshot: (() -> Void)?
 
     let model = GalleryModel()
-
-    func show() {
-        GalleryWindowController.show()
-        log.notice("Gallery opened")
-    }
 
     /// A pinch on the trackpad, or ⌘ and the scroll wheel, resizes the grid's tiles, as the slider and ⌘+ and ⌘− do. Plain
     /// scrolling still scrolls. Not while the preview or a dialog covers the grid.

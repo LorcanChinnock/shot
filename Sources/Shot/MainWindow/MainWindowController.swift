@@ -112,15 +112,15 @@ private final class MainWindow: NSWindow {
     }
 }
 
-/// The one Shot window, holding the library and Settings, while `PreferenceKey.oneWindow` is on (#1460). It replaces
-/// `GalleryWindowController` and `SettingsWindowController`, and opens where it was last closed, at the same size.
+/// The one Shot window, holding the library and Settings, and every way in to them: the menu bar, ⌘, and `shot://` links
+/// (#1460). It opens where it was last closed, at the same size.
 @MainActor
 enum MainWindowController {
     private(set) static var window: NSWindow?
     private static var contentReleased = false
-    static let size = GalleryWindowController.size
+    static let size = NSSize(width: 1224, height: 764)
     /// The toolbar and two columns of thumbnails, with the sidebar hidden.
-    static let minSize = NSSize(width: MainWindowLayout.minWidth, height: SettingsWindowController.minSize.height)
+    static let minSize = NSSize(width: MainWindowLayout.minWidth, height: 420)
     /// The user defaults name AppKit saves the window's frame under.
     private static let frameName = "Shot"
 
@@ -129,18 +129,19 @@ enum MainWindowController {
 
     static func showLibrary() {
         MainWindowNavigation.shared.openLibrary()
-        show()
+        show(timedAs: "gallery")
         // Keeps the search field from taking focus, so the arrow keys move through the grid.
         window?.makeFirstResponder(nil)
     }
 
     static func showSettings(section: SettingsSection? = nil) {
         MainWindowNavigation.shared.openSettings(section)
-        show()
+        show(timedAs: "settings")
     }
 
-    private static func show() {
-        Perf.measureWindowOpen("main")
+    /// `timedAs` names the page for `scripts/perf.sh`, which keeps a budget for opening each.
+    private static func show(timedAs page: String) {
+        Perf.measureWindowOpen(page)
         if window == nil {
             makeWindow()
         }
@@ -198,7 +199,7 @@ enum MainWindowController {
                 guard event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
                     return false
                 }
-                return SettingsWindowController.moveBetweenSections(keyCode: event.keyCode, in: window)
+                return moveBetweenSections(keyCode: event.keyCode, in: window)
             }
         }
         NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { _ in
@@ -223,6 +224,22 @@ enum MainWindowController {
         }
         self.window = window
     }
+
+    /// ↑ and ↓ move between sections on the settings pages, as in a sidebar list, unless a text field, a shortcut recorder, a
+    /// menu or a sheet has the keyboard.
+    private static func moveBetweenSections(keyCode: UInt16, in window: NSWindow) -> Bool {
+        let navigation = SettingsNavigation.shared
+        guard window.isKeyWindow, window.attachedSheet == nil, window.childWindows?.isEmpty ?? true,
+              !navigation.recordingShortcut, !(window.firstResponder is NSText) else {
+            return false
+        }
+        switch keyCode {
+        case 126: navigation.step(by: -1)
+        case 125: navigation.step(by: 1)
+        default: return false
+        }
+        return true
+    }
 }
 
 /// The library or the settings pages, filling the window. The gallery keeps watching the save folder while the window is
@@ -241,7 +258,6 @@ private struct MainWindowView: View {
                 SettingsView()
             }
         }
-        .environment(\.inMainWindow, true)
         .onGeometryChange(for: Double.self) { $0.size.width } action: { width in
             navigation.width = width
             // Back to the sidebar button's own choice once the widest sidebar either page can have fits. Clearing it
@@ -267,9 +283,4 @@ private struct MainWindowView: View {
         .onDisappear { model.stop() }
         .frame(minWidth: MainWindowController.minSize.width, maxWidth: .infinity, maxHeight: .infinity)
     }
-}
-
-extension EnvironmentValues {
-    /// True inside the one Shot window, where the library and Settings sidebars link to each other rather than to a window.
-    @Entry var inMainWindow = false
 }

@@ -472,8 +472,7 @@ final class Recorder: NSObject {
             throw CaptureError.displayNotFound
         }
         let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        // Shot's windows stay out of the video, except the camera bubble, the Settings and gallery windows and
-        // the click rings.
+        // Shot's windows stay out of the video, except the camera bubble, the Shot window and the click rings.
         let cameraWindows = content.windows.filter { $0.windowID == CameraBubble.shared.windowID }
         let mainWindows = content.windows.filter { ShotWindows.capturable.contains($0.windowID) }
         let clickWindows = clickRings.map { rings in content.windows.filter { $0.windowID == rings.windowID } } ?? []

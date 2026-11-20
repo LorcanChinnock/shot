@@ -7,7 +7,6 @@ import UniformTypeIdentifiers
 /// Tags the captures with a tag. One row is picked at a time. At the foot, how much room the captures take.
 struct GallerySidebar: View {
     let model: GalleryModel
-    @Environment(\.inMainWindow) private var inMainWindow
     @State private var listTargeted = false
     @State private var managingTags = false
 
@@ -31,9 +30,7 @@ struct GallerySidebar: View {
             // folder's row lights up to show it.
             .modifier(FolderDrop(model: model, folder: "", targeted: $listTargeted))
             GalleryStorage(model: model)
-            if inMainWindow {
-                OpenSettingsRow()
-            }
+            OpenSettingsRow()
         }
     }
 
@@ -558,7 +555,7 @@ private struct FolderDrop: ViewModifier {
     }
 }
 
-/// In the one Shot window, the way in to Settings, at the very foot of the library's sidebar.
+/// The way in to Settings, at the very foot of the library's sidebar.
 private struct OpenSettingsRow: View {
     @State private var hovering = false
 

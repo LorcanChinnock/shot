@@ -2700,15 +2700,15 @@
     },
     "%lld · %@" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld · %2$@"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "%1$lld · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
             "value" : "%1$lld · %2$@"
           }
         },
@@ -29811,58 +29811,6 @@
         }
       }
     },
-    "No settings match" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keine Einstellung passt"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ningún ajuste coincide"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun réglage ne correspond"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessuna impostazione corrisponde"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一致する設定はありません"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "일치하는 설정이 없습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nenhum ajuste corresponde"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "没有匹配的设置"
-          }
-        }
-      }
-    },
     "No sound" : {
       "localizations" : {
         "de" : {
@@ -31423,58 +31371,6 @@
         }
       }
     },
-    "Open Gallery" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Galerie öffnen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir galería"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir la galerie"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apri galleria"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ギャラリーを開く"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "갤러리 열기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir galeria"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开图库"
-          }
-        }
-      }
-    },
     "Open Shot at login" : {
       "localizations" : {
         "de" : {
@@ -31939,58 +31835,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已打开，但找不到 %@"
-          }
-        }
-      }
-    },
-    "Opens About" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Öffnet „Über“"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abre Acerca de"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvre À propos"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apre Info"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「情報」を開きます"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "정보를 엽니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abre Sobre"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开“关于”"
           }
         }
       }
@@ -41464,58 +41308,6 @@
         }
       }
     },
-    "Search by file name or by text in screenshots (⌘F)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nach Dateiname oder Text in Bildschirmfotos suchen (⌘F)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Busca por nombre de archivo o por texto en las capturas (⌘F)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rechercher par nom de fichier ou par texte dans les captures d’écran (⌘F)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cerca per nome file o per testo negli screenshot (⌘F)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ファイル名またはスクリーンショット内のテキストで検索（⌘F）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "파일 이름이나 스크린샷 속 텍스트로 검색 (⌘F)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscar por nome de arquivo ou por texto nas capturas de tela (⌘F)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "按文件名或截屏中的文字搜索（⌘F）"
-          }
-        }
-      }
-    },
     "Search captures and settings" : {
       "localizations" : {
         "de" : {
@@ -41616,58 +41408,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "按名称或说明搜索所有设置 (⌘F)"
-          }
-        }
-      }
-    },
-    "Search names and text in screenshots" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Namen und Text in Bildschirmfotos suchen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscar nombres y texto en capturas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rechercher noms et texte des captures d’écran"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cerca nomi e testo negli screenshot"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名前とスクリーンショット内のテキストを検索"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이름과 스크린샷 속 텍스트 검색"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscar nomes e texto nas capturas de tela"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "搜索名称和截屏中的文字"
           }
         }
       }
@@ -51177,58 +50917,6 @@
         }
       }
     },
-    "Try another word, or clear the search to see every section." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Versuch es mit einem anderen Wort, oder leere die Suche, um alle Bereiche zu sehen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prueba con otra palabra o borra la búsqueda para ver todas las secciones."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Essayez un autre mot, ou effacez la recherche pour voir toutes les sections."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prova un’altra parola o cancella la ricerca per vedere tutte le sezioni."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "別の言葉を試すか、検索を消去してすべてのセクションを表示してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다른 단어를 입력하거나 검색을 지워 모든 섹션을 보세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tente outra palavra ou limpe a busca para ver todas as seções."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "换个词试试，或清除搜索以查看所有分区。"
-          }
-        }
-      }
-    },
     "Try another word, or clear the search." : {
       "localizations" : {
         "de" : {
@@ -52476,58 +52164,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更新"
-          }
-        }
-      }
-    },
-    "Updates and more in About" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Updates und mehr unter „Über“"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actualizaciones y más en Acerca de"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mises à jour et plus dans À propos"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiornamenti e altro in Info"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "アップデートなどは「情報」にあります"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "업데이트 등은 정보에 있습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atualizações e mais em Sobre"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更新等内容见“关于”"
           }
         }
       }

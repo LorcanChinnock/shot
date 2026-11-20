@@ -29,7 +29,7 @@ You can also make a folder while moving captures: right-click one, or a selectio
 
 ## Change the sidebar's width
 
-Drag the thin strip between the sidebar and the thumbnails to change its width, or double-click it to reset. Drag it narrower than it goes to close it. The Settings window's sidebar resizes and resets the same way, but it always stays open.
+Drag the thin strip between the sidebar and the thumbnails to change its width, or double-click it to reset. Drag it narrower than it goes to close it. The Settings sidebar resizes and resets the same way, but it stays open while the window is wide enough for it.
 
 ## See how much room your captures take
 

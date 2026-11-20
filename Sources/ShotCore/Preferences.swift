@@ -105,9 +105,6 @@ public enum PreferenceKey {
     public static let keptSelectionAids = "keptSelectionAids"
     /// How far the welcome window got, an `OnboardingProgress`. Not a setting, so resetting settings keeps it.
     public static let onboarding = "onboarding"
-    /// True to show the library and Settings in one window instead of two (#1460). Hidden and off by default, switched on with
-    /// `defaults write <bundle ID> oneWindow -bool YES` while it's tried out. Not a setting, so resetting settings keeps it.
-    public static let oneWindow = "oneWindow"
 
     public static func hotkey(_ action: ShotAction) -> String { "hotkey.\(action.rawValue)" }
 }
@@ -380,7 +377,6 @@ public struct Preferences {
     }
 
     public var playSound: Bool { store.bool(forKey: PreferenceKey.playSound) }
-    public var oneWindow: Bool { store.bool(forKey: PreferenceKey.oneWindow) }
     public var saveFolder: URL { URL(fileURLWithPath: store.string(forKey: PreferenceKey.saveFolder) ?? Self.defaultSaveFolder) }
 
     public var filePrefix: String { Self.sanitizedPrefix(store.string(forKey: PreferenceKey.filePrefix) ?? "") }
