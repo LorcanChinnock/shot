@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import { SKIP, visit } from 'unist-util-visit';
@@ -33,15 +33,47 @@ function sizeOf(file: string): [number, number] | undefined {
   if (bytes.toString('ascii', 0, 3) === 'GIF') return [bytes.readUInt16LE(6), bytes.readUInt16LE(8)];
 }
 
-/** Points a guide screenshot at its hashed URL and sizes it. All but a page's first image load only as they near the window. */
+/** A WebP's size in pixels, read from its header (lossy, lossless or extended). */
+function webpSize(path: string): [number, number] | undefined {
+  const b = readFileSync(path);
+  const chunk = b.toString('ascii', 12, 16);
+  if (chunk === 'VP8X') return [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)];
+  if (chunk === 'VP8 ') return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
+  if (chunk === 'VP8L') {
+    const bits = b.readUInt32LE(21);
+    return [1 + (bits & 0x3fff), 1 + ((bits >> 14) & 0x3fff)];
+  }
+}
+
+/**
+ * A GIF in the guide plays on the site as the looping clip `npm run media` makes from its recording, when there is one.
+ * The clip comes from the 2x recording, so it stays sharp on a Retina screen where the GIF can't, and it's smaller.
+ * The Markdown keeps pointing at the GIF, which GitHub shows.
+ */
+function mediaLoop(file: string, rest: string): string | undefined {
+  const name = file.replace(/\.gif$/, '');
+  const poster = resolve(process.cwd(), 'public/media', `${name}.webp`);
+  if (name === file || !existsSync(poster)) return;
+  const size = webpSize(poster);
+  const label = /\salt="([^"]*)"/.exec(rest)?.[1] ?? '';
+  const dims = size ? ` width="${Math.round(size[0] / 2)}" height="${Math.round(size[1] / 2)}"` : '';
+  return `<video class="loop" autoplay muted loop playsinline disablepictureinpicture preload="none" poster="/media/${name}.webp"${dims} aria-label="${label}"><source src="/media/${name}.webm" type="video/webm"><source src="/media/${name}.mp4" type="video/mp4"></video>`;
+}
+
+/**
+ * Points a guide screenshot at its hashed URL and sizes it. All but a page's first image load only as they near the window.
+ * Screenshots are taken at 2x, so each shows at half its pixel size, the window's own size, and stays sharp on Retina.
+ */
 function mediaImage(match: string, file: string, rest: string, first: boolean) {
+  const loop = mediaLoop(file, rest);
+  if (loop) return loop;
   const url = mediaUrls.get(file);
   if (!url) return match;
-  // An explicit width in the Markdown (a 2x screenshot shown at half size) keeps its own width and sets the height to match.
+  // An explicit width in the Markdown keeps its own width and sets the height to match.
   const size = sizeOf(file);
   const width = /\swidth="(\d+)"/.exec(rest)?.[1];
-  const dims = !size ? '' : width ? ` height="${Math.round((size[1] * Number(width)) / size[0])}"` : ` width="${size[0]}" height="${size[1]}"`;
-  return `<img src="${url}"${rest}${dims}${first ? '' : ' loading="lazy"'} decoding="async"`;
+  const dims = !size ? '' : width ? ` height="${Math.round((size[1] * Number(width)) / size[0])}"` : ` width="${Math.round(size[0] / 2)}" height="${Math.round(size[1] / 2)}"`;
+  return `<img src="${url}"${rest}${dims}${first ? '' : ' loading="lazy"'} decoding="async">`;
 }
 
 const callouts: Record<string, string> = { TIP: 'Tip', NOTE: 'Good to know', WARNING: 'Watch out' };
@@ -155,6 +187,6 @@ export const pages: GuidePage[] = rendered.map(({ slug, title, summary, group, f
     headings,
     html: html
       .replace(/href="#([^"]+)"/g, (match, id) => (anchors[id] ? `href="${anchors[id]}"` : match))
-      .replace(/<img src="(?:\.\.\/)+docs\/media\/([^"]+)"([^>]*?)(?=\s*\/?>)/g, (match, file, rest) => mediaImage(match, file, rest, images++ === 0)),
+      .replace(/<img src="(?:\.\.\/)+docs\/media\/([^"]+)"([^>]*?)\s*\/?>/g, (match, file, rest) => mediaImage(match, file, rest, images++ === 0)),
   };
 });
