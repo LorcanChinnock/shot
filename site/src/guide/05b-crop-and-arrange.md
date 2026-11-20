@@ -35,7 +35,7 @@ Click **Layers** in the title bar (<kbd>⌘L</kbd>) to list your marks, frontmos
 | To | Do this |
 |---|---|
 | Select | Click a row. The mark is selected on the canvas with its handles, and its tool is picked, so a line takes up the Line tool and its options show. The next line you draw has the same colour, width and dashes. Several rows, a placed image or a locked layer pick the Select tool. <kbd>⌘</kbd>-click or <kbd>⇧</kbd>-click to select several. |
-| Reorder | Drag a row by its handle. <kbd>Esc</kbd>, or dropping outside the list, cancels. |
+| Reorder | Drag a row from anywhere on it. <kbd>Esc</kbd>, or dropping outside the list, cancels. |
 | Move forward or back | <kbd>⌘]</kbd> and <kbd>⌘[</kbd>, or <kbd>⌥⌘]</kbd> and <kbd>⌥⌘[</kbd> to bring to the front or send to the back. |
 | Hide | Click the eye. A hidden layer is also left out of Copy and Save. |
 | Lock | Point at the row and click the lock, which stays showing while the layer is locked. A locked layer can't be picked on the canvas, moved or deleted, but you can still drag it in the list. |

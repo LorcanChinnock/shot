@@ -215,7 +215,6 @@ struct LayersPanel: View {
             isSelected: selection.contains(row.id),
             isLifted: lifted,
             isRenaming: renaming == row.id,
-            grip: grip(for: row),
             onHide: { onHide([row.id], !row.isHidden) },
             onLock: { onLock([row.id], !row.isLocked) },
             onDelete: { onDelete([row.id]) },
@@ -229,6 +228,8 @@ struct LayersPanel: View {
         )
         .frame(height: Self.rowHeight, alignment: .top)
         .contentShape(Rectangle())
+        // The whole row drags, not just its grip; off while renaming, so a drag in the field selects text.
+        .gesture(rowDrag(for: row), isEnabled: renaming != row.id)
         // One gesture, so a click selects at once instead of waiting out the double-click interval; the second click renames.
         .onTapGesture {
             guard renaming != row.id else {
@@ -253,7 +254,7 @@ struct LayersPanel: View {
             selection = [row.id]
             renaming = row.id
         }
-        // The grip only drags, so VoiceOver moves a layer one place at a time.
+        // Dragging needs a pointer, so VoiceOver moves a layer one place at a time.
         .accessibilityActions {
             if let index = rows.firstIndex(where: { $0.id == row.id }) {
                 if index > 0 {
@@ -361,7 +362,7 @@ struct LayersPanel: View {
         return CGFloat(index < drag.gap ? index : index + 1) * Self.rowHeight
     }
 
-    private func grip(for row: LayerRow) -> some Gesture {
+    private func rowDrag(for row: LayerRow) -> some Gesture {
         DragGesture(minimumDistance: 2, coordinateSpace: .named(Self.space))
             .onChanged { value in
                 guard !dragCancelled else {
@@ -589,12 +590,11 @@ private struct RowDrag {
 /// A row's height, less the 1 pt gap after it.
 private let layerRowHeight: CGFloat = 28
 
-private struct LayerRowView<Grip: Gesture>: View {
+private struct LayerRowView: View {
     let row: LayerRow
     let isSelected: Bool
     let isLifted: Bool
     let isRenaming: Bool
-    let grip: Grip
     let onHide: () -> Void
     let onLock: () -> Void
     let onDelete: () -> Void
@@ -611,7 +611,6 @@ private struct LayerRowView<Grip: Gesture>: View {
                 .frame(width: 10, height: layerRowHeight)
                 .contentShape(Rectangle())
                 .pointerStyle(isLifted ? .grabActive : .grabIdle)
-                .gesture(grip)
                 // VoiceOver moves a layer with the row's Move Up and Move Down actions instead.
                 .accessibilityHidden(true)
             Image(systemName: row.symbol)
@@ -648,6 +647,7 @@ private struct LayerRowView<Grip: Gesture>: View {
         .opacity(row.isHidden && !isLifted ? (contrast == .increased ? 0.8 : 0.5) : 1)
         .background { background }
         .scaleEffect(isLifted ? 1.03 : 1)
+        .pointerStyle(isLifted ? .grabActive : nil)
         .onHover { isHovered = $0 }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(row.name))
