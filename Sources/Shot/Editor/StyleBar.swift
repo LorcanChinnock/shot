@@ -84,7 +84,7 @@ extension EditorModel: StyleBarEditing {}
 /// The bar. On the left, a row of colours for each colour the mark has, named on its left: Line, and Fill under it for a
 /// shape; Text, and Background under it for a note. Each row has the seven colours and a custom one, then transparent
 /// where the mark stays visible without that colour. On the
-/// right, the width or text size, a line's dashes, the pen's smoothing, a Glow switch for an arrow, line or shape, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
+/// right, the width or text size, a line's dashes, the pen's smoothing, a Glow button for an arrow, line or shape, a shape's outlines and a text's alignment. A redaction and a spotlight show all their
 /// options in one row in place of the colours. Right-clicking it offers Reset Style, as the Edit menu does. The video
 /// editor shows it too, at the top of the video's well.
 struct StyleBar<Model: StyleBarEditing>: View {
@@ -166,15 +166,14 @@ struct StyleBar<Model: StyleBarEditing>: View {
             }
         case .glow:
             if let glow = model.paletteGlow {
-                HStack(spacing: 6) {
-                    Text("Glow").font(Theme.small).foregroundStyle(labelColor).accessibilityHidden(true)
-                    Toggle("Glow", isOn: Binding(get: { glow }, set: { model.setGlow($0) }))
-                        .toggleStyle(ThemeToggleStyle())
-                        .labelsHidden()
-                        .accessibilityLabel(Text("Glow"))
-                }
-                .frame(height: 24)
-                .themeTip("Glow", detail: "Adds a soft glow in the mark's colour around it.")
+                let tint = model.paletteColor
+                Toggle("Glow", isOn: Binding(get: { glow }, set: { model.setGlow($0) }))
+                    .toggleStyle(GlyphToggleStyle { on in
+                        GlowGlyph(on: on, tint: tint.a == 0 ? nil : tint.swiftUIColor)
+                    })
+                    .labelsHidden()
+                    .frame(height: 24)
+                    .themeTip("Glow", detail: "Adds a soft glow in the mark's colour around it.")
             }
         case .outline:
             if let shape = model.paletteShape {
@@ -387,6 +386,35 @@ private struct LineDashGlyph: View {
         }
         .stroke(color, style: StrokeStyle(lineWidth: Self.width, lineCap: .round, dash: lengths))
         .frame(width: Self.length + Self.width, height: Self.width)
+    }
+}
+
+/// A short level line inside a soft halo: grey while Glow is off, and in the mark's colour once it's on, so the button
+/// shows what it does. A mark with no colour keeps the grey halo.
+private struct GlowGlyph: View {
+    let on: Bool
+    let tint: Color?
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    private static let length: CGFloat = 12
+
+    var body: some View {
+        let line = Path { path in
+            path.move(to: CGPoint(x: 5, y: 5))
+            path.addLine(to: CGPoint(x: 5 + Self.length, y: 5))
+        }
+        ZStack {
+            line.stroke(halo, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+            line.stroke(StyleBarGlyph.color(selected: on), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+        }
+        .frame(width: Self.length + 10, height: 10)
+    }
+
+    private var halo: Color {
+        if on, let tint {
+            return tint.opacity(contrast == .increased ? 0.6 : 0.4)
+        }
+        return Theme.ink.opacity(contrast == .increased ? 0.3 : 0.18)
     }
 }
 

@@ -1066,6 +1066,61 @@ private struct SegmentThumb: View {
     }
 }
 
+/// An on/off drawn as one picture segment of `ThemeSegmented`: the field-fill track, with the white thumb under the
+/// picture while it's on. For a toggle that sits among segmented pictures, such as the style bar's Glow, where a switch
+/// would look borrowed from a form. The label names it to VoiceOver.
+struct GlyphToggleStyle<Glyph: View>: ToggleStyle {
+    var glyphSize = CGSize(width: 26, height: 20)
+    @ViewBuilder let glyph: (Bool) -> Glyph
+
+    func makeBody(configuration: Configuration) -> some View {
+        GlyphToggle(configuration: configuration, glyphSize: glyphSize, glyph: glyph(configuration.isOn))
+    }
+}
+
+private struct GlyphToggle<Glyph: View>: View {
+    let configuration: ToggleStyleConfiguration
+    let glyphSize: CGSize
+    let glyph: Glyph
+    @FocusState private var focused: Bool
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let track = RoundedRectangle(cornerRadius: 8, style: .circular)
+        Button {
+            withAnimation(Motion.animation(.selectionSlide, reduceMotion: reduceMotion)) {
+                configuration.isOn.toggle()
+            }
+        } label: {
+            glyph
+                .frame(width: glyphSize.width, height: glyphSize.height)
+                .background {
+                    if configuration.isOn {
+                        SegmentThumb().transition(.opacity)
+                    }
+                }
+                .padding(2)
+                .background(Theme.fieldFill, in: track)
+                .modifier(ButtonEdge(shape: track, width: contrast == .increased ? 1 : 0, color: Theme.ink.opacity(0.6)))
+                .background {
+                    if focused, isEnabled {
+                        Color.clear.inkBorder(RoundedRectangle(cornerRadius: 12, style: .circular), width: 4, color: Theme.focusRing).padding(-4)
+                    }
+                }
+                .opacity(isEnabled ? 1 : 0.5)
+                .contentShape(track)
+        }
+        .buttonStyle(.plain)
+        .focusEffectDisabled()
+        .focused($focused)
+        .accessibilityRepresentation {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+        }
+    }
+}
+
 // MARK: Layout
 
 extension EnvironmentValues {
