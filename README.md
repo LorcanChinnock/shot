@@ -105,6 +105,8 @@ Shot collects nothing. It has no account, no cloud and no analytics, and it only
 
 Bug reports, ideas and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how to build Shot from source, run the tests and send a change. To report a security problem, see [SECURITY.md](SECURITY.md).
 
+Shot shares its repository layout, tooling and release pipeline with [Warble](https://github.com/LorcanChinnock/warble), which shows what's playing in your Mac's notch, by the same author.
+
 ## Support
 
 Shot is free, with no ads. [Sponsoring](https://github.com/sponsors/LorcanChinnock) keeps it that way.
