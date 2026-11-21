@@ -70,6 +70,8 @@ const footer: { title: string; links: [string, string][] }[] = [
       ['GitHub', 'https://github.com/LorcanChinnock/shot'],
       ['Privacy', '/privacy/'],
       ['Sponsor', '/sponsor'],
+      ['Press kit', '/press/'],
+      ['Warble, by the same maker', 'https://warble.lorcanchinnock.com'],
     ],
   },
 ];
@@ -148,6 +150,7 @@ const footer: { title: string; links: [string, string][] }[] = [
               <span>Shot</span>
             </a>
             <p>Screenshots, recordings and GIFs for Mac. Free and open source under the <a href="https://github.com/LorcanChinnock/shot/blob/main/LICENSE">GPL-3.0 license</a>.</p>
+            <p>Like Shot? A star on <a href="https://github.com/LorcanChinnock/shot">GitHub</a> helps other people find it.</p>
           </div>
           {footer.map((col) => (
             <nav aria-labelledby={`footer-${col.title.toLowerCase()}`}>

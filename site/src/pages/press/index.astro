@@ -1,0 +1,52 @@
+---
+import Prose from '../../layouts/Prose.astro';
+import { latestRelease } from '../../lib/release';
+
+const release = await latestRelease();
+const media = 'https://github.com/LorcanChinnock/shot/raw/main/docs/media';
+const shots: [string, string][] = [
+  ['hero.gif', 'Taking a screenshot with ⇧⌘4, marking it up and pasting it'],
+  ['capture.gif', 'The capture bar, picking an area and the Quick Access card'],
+  ['editor.png', 'The editor with a blurred email address, a highlight and a sticky note'],
+  ['recording.gif', 'Recording an area of the screen'],
+  ['video-editor.png', 'Trimming a recording and exporting a GIF'],
+  ['gallery.png', 'The gallery of past captures'],
+];
+---
+
+<Prose title="Press kit" description="A short description of Shot, the facts, its icon and screenshots, free to use when you write about it.">
+  <header class="longform-head">
+    <p class="longform-meta">For writers and creators</p>
+    <h1>Shot press <span class="hl">kit</span></h1>
+    <p class="lede">Writing about Shot, or putting it in a video? Use anything on this page. You don't need to ask first.</p>
+  </header>
+
+  <h2>In one line</h2>
+  <p>Shot is a free, open-source Mac menu bar app for screenshots, annotation, screen recording and GIFs, with no account, no cloud and no analytics.</p>
+
+  <h2>In a paragraph</h2>
+  <p>Press <kbd>⇧⌘4</kbd> and Shot copies and saves the screenshot the moment you let go, then shows a card in the corner. From there you can add arrows, text, highlights and blur, drag the capture into another app, or just paste it. Shot also captures long scrolling pages, records the screen with your microphone and a camera bubble, trims recordings and exports them as MP4 or GIF, and keeps a searchable gallery of every capture. It's made by one developer, Lorcan Chinnock, and is free software under the GPL-3.0 license.</p>
+
+  <h2>Facts</h2>
+  <ul>
+    <li><strong>Price:</strong> free, with no ads and no paid tier.</li>
+    <li><strong>Platform:</strong> macOS 15 or later, on Apple silicon or Intel.</li>
+    <li><strong>Latest version:</strong> {release.version}, in beta.</li>
+    <li><strong>Privacy:</strong> no account, no cloud and no analytics. Shot goes online only to check for updates, after it asks.</li>
+    <li><strong>Source code:</strong> <a href="https://github.com/LorcanChinnock/shot">github.com/LorcanChinnock/shot</a></li>
+    <li><strong>Install:</strong> <code>curl -fsSL https://shot.lorcanchinnock.com/install.sh | bash</code>, or see <a href="/#install">Install</a>.</li>
+  </ul>
+
+  <h2>Icon</h2>
+  <p><a href="https://github.com/LorcanChinnock/shot/raw/main/docs/icon.png">Download the icon (PNG)</a>. Please don't change its colours or shape.</p>
+
+  <h2>Screenshots and recordings</h2>
+  <p>Every picture shows a made-up support app, so there's nothing private in them.</p>
+  <ul>
+    {shots.map(([file, label]) => <li><a href={`${media}/${file}`}>{label}</a> ({file.endsWith('.gif') ? 'GIF' : 'PNG'})</li>)}
+  </ul>
+  <p>More are in the <a href="https://github.com/LorcanChinnock/shot/tree/main/docs/media">media folder on GitHub</a>.</p>
+
+  <h2>Contact</h2>
+  <p>Questions, or need something that isn't here? Get in touch through <a href="https://lorcanchinnock.com">lorcanchinnock.com</a>, or open a <a href="https://github.com/LorcanChinnock/shot/issues">GitHub issue</a>.</p>
+</Prose>
