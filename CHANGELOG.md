@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.99](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.98...v0.7.0-beta.99) (2026-11-21)
+
+
+### Features
+
+* **editor:** make the style bar's Glow a glyph button ([#1488](https://github.com/LorcanChinnock/shot/issues/1488)) ([1a53ea8](https://github.com/LorcanChinnock/shot/commit/1a53ea84ae2a5dd625c89bb0cc7c4253f5aedae5))
+
 ## [0.7.0-beta.98](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.97...v0.7.0-beta.98) (2026-11-20)
 
 
