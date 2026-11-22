@@ -152,6 +152,8 @@ const edit = `${repo}/edit/main/site/src/guide/${page.file}`;
   .prose .guide-body .table th { padding-block: 12px; border-top: 0; border-bottom: 1.5px solid var(--edge); }
   .prose .guide-body .table thead + tbody tr:first-child td { border-top: 0; }
   .prose .guide-body .table td:first-child { white-space: nowrap; }
+  /* On a phone a long key description ("Shift / Option / Space while dragging a handle") would push Action out of sight, so it wraps. */
+  @media (max-width: 560px) { .prose .guide-body .table td:first-child { white-space: normal; min-width: 6.5em; } }
   .prose .guide-body .code { margin: 0; }
 
   /* The end of the page: a way to report a gap, then the previous page and the next one, which is the page's ink control. */

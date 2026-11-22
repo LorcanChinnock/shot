@@ -99,8 +99,8 @@ function rehypeCallouts() {
       const match = text?.type === 'text' && /^\[!(\w+)\]\s*/.exec(text.value);
       if (!match || !callouts[match[1]]) return;
       text.value = text.value.slice(match[0].length);
-      node.tagName = 'aside';
-      node.properties = { className: ['callout', `callout-${match[1].toLowerCase()}`] };
+      node.tagName = 'div';
+      node.properties = { className: ['callout', `callout-${match[1].toLowerCase()}`], role: 'note' };
       const label = { type: 'element', tagName: 'p', properties: { className: ['callout-label'] }, children: [{ type: 'text', value: callouts[match[1]] }] };
       if (icons[match[1]]) label.children.unshift(icon(icons[match[1]]) as any);
       node.children.unshift(label);
