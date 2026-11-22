@@ -84,11 +84,11 @@ const toc = headings.filter((h) => h.depth === 2);
   nav a { display: block; text-decoration: none; }
 
   /* Phones: each list is a quiet card that opens. Wide screens open them (the script below) and drop the card. */
-  details { background: var(--surface); border-radius: var(--radius-card); box-shadow: 0 0 0 1px var(--hairline); padding: 10px 16px; }
-  summary { display: flex; align-items: center; min-height: 32px; font-weight: 800; font-size: 15px; cursor: pointer; }
-  details[open] summary { margin-bottom: 10px; }
+  details { background: var(--surface); border-radius: var(--radius-card); box-shadow: 0 0 0 1px var(--hairline); padding: 0 16px; }
+  summary { display: flex; align-items: center; min-height: 52px; font-weight: 800; font-size: 15px; cursor: pointer; }
+  details[open] { padding-bottom: 12px; }
   @media (min-width: 1000px) {
-    details { background: none; box-shadow: none; padding: 0; }
+    details, details[open] { background: none; box-shadow: none; padding: 0; }
     summary { list-style: none; pointer-events: none; }
     summary::-webkit-details-marker { display: none; }
     .guide-pages summary { display: none; }

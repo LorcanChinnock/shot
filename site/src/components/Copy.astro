@@ -4,12 +4,13 @@ interface Props {
   command: string;
 }
 const { command } = Astro.props;
-// Let a long command wrap after its slashes on narrow screens, instead of scrolling out of sight.
-const parts = command.split('/');
+// Let a long command wrap after its slashes and before the dots in its address on narrow screens,
+// instead of scrolling out of sight or breaking in the middle of a word.
+const parts = command.split(/(?<=\/)|(?=\.)/);
 ---
 
 <div class="copy">
-  <code>{parts.map((part, i) => (i ? <Fragment>/<wbr />{part}</Fragment> : part))}</code>
+  <code>{parts.map((part, i) => (i ? <Fragment><wbr />{part}</Fragment> : part))}</code>
   <button type="button" data-copy={command}>Copy</button>
   <span class="status" aria-live="polite"></span>
 </div>
