@@ -38,8 +38,9 @@ final class SelectionOverlayView: NSView {
         case switchKind
     }
     private var barHits: [(rect: CGRect, action: BarAction)] = []
-    /// A press that landed on a button of the bar: its release clicks it, unless it turns into dragging out an area first.
-    private var pressedChip: (action: BarAction, point: CGPoint)?
+    /// A press that landed on the bar: its release clicks the button under it, if any, unless it turns into dragging out an
+    /// area first. A press between buttons does nothing, rather than capturing what's under the bar.
+    private var pressedChip: (action: BarAction?, point: CGPoint)?
     /// Whether the bar sits at the bottom or top, or is hidden, so it stays off what's being picked.
     private var barPlacement = OverlayBarPlacement.bottom
     /// Where the bar was last drawn, nil while it's hidden or faded, so the chips and loupe keep off it.
@@ -109,7 +110,15 @@ final class SelectionOverlayView: NSView {
     }
 
     override func cursorUpdate(with event: NSEvent) {
-        Self.cursor.set()
+        updateCursor(at: convert(event.locationInWindow, from: nil))
+    }
+
+    /// The arrow over the whole bar, since a click there never captures, and the crosshair everywhere else.
+    private func updateCursor(at point: CGPoint) {
+        guard !controller.showsPermissionCard else {
+            return
+        }
+        (barFrame?.contains(point) == true ? NSCursor.arrow : Self.cursor).set()
     }
 
     override func mouseEntered(with event: NSEvent) {
@@ -138,10 +147,11 @@ final class SelectionOverlayView: NSView {
     override func mouseMoved(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
         pointer = point
+        updateCursor(at: point)
         let hovered = barHits.first { $0.rect.contains(point) }?.action
         // A faded bar draws nothing and has no buttons to hit, so its last frame stands in for it.
         let ontoFadedBar = barFrame == nil && dragStart == nil && fadedBarFrame?.contains(point) == true
-        if hovered != nil || ontoFadedBar {
+        if barFrame?.contains(point) == true || ontoFadedBar {
             controller.revealBar()
         }
         if hovered != hoveredChip {
@@ -165,7 +175,7 @@ final class SelectionOverlayView: NSView {
         }
         let point = clamped(convert(event.locationInWindow, from: nil))
         pointer = point
-        pressedChip = barHits.first { $0.rect.contains(point) }.map { ($0.action, point) }
+        pressedChip = barFrame?.contains(point) == true ? (barHits.first { $0.rect.contains(point) }?.action, point) : nil
         if controller.target != .area {
             return
         }
@@ -298,7 +308,9 @@ final class SelectionOverlayView: NSView {
         if let chip = pressedChip {
             pressedChip = nil
             dragStart = nil
-            perform(chip.action)
+            if let action = chip.action {
+                perform(action)
+            }
             return
         }
         if controller.windowMode {
