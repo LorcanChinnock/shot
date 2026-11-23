@@ -2,7 +2,7 @@
   <img src="docs/icon.png" width="128" height="128" alt="Shot app icon">
 </p>
 
-<h1 align="center">Shot <sup>beta</sup></h1>
+<h1 align="center">Shot</h1>
 
 <p align="center">
   Screenshots, annotations, and screen recordings for macOS, from the menu bar.<br>
@@ -11,7 +11,6 @@
 
 <p align="center">
   <a href="https://github.com/LorcanChinnock/shot/releases/latest"><img src="https://img.shields.io/github/v/release/LorcanChinnock/shot?label=download" alt="Latest release"></a>
-  <img src="https://img.shields.io/badge/status-beta-yellow" alt="Beta">
   <img src="https://img.shields.io/badge/macOS-15%2B-black" alt="macOS 15 or later">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0 license"></a>
   <a href="https://github.com/sponsors/LorcanChinnock"><img src="https://img.shields.io/badge/sponsor-%E2%99%A5-ea4aaa" alt="Sponsor Shot"></a>
