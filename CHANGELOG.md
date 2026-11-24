@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.100](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.99...v0.7.0-beta.100) (2026-11-24)
+
+
+### Bug Fixes
+
+* **capture:** make the whole capture bar one click target ([#1495](https://github.com/LorcanChinnock/shot/issues/1495)) ([6479b9e](https://github.com/LorcanChinnock/shot/commit/6479b9eb7bcb79a330dd4124273612986389e95e))
+
 ## [0.7.0-beta.99](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.98...v0.7.0-beta.99) (2026-11-21)
 
 
