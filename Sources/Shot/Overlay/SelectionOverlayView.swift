@@ -10,12 +10,12 @@ final class SelectionOverlayView: NSView {
     private var showMagnifier: Bool { controller.showMagnifier }
     private var showCrosshair: Bool { controller.showCrosshair }
     private var showSizeLabel: Bool { controller.showSizeLabel }
-    /// Whether the pointer is over a button of the bar, which keeps the bar from going.
+    /// Whether the pointer is anywhere on the bar, which keeps the bar from going and the loupe and guides off it.
     var pointerIsOnBar: Bool {
         guard let pointer else {
             return false
         }
-        return barHits.contains { $0.rect.contains(pointer) }
+        return barFrame?.contains(pointer) == true
     }
     private var pointer: CGPoint?
     private var dragStart: CGPoint?
@@ -979,7 +979,6 @@ final class SelectionOverlayView: NSView {
     /// size toggles. A click does what Tab, B, D, S, R, M, C and I do. It shows on the screen with the pointer only, at the
     /// bottom unless what's being picked reaches it, and hides while an area is dragged out.
     private func drawBar(avoiding hole: CGRect?) {
-        let previous = barHits.map(\.rect)
         let previousFrame = barFrame
         barHits = []
         barFrame = nil
@@ -1056,7 +1055,7 @@ final class SelectionOverlayView: NSView {
         } ?? bounds
         barPlacement = OverlayBarPlacement.placement(
             for: size, visible: visible, avoiding: aim(hole), dragging: dragging, current: barPlacement,
-            pointerOnBar: dragStart == nil && pointer.map { point in previous.contains { $0.contains(point) } } ?? false
+            pointerOnBar: dragStart == nil && pointer.map { previousFrame?.contains($0) == true } ?? false
         )
         guard let frame = barPlacement.frame(of: size, visible: visible) else {
             hoveredChip = nil
