@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.101](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.100...v0.7.0-beta.101) (2026-11-24)
+
+
+### Bug Fixes
+
+* **capture:** keep the loupe and guides off the whole capture bar ([#1498](https://github.com/LorcanChinnock/shot/issues/1498)) ([47d8797](https://github.com/LorcanChinnock/shot/commit/47d8797b4957073595a44af771e493ad7af1e7a3))
+
 ## [0.7.0-beta.100](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.99...v0.7.0-beta.100) (2026-11-24)
 
 
