@@ -72,23 +72,33 @@ struct GIFFrameFill<Image> {
 extension AVAssetExportSession {
     /// Exports as `export(to:as:)` does, passing on how far it has got, from 0 to 1, a few times a second.
     func export(to url: URL, as fileType: AVFileType, progress: @escaping @Sendable (Double) -> Void) async throws {
-        nonisolated(unsafe) let session = self
-        let finished = Mutex(false)
+        let watch = ExportWatch(self)
         let watcher = Task {
-            for await state in session.states(updateInterval: 0.1) {
+            for await state in watch.session.states(updateInterval: 0.1) {
                 guard case let .exporting(current) = state else {
                     continue
                 }
                 let fraction = current.fractionCompleted
                 // Checked under the lock, so a report can't land after the last one.
-                finished.withLock { done in
+                watch.finished.withLock { done in
                     if !done { progress(fraction) }
                 }
             }
         }
         defer { watcher.cancel() }
         try await export(to: url, as: fileType)
-        finished.withLock { $0 = true }
+        watch.finished.withLock { $0 = true }
         progress(1)
+    }
+}
+
+/// The export session a progress watcher reads, and whether the export has finished, shared with the watcher's task.
+/// The session's state reports are safe from any thread, and the lock guards the flag.
+private final class ExportWatch: @unchecked Sendable {
+    let session: AVAssetExportSession
+    let finished = Mutex(false)
+
+    init(_ session: AVAssetExportSession) {
+        self.session = session
     }
 }
