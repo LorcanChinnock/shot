@@ -44452,6 +44452,9 @@
         }
       }
     },
+    "Show icon in menu bar" : {
+
+    },
     "Show in Finder" : {
       "localizations" : {
         "de" : {
@@ -52954,6 +52957,9 @@
           }
         }
       }
+    },
+    "When it’s hidden, open Shot again from Finder or Spotlight to get back here." : {
+
     },
     "While picking what to capture" : {
       "localizations" : {

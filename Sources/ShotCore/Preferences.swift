@@ -16,6 +16,7 @@ public enum PreferenceKey {
     public static let openEditorAfterCapture = "openEditorAfterCapture"
     public static let captureShowsCursor = "captureShowsCursor"
     public static let excludesMenuBar = "excludesMenuBar"
+    public static let showsMenuBarIcon = "showsMenuBarIcon"
     public static let showMagnifier = "showMagnifier"
     public static let showCrosshair = "showCrosshair"
     public static let browserPageOnly = "browserPageOnly"
@@ -135,6 +136,7 @@ public struct Preferences {
             PreferenceKey.openEditorAfterCapture: false,
             PreferenceKey.captureShowsCursor: false,
             PreferenceKey.excludesMenuBar: false,
+            PreferenceKey.showsMenuBarIcon: true,
             // Off, so a first capture is just a drag; Settings › Capture turns them on for exact edges.
             PreferenceKey.showMagnifier: false,
             PreferenceKey.showCrosshair: false,
@@ -411,6 +413,8 @@ public struct Preferences {
     public var captureShowsCursor: Bool { store.bool(forKey: PreferenceKey.captureShowsCursor) }
     /// Crops the menu bar, and the notch beside it, off full-screen screenshots and recordings.
     public var excludesMenuBar: Bool { store.bool(forKey: PreferenceKey.excludesMenuBar) }
+    /// Off hides Shot's menu bar icon, except while a countdown or recording runs or an update waits.
+    public var showsMenuBarIcon: Bool { store.bool(forKey: PreferenceKey.showsMenuBarIcon) }
     public var showMagnifier: Bool { store.bool(forKey: PreferenceKey.showMagnifier) }
     public var showCrosshair: Bool { store.bool(forKey: PreferenceKey.showCrosshair) }
     /// Picking a browser window captures just its web page, without the toolbar and tabs. Needs Accessibility access.

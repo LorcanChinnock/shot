@@ -1,6 +1,9 @@
 import AppKit
 import Observation
 import ShotCore
+import os
+
+private let log = Logger.shot("menu-bar")
 
 /// Shot's icon in the menu bar and the native menu it opens. The menu is an `NSMenu`, so macOS draws its rows, highlight and
 /// shadow, and keyboard navigation, type-to-select and VoiceOver work as in any other menu. Only the Recent row is a custom
@@ -15,6 +18,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private let coordinator: CaptureCoordinator
     private let recent = RecentCapturesStore()
     private let recentRow = RecentRowView()
+    private var visibilityObservation: NSKeyValueObservation?
     /// Made once and added back on each rebuild: a menu item that's let go takes its view out of whichever item holds it now.
     private lazy var recentItems: [NSMenuItem] = {
         let thumbnails = NSMenuItem(title: String(localized: "Recent captures"), action: nil, keyEquivalent: "")
@@ -29,9 +33,12 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.delegate = self
         menu.autoenablesItems = false
         statusItem.menu = menu
+        // ⌘-dragging the icon off the menu bar turns the setting off, as the Settings toggle does.
+        statusItem.behavior = .removalAllowed
         recentRow.onOpen = { [weak self] item in self?.open(item) }
         recent.onChange = { [weak self] in self?.showRecent() }
         updateIcon()
+        observeRemoval()
         // Read ahead, off the main thread, so the first open already has its pictures.
         recent.refresh()
     }
@@ -53,8 +60,28 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             }
             statusItem.button?.image = image
             statusItem.button?.setAccessibilityLabel(image.accessibilityDescription)
+            let visible = MenuBar.showsIcon(
+                setting: SettingsStore.shared.value(forKey: PreferenceKey.showsMenuBarIcon) as? Bool ?? true,
+                isCountingDown: state.countdown != nil,
+                isRecording: state.isRecording,
+                updatePending: Updater.shared.pendingVersion != nil
+            )
+            if statusItem.isVisible != visible {
+                log.notice("Menu bar icon \(visible ? "shown" : "hidden", privacy: .public)")
+                statusItem.isVisible = visible
+            }
         } onChange: { [weak self] in
             Task { @MainActor in self?.updateIcon() }
+        }
+    }
+
+    /// Shot only ever hides the icon when the setting is already off, so a hide it didn't make is the person's ⌘-drag.
+    private func observeRemoval() {
+        visibilityObservation = statusItem.observe(\.isVisible, options: [.new]) { _, change in
+            guard change.newValue == false else {
+                return
+            }
+            Task { @MainActor in SettingsStore.shared.set(false, forKey: PreferenceKey.showsMenuBarIcon) }
         }
     }
 

@@ -37,6 +37,7 @@ import Testing
         #expect(!prefs.openEditorAfterCapture)
         #expect(!prefs.captureShowsCursor)
         #expect(!prefs.excludesMenuBar)
+        #expect(prefs.showsMenuBarIcon)
         #expect(!prefs.showMagnifier)
         #expect(!prefs.showCrosshair)
         #expect(!prefs.showSizeLabel)
