@@ -26,8 +26,10 @@ public enum ProjectExporter {
 
     /// Writes the project to `output`, replacing it, as `fileType`, drawn at the canvas size and re-encoded as H.264, or
     /// HEVC when `usesHEVC`.
-    public static func export(_ project: Project, to output: URL, as fileType: AVFileType = .mp4) async throws {
-        try await AVVideoWriter.write(project, to: output, as: fileType) { frameRate in
+    public static func export(
+        _ project: Project, to output: URL, as fileType: AVFileType = .mp4, progress: @escaping @Sendable (Double) -> Void = { _ in }
+    ) async throws {
+        try await AVVideoWriter.write(project, to: output, as: fileType, progress: progress) { frameRate in
             usesHEVC(canvas: project.outputRect.size, frameRate: frameRate) ? .hevc : .h264
         }
     }

@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let log = Logger.shot("gif")
 
 /// Which source frames a GIF uses and how big they are.
 public struct GIFFramePlan: Equatable, Sendable {
@@ -54,18 +57,27 @@ public enum GIFExporter {
     public struct Result: Sendable {
         public let frameCount: Int
         public let truncated: Bool
+        /// Frames that didn't decode, which repeat the frame before them.
+        public var skippedFrames = 0
     }
 
-    public enum ExportError: LocalizedError {
+    public enum ExportError: LocalizedError, Equatable {
         case noVideoTrack
         case cannotCreateDestination
         case finalizeFailed
+        /// Not one frame decoded; holds why the last one didn't.
+        case noFramesDecoded(reason: String)
+
+        static func decodeFailure(_ error: any Error) -> ExportError {
+            .noFramesDecoded(reason: ExportProgress.message(for: error))
+        }
 
         public var errorDescription: String? {
             switch self {
             case .noVideoTrack: String(localized: "The recording has no video track")
             case .cannotCreateDestination: String(localized: "Couldn't create the GIF file")
             case .finalizeFailed: String(localized: "Couldn't finish writing the GIF")
+            case let .noFramesDecoded(reason): String(localized: "Couldn't read the video's frames: \(reason)")
             }
         }
     }
@@ -116,15 +128,27 @@ public enum GIFExporter {
         let writer = GIFStreamWriter() { try file.write(contentsOf: $0) }
         let times = (0..<plan.frameCount).map(plan.sourceTime(ofFrame:))
         var index = 0
+        var fill = GIFFrameFill<CGImage>()
         try await frames.readFrames(at: times, maxSize: plan.size, tolerance: tolerance(fps)) { frame in
             try Task.checkCancellation()
-            try writer.add(frame.decoded.get().image, delay: plan.delay(ofFrame: index))
+            if case let .failure(error) = frame.decoded {
+                log.error("Frame at \(frame.requestedTime, privacy: .public) s didn't decode: \(ExportProgress.diagnosis(of: error), privacy: .public)")
+            }
+            if let next = fill.next(frame.decoded.map { $0.image }, delay: plan.delay(ofFrame: index)) {
+                try writer.add(next.image, delay: next.delay)
+            }
             index += 1
             progress(Double(index) / Double(plan.frameCount))
         }
+        guard fill.written > 0 else {
+            throw ExportError.decodeFailure(fill.lastError ?? CocoaError(.fileReadCorruptFile))
+        }
+        if fill.skipped > 0 {
+            log.notice("\(fill.skipped, privacy: .public) of \(plan.frameCount, privacy: .public) frames didn't decode and repeat the frame before them")
+        }
         try writer.finish()
         finished = true
-        return Result(frameCount: plan.frameCount, truncated: plan.truncated)
+        return Result(frameCount: fill.written, truncated: plan.truncated, skippedFrames: fill.skipped)
     }
 
     /// Roughly how many bytes `export` writes with the same arguments.
@@ -142,21 +166,39 @@ public enum GIFExporter {
     ) async throws -> Int {
         let plan = try plan(of: frames, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed)
         let anchors = plan.sampleFrames(estimateSamples).map { max(0, min($0, plan.frameCount - 2)) }
-        var whole = 0, change = 0
+        var whole = 0, change = 0, wholes = 0, changes = 0
+        var lastError: (any Error)?
         for anchor in anchors {
             try Task.checkCancellation()
             let writer = GIFStreamWriter() { _ in }
             let indices = Array(anchor..<min(anchor + 2, plan.frameCount))
-            var single = 0, read = 0
+            var single: Int?, read = 0, decoded = 0
             try await frames.readFrames(at: indices.map(plan.sourceTime(ofFrame:)), maxSize: plan.size, tolerance: tolerance(fps)) { frame in
-                try writer.add(frame.decoded.get().image, delay: plan.delay(ofFrame: indices[read]))
-                if read == 0 { single = writer.bytesWritten }
-                read += 1
+                defer { read += 1 }
+                // A sample that won't decode is left out of the estimate rather than failing it.
+                guard case let .success(frameImage) = frame.decoded else {
+                    if case let .failure(error) = frame.decoded { lastError = error }
+                    return
+                }
+                try writer.add(frameImage.image, delay: plan.delay(ofFrame: indices[read]))
+                decoded += 1
+                if single == nil { single = writer.bytesWritten }
+            }
+            guard let single else {
+                continue
             }
             whole += single
-            change += writer.bytesWritten - single
+            wholes += 1
+            // Only a pair that both decoded says what a change costs.
+            if decoded == indices.count {
+                change += writer.bytesWritten - single
+                changes += 1
+            }
         }
-        return extrapolate(wholeFrameBytes: whole / anchors.count, changeBytes: change / anchors.count, totalFrames: plan.frameCount)
+        guard wholes > 0 else {
+            throw ExportError.decodeFailure(lastError ?? CocoaError(.fileReadCorruptFile))
+        }
+        return extrapolate(wholeFrameBytes: whole / wholes, changeBytes: changes == 0 ? 0 : change / changes, totalFrames: plan.frameCount)
     }
 
     static func extrapolate(wholeFrameBytes: Int, changeBytes: Int, totalFrames: Int) -> Int {

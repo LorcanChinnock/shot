@@ -53,6 +53,10 @@ final class VideoEditorModel {
     private(set) var options = Preferences().videoExportOptions
     /// Bytes Export would write, or nil until it's worked out.
     private(set) var estimatedSize: Int?
+    /// True when the size couldn't be worked out for the current edit, so the panel stops showing it as on its way.
+    private(set) var estimateFailed = false
+    /// The plan `estimatedSize` or `estimateFailed` is for.
+    @ObservationIgnored private var estimatedPlan: VideoExportPlan?
     /// The side panel beside the video: the Inspector or Export, which take turns. Both start closed in every window (rule 2).
     private(set) var sidePanel: VideoSidePanel?
     /// How far Export has got, from 0 to 1, while it can tell; nil when it can't or nothing is exporting.
@@ -934,19 +938,8 @@ final class VideoEditorModel {
         let options = options, project = project, plan = VideoExportPlan(project: project, options: options), fileURL = fileURL
         let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var truncated = false
-        let progress = PercentProgress { [weak self] percent in
-            Task { @MainActor in
-                // The task may run on after the export ended, so a late report can't bring the bar back.
-                guard self?.isExporting == true else {
-                    return
-                }
-                self?.exportFraction = Double(percent) / 100
-                Toast.progress("Exporting…", fraction: Double(percent) / 100)
-            }
-        }
-        defer { exportFraction = nil }
-        let exported = await exporting {
-            let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: .app, progress: progress.report)
+        let exported = await exporting { progress in
+            let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: .app, progress: progress)
             truncated = outcome.truncated
             log.notice("Exported \(plan.kind.rawValue, privacy: .public) at \(options.speed, privacy: .public)×, muted \(options.muted, privacy: .public), passthrough \(outcome.passthrough, privacy: .public), \(outcome.frameCount ?? 0, privacy: .public) GIF frames")
         }
@@ -964,11 +957,21 @@ final class VideoEditorModel {
         }
     }
 
-    /// Works out `estimatedSize` for the current trim, cuts and options; call again when any change.
+    /// Works out `estimatedSize` for the current trim, cuts and options; call again when any change, or when an export
+    /// starts or ends. It reads frames, so it waits while an export runs rather than compete with it for the decoder.
     func refreshEstimate() async {
         let plan = VideoExportPlan(project: project, options: options)
+        // The estimate already shown is still right for this edit.
+        if plan == estimatedPlan, estimatedSize != nil || estimateFailed {
+            return
+        }
         // The last estimate was for the old edit, so show none until this one's ready.
         estimatedSize = nil
+        estimateFailed = false
+        estimatedPlan = nil
+        guard !isExporting else {
+            return
+        }
         // Wait for a drag or a run of clicks to settle before reading frames.
         try? await Task.sleep(for: .milliseconds(250))
         guard !Task.isCancelled else {
@@ -978,12 +981,18 @@ final class VideoEditorModel {
             let size = try await plan.estimate()
             if !Task.isCancelled {
                 estimatedSize = size
+                estimatedPlan = plan
             }
         } catch is CancellationError {
             return
         } catch {
-            log.error("Size estimate failed: \(error.localizedDescription, privacy: .public)")
+            guard !Task.isCancelled else {
+                return
+            }
+            log.error("Size estimate failed: \(error.localizedDescription, privacy: .public) (\(ExportProgress.diagnosis(of: error), privacy: .public))")
             estimatedSize = nil
+            estimateFailed = true
+            estimatedPlan = plan
         }
     }
 
@@ -991,11 +1000,11 @@ final class VideoEditorModel {
     /// reopens live, which a temporary file for the clipboard or the trim Save swaps in doesn't need.
     private func export(to output: URL, creating folder: URL?, keepingProject: Bool) async -> Bool {
         let project = project, fileURL = fileURL, plan = VersionWriter.videoPlan(for: project, of: fileURL)
-        let written = await exporting {
+        let written = await exporting { progress in
             if let folder {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             }
-            let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: keepingProject ? .app : nil)
+            let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: keepingProject ? .app : nil, progress: progress)
             log.notice("Wrote the edit as \(plan.kind.rawValue, privacy: .public), passthrough \(outcome.passthrough, privacy: .public)")
         }
         if written, keepingProject {
@@ -1011,24 +1020,39 @@ final class VideoEditorModel {
     }
 
     /// Runs `work` with the player paused, one export at a time; false if it couldn't start, failed or was cancelled.
-    private func exporting(_ work: @escaping () async throws -> Void) async -> Bool {
+    /// `work` reports how far it has got, from 0 to 1, which the Export panel and the toast show as a bar.
+    private func exporting(_ work: @escaping (_ progress: @escaping @Sendable (Double) -> Void) async throws -> Void) async -> Bool {
         guard exportTask == nil else {
             return false
         }
         player.pause()
+        exportFraction = nil
         Toast.show("Exporting…", duration: nil)
+        let progress = PercentProgress { [weak self] percent in
+            Task { @MainActor in
+                // The task may run on after the export ended, so a late report can't bring the bar back.
+                guard let self, self.isExporting else {
+                    return
+                }
+                self.exportFraction = Double(percent) / 100
+                Toast.progress("Exporting…", fraction: Double(percent) / 100)
+            }
+        }
         let task = Task {
-            defer { exportTask = nil }
+            defer {
+                exportTask = nil
+                exportFraction = nil
+            }
             do {
-                try await work()
+                try await work(progress.report)
                 return true
             } catch where Task.isCancelled {
                 log.notice("Export cancelled")
                 Toast.show("Export cancelled")
                 return false
             } catch {
-                log.error("Export failed: \(error.localizedDescription, privacy: .public)")
-                Toast.error("Couldn't export: \(error.localizedDescription)")
+                log.error("Export failed: \(error.localizedDescription, privacy: .public) (\(ExportProgress.diagnosis(of: error), privacy: .public))")
+                Toast.error("Couldn't export: \(ExportProgress.message(for: error))")
                 return false
             }
         }
