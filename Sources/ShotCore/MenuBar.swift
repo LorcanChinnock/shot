@@ -12,4 +12,10 @@ public enum MenuBar {
     public static func frameBelow(screenFrame: CGRect, height: CGFloat) -> CGRect {
         CGRect(x: screenFrame.minX, y: screenFrame.minY, width: screenFrame.width, height: screenFrame.height - height)
     }
+
+    /// Shot's icon shows when the setting asks for it, and also, while hidden, when it has something live to say: the
+    /// countdown's seconds, the recording's time, or the dot of an update waiting to be opened.
+    public static func showsIcon(setting: Bool, isCountingDown: Bool, isRecording: Bool, updatePending: Bool) -> Bool {
+        setting || isCountingDown || isRecording || updatePending
+    }
 }

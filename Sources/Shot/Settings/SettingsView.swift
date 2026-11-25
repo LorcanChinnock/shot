@@ -326,6 +326,7 @@ struct AppIconView: View {
 private struct GeneralSettings: View {
     @Setting(PreferenceKey.playSound) private var playSound: Bool
     @Setting(PreferenceKey.excludesMenuBar) private var excludesMenuBar: Bool
+    @Setting(PreferenceKey.showsMenuBarIcon) private var showsMenuBarIcon: Bool
     @Setting(PreferenceKey.saveFolder) private var saveFolder: String
     @Setting(PreferenceKey.filePrefix) private var filePrefix: String
     @FocusState private var prefixFocused: Bool
@@ -342,6 +343,11 @@ private struct GeneralSettings: View {
                 .onChange(of: launchAtLogin) { _, enabled in
                     setLaunchAtLogin(enabled)
                 }
+            ToggleRow(
+                title: "Show icon in menu bar",
+                subtitle: "When it’s hidden, open Shot again from Finder or Spotlight to get back here.",
+                isOn: $showsMenuBarIcon
+            )
             ToggleRow(title: "Play capture sound", isOn: $playSound)
             ToggleRow(title: "Exclude menu bar", subtitle: "Crop the menu bar and notch off full-screen captures.", isOn: $excludesMenuBar)
             SettingRow(title: "Appearance", subtitle: "Captures look the same either way.") {

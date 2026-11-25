@@ -16,3 +16,11 @@ private let builtIn = CGRect(x: -1512, y: 0, width: 1512, height: 982)
 @Test func frameBelowDropsTheTopStrip() {
     #expect(MenuBar.frameBelow(screenFrame: builtIn, height: 32) == CGRect(x: -1512, y: 0, width: 1512, height: 950))
 }
+
+@Test func hiddenIconComesBackOnlyWithSomethingToShow() {
+    #expect(MenuBar.showsIcon(setting: true, isCountingDown: false, isRecording: false, updatePending: false))
+    #expect(!MenuBar.showsIcon(setting: false, isCountingDown: false, isRecording: false, updatePending: false))
+    #expect(MenuBar.showsIcon(setting: false, isCountingDown: true, isRecording: false, updatePending: false))
+    #expect(MenuBar.showsIcon(setting: false, isCountingDown: false, isRecording: true, updatePending: false))
+    #expect(MenuBar.showsIcon(setting: false, isCountingDown: false, isRecording: false, updatePending: true))
+}
