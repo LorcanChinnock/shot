@@ -26,8 +26,8 @@ struct ExportPanel: View {
         .sidePanel(width: Self.width)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Export"))
-        // The estimate reads frames, so it's worked out only while the panel shows.
-        .task(id: model.edit) {
+        // The estimate reads frames, so it's worked out only while the panel shows, and stops while anything exports.
+        .task(id: EstimateKey(edit: model.edit, isExporting: model.isExporting)) {
             await model.refreshEstimate()
         }
     }
@@ -146,8 +146,7 @@ private struct SummaryCard: View {
         let length = VideoExportPanel.length(of: model.keptLength, options: model.options, isComposite: model.isComposite)
         VStack(spacing: 10) {
             row("Estimated size") {
-                Text(verbatim: model.estimatedSize.map { "≈ " + ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "≈ …")
-                    .font(.scaled(12, weight: .bold, design: .monospaced, tabular: true))
+                estimate
             }
             .themeTip("Estimated size of the exported file")
             row("Length") {
@@ -169,6 +168,22 @@ private struct SummaryCard: View {
         }
         .padding(12)
         .depth(.group, fill: Theme.group, radius: Theme.Radius.group)
+    }
+
+    /// The size once it's worked out, a spinner while it's read from the video, and a dash when it couldn't be.
+    @ViewBuilder private var estimate: some View {
+        if let size = model.estimatedSize {
+            Text(verbatim: "≈ " + ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+                .font(.scaled(12, weight: .bold, design: .monospaced, tabular: true))
+        } else if model.estimateFailed || model.isExporting {
+            Text(verbatim: "—")
+                .font(.scaled(12, weight: .bold, design: .monospaced, tabular: true))
+                .accessibilityLabel(Text("Unknown"))
+        } else {
+            ProgressView()
+                .controlSize(.mini)
+                .accessibilityLabel(Text("Estimating…"))
+        }
     }
 
     private func row(_ title: LocalizedStringResource, @ViewBuilder value: () -> some View) -> some View {
@@ -204,11 +219,12 @@ private struct SummaryCard: View {
         }
     }
 
-    /// "Exporting…" with the bar while a GIF reports how far it's got, and Cancel.
+    /// "Preparing…" with a spinner until the export reports how far it's got, then "Exporting…" with the percentage and
+    /// the bar, and Cancel.
     private var exporting: some View {
         VStack(spacing: 10) {
             HStack(spacing: 8) {
-                Text("Exporting…")
+                Text(status)
                     .font(.scaled(12, weight: .semibold))
                     .foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
@@ -235,6 +251,14 @@ private struct SummaryCard: View {
         }
     }
 
+    private var status: LocalizedStringResource {
+        if model.exportFraction == nil {
+            "Preparing…"
+        } else {
+            "Exporting…"
+        }
+    }
+
     private var title: LocalizedStringResource {
         if model.options.format == .gif {
             "Export GIF"
@@ -250,4 +274,10 @@ private struct SummaryCard: View {
             "Writes a new MP4 with these options next to the recording, and copies it."
         }
     }
+}
+
+/// What the size estimate depends on: the edit, and whether an export is running, which it waits for.
+private struct EstimateKey: Equatable {
+    let edit: VideoEdit
+    let isExporting: Bool
 }

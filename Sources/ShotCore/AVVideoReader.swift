@@ -89,9 +89,16 @@ public enum AVVideoReader {
                 continue
             }
             waiting[result.requestedTime]?.removeFirst()
-            let decoded = Result { () throws -> (time: Double, image: CGImage) in
+            var decoded = Result { () throws -> (time: Double, image: CGImage) in
                 let image = try result.image
                 return ((try? result.actualTime.seconds) ?? times[index], image)
+            }
+            if case .failure = decoded, !Task.isCancelled {
+                // A decoder can be busy for a moment, or one frame damaged; one more try, from any nearby frame,
+                // saves the export from failing on it.
+                if let retried = try? await retry(asset, drawnBy: videoComposition, at: requested[index], maxSize: maxSize) {
+                    decoded = .success(retried)
+                }
             }
             early[index] = VideoFrame(requestedTime: times[index], decoded: decoded)
             while let frame = early.removeValue(forKey: next) {
@@ -104,6 +111,21 @@ public enum AVVideoReader {
         for (_, frame) in early.sorted(by: { $0.key < $1.key }) {
             try body(frame)
         }
+    }
+
+    /// Decodes one frame of `asset` at `time` with a generator of its own that takes the nearest frame it can.
+    private static func retry(
+        _ asset: AVAsset, drawnBy videoComposition: AVVideoComposition?, at time: CMTime, maxSize: CGSize
+    ) async throws -> (time: Double, image: CGImage) {
+        try await Task.sleep(for: .milliseconds(20))
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.videoComposition = videoComposition
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = maxSize
+        generator.requestedTimeToleranceBefore = .positiveInfinity
+        generator.requestedTimeToleranceAfter = .positiveInfinity
+        let (image, actual) = try await generator.image(at: time)
+        return (actual.seconds, image)
     }
 
     /// Decodes `url`'s first audio track as mono 32-bit float samples at `sampleRate`, handing them to `body` in order, a

@@ -18,12 +18,16 @@ public enum AVVideoAssembler {
     /// `fileType`, or else the input's own type. `speed` 2 plays it in half the time with every frame kept; `muted` leaves
     /// the audio out. Returns false when it had to re-encode the video. Throws `VideoTrimmer.TrimError` when it can't
     /// write that type or the export fails.
-    public static func trim(_ input: URL, kept: [TrimRange], speed: Double, muted: Bool, to output: URL, as fileType: AVFileType?) async throws -> Bool {
+    /// `progress` hears how far it has got, from 0 to 1.
+    public static func trim(
+        _ input: URL, kept: [TrimRange], speed: Double, muted: Bool, to output: URL, as fileType: AVFileType?,
+        progress: @escaping @Sendable (Double) -> Void = { _ in }
+    ) async throws -> Bool {
         let asset = AVURLAsset(url: input)
         let fileType = try fileType ?? Self.fileType(of: input)
         let audio = muted ? [] : try await asset.loadTracks(withMediaType: .audio)
         if speed != 1, !audio.isEmpty {
-            return try await retime(asset, audio: audio, kept: kept, speed: speed, to: output, as: fileType)
+            return try await retime(asset, audio: audio, kept: kept, speed: speed, to: output, as: fileType, progress: progress)
         }
         // One section with its sound as it is exports straight from the file. Otherwise a composition
         // joins the kept sections, with the sound when there's any to keep or the video alone retimed.
@@ -44,7 +48,7 @@ public enum AVVideoAssembler {
         if FileManager.default.fileExists(atPath: output.path) {
             try FileManager.default.removeItem(at: output)
         }
-        try await export.export(to: output, as: fileType)
+        try await export.export(to: output, as: fileType, progress: progress)
         return passthrough
     }
 
@@ -71,12 +75,18 @@ public enum AVVideoAssembler {
     /// Copying scaled audio only stretches it with an edit list, which most players ignore, so the
     /// audio is rendered at the new rate. Export can't copy retimed video alongside that audio, so
     /// each is written on its own and the samples of both are copied into `output`.
-    private static func retime(_ asset: AVURLAsset, audio: [AVAssetTrack], kept: [TrimRange], speed: Double, to output: URL, as fileType: AVFileType) async throws -> Bool {
+    private static func retime(
+        _ asset: AVURLAsset, audio: [AVAssetTrack], kept: [TrimRange], speed: Double, to output: URL, as fileType: AVFileType,
+        progress: @escaping @Sendable (Double) -> Void
+    ) async throws -> Bool {
         let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("Shot/\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: scratch) }
         let videoURL = scratch.appendingPathComponent("video.mp4")
-        let passthrough = try await trim(asset.url, kept: kept, speed: speed, muted: true, to: videoURL, as: .mp4)
+        // Re-encoding the video takes most of the time, the audio a little, and copying both together less.
+        let passthrough = try await trim(
+            asset.url, kept: kept, speed: speed, muted: true, to: videoURL, as: .mp4, progress: ExportProgress.stage(progress, from: 0, to: 0.7)
+        )
 
         let retimed = AVMutableComposition()
         for track in audio {
@@ -87,19 +97,22 @@ public enum AVVideoAssembler {
         }
         export.audioTimePitchAlgorithm = .spectral
         let audioURL = scratch.appendingPathComponent("audio.m4a")
-        try await export.export(to: audioURL, as: .m4a)
+        try await export.export(to: audioURL, as: .m4a, progress: ExportProgress.stage(progress, from: 0.7, to: 0.85))
 
         if FileManager.default.fileExists(atPath: output.path) {
             try FileManager.default.removeItem(at: output)
         }
-        try await mux(video: videoURL, audio: audioURL, to: output, as: fileType)
+        try await mux(video: videoURL, audio: audioURL, to: output, as: fileType, progress: ExportProgress.stage(progress, from: 0.85, to: 1))
         return passthrough
     }
 
     /// Copies the samples of `video`'s video track and `audio`'s audio track into one file. Cancelling the task, or
     /// `isCancelled` returning true, before it finishes leaves no file. Tests pass `isCancelled` to stop it partway
     /// through the copy, which cancelling a task can't do reliably, since a short copy may already be done.
-    static func mux(video: URL, audio: URL, to output: URL, as fileType: AVFileType, isCancelled: @escaping @Sendable () -> Bool = { false }) async throws {
+    static func mux(
+        video: URL, audio: URL, to output: URL, as fileType: AVFileType, progress: @escaping @Sendable (Double) -> Void = { _ in },
+        isCancelled: @escaping @Sendable () -> Bool = { false }
+    ) async throws {
         let writer = try AVAssetWriter(outputURL: output, fileType: fileType)
         let videoAsset = AVURLAsset(url: video)
         let duration = try await videoAsset.load(.duration)
@@ -135,7 +148,9 @@ public enum AVVideoAssembler {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     DispatchQueue(label: "Shot.mux").async {
                         continuation.resume(with: Result {
-                            try Self.copySamples(pending, into: sharedWriter) { cancelled.withLock { $0 } || isCancelled() }
+                            try Self.copySamples(pending, into: sharedWriter, duration: duration.seconds, progress: progress) {
+                                cancelled.withLock { $0 } || isCancelled()
+                            }
                         })
                     }
                 }
@@ -153,11 +168,18 @@ public enum AVVideoAssembler {
         guard writer.status == .completed else {
             throw writer.error ?? VideoTrimmer.TrimError.exportFailed
         }
+        progress(1)
     }
 
-    /// Copies every sample from each reader output to its writer input, blocking until all are written.
-    private static func copySamples(_ copies: [(reader: AVAssetReader, output: AVAssetReaderTrackOutput, input: AVAssetWriterInput)], into writer: AVAssetWriter, isCancelled: () -> Bool) throws {
+    /// Copies every sample from each reader output to its writer input, blocking until all are written, and tells
+    /// `progress` how far through the `duration` seconds of video it has got.
+    private static func copySamples(
+        _ copies: [(reader: AVAssetReader, output: AVAssetReaderTrackOutput, input: AVAssetWriterInput)], into writer: AVAssetWriter,
+        duration: Double, progress: (Double) -> Void, isCancelled: () -> Bool
+    ) throws {
         var copies = copies
+        // Samples come in decoding order, whose times can step back, so only a step forward is reported.
+        var reported = 0.0
         // The writer interleaves the tracks, so it takes from whichever one it's ready for.
         while !copies.isEmpty {
             if isCancelled() {
@@ -170,6 +192,13 @@ public enum AVVideoAssembler {
                         throw writer.error ?? VideoTrimmer.TrimError.exportFailed
                     }
                     appended = true
+                    if copies[index].input.mediaType == .video, duration > 0 {
+                        let fraction = min(1, CMSampleBufferGetPresentationTimeStamp(buffer).seconds / duration)
+                        if fraction > reported {
+                            reported = fraction
+                            progress(fraction)
+                        }
+                    }
                 } else {
                     if copies[index].reader.status == .failed {
                         throw copies[index].reader.error ?? VideoTrimmer.TrimError.exportFailed

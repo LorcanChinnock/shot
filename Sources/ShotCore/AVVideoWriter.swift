@@ -8,7 +8,11 @@ public enum AVVideoWriter {
     /// Writes `project` to `output`, replacing it, as `fileType`, drawn at its output size with its annotations. `codec` picks the encoding from the frame rate it's drawn at, its fastest picture's. Throws
     /// `ProjectExporter.ExportError` when it can't write that type or the export fails, and
     /// `CompositionBuilder.BuildError` when a clip can't be read.
-    public static func write(_ project: Project, to output: URL, as fileType: AVFileType, codec: (_ frameRate: Int) -> VideoCodec) async throws {
+    /// `progress` hears how far it has got, from 0 to 1.
+    public static func write(
+        _ project: Project, to output: URL, as fileType: AVFileType, progress: @escaping @Sendable (Double) -> Void = { _ in },
+        codec: (_ frameRate: Int) -> VideoCodec
+    ) async throws {
         let built = try await CompositionBuilder.build(project)
         let frameRate = Int((1 / built.videoComposition.frameDuration.seconds).rounded())
         let preset = codec(frameRate) == .hevc ? AVAssetExportPresetHEVCHighestQuality : AVAssetExportPresetHighestQuality
@@ -23,6 +27,6 @@ public enum AVVideoWriter {
         if FileManager.default.fileExists(atPath: output.path) {
             try FileManager.default.removeItem(at: output)
         }
-        try await export.export(to: output, as: fileType)
+        try await export.export(to: output, as: fileType, progress: progress)
     }
 }

@@ -20,12 +20,15 @@ public enum VideoTrimmer {
     /// `muted` leaves the audio out. Copies the video samples as they are when it can; returns false when it had to
     /// re-encode.
     @discardableResult
-    public static func trim(_ input: URL, range: TrimRange, cuts: CutList = CutList(), speed: Double = 1, muted: Bool = false, to output: URL, as fileType: AVFileType? = nil) async throws -> Bool {
+    public static func trim(
+        _ input: URL, range: TrimRange, cuts: CutList = CutList(), speed: Double = 1, muted: Bool = false, to output: URL, as fileType: AVFileType? = nil,
+        progress: @escaping @Sendable (Double) -> Void = { _ in }
+    ) async throws -> Bool {
         let kept = cuts.kept(in: range)
         guard !kept.isEmpty else {
             throw TrimError.nothingLeft
         }
-        return try await AVVideoAssembler.trim(input, kept: kept, speed: speed, muted: muted, to: output, as: fileType)
+        return try await AVVideoAssembler.trim(input, kept: kept, speed: speed, muted: muted, to: output, as: fileType, progress: progress)
     }
 
     /// Roughly how many bytes `trim` writes with the same arguments, from the tracks' average bit rates.

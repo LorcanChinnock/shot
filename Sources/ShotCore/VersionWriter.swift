@@ -171,7 +171,7 @@ public enum VersionWriter {
     @discardableResult
     public static func writeVideo(
         _ plan: VideoExportPlan, of project: Project, original: URL, to output: URL, projects: ProjectStore? = nil,
-        progress: @Sendable (Double) -> Void = { _ in }
+        progress: @escaping @Sendable (Double) -> Void = { _ in }
     ) async throws -> VideoExportPlan.Outcome {
         let outcome = try await plan.run(to: output, progress: progress)
         keep(project, of: output, original: original, in: projects)

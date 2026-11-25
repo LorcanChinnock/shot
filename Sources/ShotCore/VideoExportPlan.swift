@@ -60,17 +60,17 @@ public enum VideoExportPlan: Equatable, Sendable {
     @discardableResult
     public func run(
         to output: URL,
-        progress: @Sendable (Double) -> Void = { _ in }
+        progress: @escaping @Sendable (Double) -> Void = { _ in }
     ) async throws -> Outcome {
         switch self {
         case let .trimmed(source, range, cuts, speed, muted, fileType):
-            let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: speed, muted: muted, to: output, as: fileType)
+            let passthrough = try await VideoTrimmer.trim(source, range: range, cuts: cuts, speed: speed, muted: muted, to: output, as: fileType, progress: progress)
             return Outcome(frameCount: nil, truncated: false, passthrough: passthrough)
         case let .trimmedGIF(source, range, cuts, fps, maxWidth, speed):
             let result = try await GIFExporter.export(videoURL: source, to: output, range: range, cuts: cuts, fps: fps, maxWidth: maxWidth, speed: speed, progress: progress)
             return Outcome(frameCount: result.frameCount, truncated: result.truncated, passthrough: false)
         case let .composite(project, fileType):
-            try await ProjectExporter.export(project, to: output, as: fileType)
+            try await ProjectExporter.export(project, to: output, as: fileType, progress: progress)
             return Outcome(frameCount: nil, truncated: false, passthrough: false)
         case let .compositeGIF(project, fps, maxWidth, speed):
             let frames = try await VideoFrames(CompositionBuilder.build(project))
