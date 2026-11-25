@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.102](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.101...v0.7.0-beta.102) (2026-11-25)
+
+
+### Features
+
+* **menu-bar:** add a setting to hide Shot's menu bar icon ([#1507](https://github.com/LorcanChinnock/shot/issues/1507)) ([751274e](https://github.com/LorcanChinnock/shot/commit/751274e12ccbd06275cb5d42ecc8c3f3c9b08ba4))
+
 ## [0.7.0-beta.101](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.100...v0.7.0-beta.101) (2026-11-24)
 
 
