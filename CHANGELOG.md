@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-beta.103](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.102...v0.7.0-beta.103) (2026-11-25)
+
+
+### Bug Fixes
+
+* **video-editor:** survive frames that won't decode and show progress for every export ([#1510](https://github.com/LorcanChinnock/shot/issues/1510)) ([a33ab05](https://github.com/LorcanChinnock/shot/commit/a33ab053d1cf2775fa7c4397449da3e6388b26f6))
+
 ## [0.7.0-beta.102](https://github.com/LorcanChinnock/shot/compare/v0.7.0-beta.101...v0.7.0-beta.102) (2026-11-25)
 
 
