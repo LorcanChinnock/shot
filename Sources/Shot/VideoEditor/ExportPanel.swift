@@ -137,8 +137,8 @@ struct ExportPanel: View {
     }
 }
 
-/// The card at the panel's foot: the estimated size and the length, then Export GIF or Export MP4 with where the file goes.
-/// While anything exports, the button gives way to its progress and Cancel.
+/// The card at the panel's foot: the estimated size and the length, then Export GIF or Export MP4 with where the file goes,
+/// and Show in Finder once an export has finished. While anything exports, the button gives way to its progress and Cancel.
 private struct SummaryCard: View {
     let model: VideoEditorModel
 
@@ -211,6 +211,16 @@ private struct SummaryCard: View {
             .buttonStyle(ThemeButtonStyle(model.isCropping ? .secondary : .main))
             .confirmationFeedback(model.confirmations.on(.export))
             .themeTip(title, detail: detail)
+            // Once a file is written, the next step is usually to paste it, or to find it to drag somewhere.
+            if model.lastExport != nil {
+                Button { model.revealLastExport() } label: {
+                    Text("Show in Finder")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 2)
+                }
+                .buttonStyle(ThemeButtonStyle())
+                .themeTip("Show in Finder", detail: "Shows the file you just exported, selected in Finder.")
+            }
             Text("Saved beside the recording and copied")
                 .font(Theme.caption)
                 .foregroundStyle(ContrastAware(standard: Theme.tertiaryText, increased: Theme.ink))
