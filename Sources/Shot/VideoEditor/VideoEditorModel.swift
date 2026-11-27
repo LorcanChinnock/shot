@@ -61,6 +61,10 @@ final class VideoEditorModel {
     private(set) var sidePanel: VideoSidePanel?
     /// How far Export has got, from 0 to 1, while it can tell; nil when it can't or nothing is exporting.
     private(set) var exportFraction: Double?
+    /// The file the last Export wrote, which the Export panel offers to show in Finder; nil until one finishes.
+    private(set) var lastExport: URL?
+    /// Whether the "Exporting…" toast is up. The Export panel shows the same progress, so the toast shows only while it's closed.
+    @ObservationIgnored private var showsExportToast = false
     private(set) var history = VideoEditHistory()
     /// The project as last opened or written, so closing asks only about changes since.
     private var savedProject: Project?
@@ -938,6 +942,7 @@ final class VideoEditorModel {
         let options = options, project = project, plan = VideoExportPlan(project: project, options: options), fileURL = fileURL
         let output = FileNaming.uniqueURL(in: fileURL.deletingLastPathComponent(), date: Date(), pathExtension: options.format.fileExtension, prefix: Preferences().filePrefix)
         var truncated = false
+        lastExport = nil
         let exported = await exporting { progress in
             let outcome = try await VersionWriter.writeVideo(plan, of: project, original: fileURL, to: output, projects: .app, progress: progress)
             truncated = outcome.truncated
@@ -949,6 +954,7 @@ final class VideoEditorModel {
         }
         wrote(project, to: output)
         Clipboard.copy(fileURL: output)
+        lastExport = output
         confirmations.show("Exported", on: .export)
         if truncated {
             Toast.show("Exported and copied \(output.lastPathComponent) (first \(Int(GIFExporter.maxDuration)) s only)", duration: .seconds(3))
@@ -1027,7 +1033,6 @@ final class VideoEditorModel {
         }
         player.pause()
         exportFraction = nil
-        Toast.show("Exporting…", duration: nil)
         let progress = PercentProgress { [weak self] percent in
             Task { @MainActor in
                 // The task may run on after the export ended, so a late report can't bring the bar back.
@@ -1035,13 +1040,14 @@ final class VideoEditorModel {
                     return
                 }
                 self.exportFraction = Double(percent) / 100
-                Toast.progress("Exporting…", fraction: Double(percent) / 100)
+                self.updateExportToast()
             }
         }
         let task = Task {
             defer {
                 exportTask = nil
                 exportFraction = nil
+                showsExportToast = false
             }
             do {
                 try await work(progress.report)
@@ -1057,7 +1063,36 @@ final class VideoEditorModel {
             }
         }
         exportTask = task
+        updateExportToast()
         return await task.value
+    }
+
+    /// Shows the export's progress in a toast while the Export panel is closed, and takes it away while the panel shows
+    /// the same progress in its foot, so the two never show at once.
+    private func updateExportToast() {
+        guard isExporting, !showsExportPanel else {
+            if showsExportToast {
+                showsExportToast = false
+                Toast.dismiss()
+            }
+            return
+        }
+        if let exportFraction {
+            Toast.progress("Exporting…", fraction: exportFraction)
+        } else if !showsExportToast {
+            Toast.show("Exporting…", duration: nil)
+        }
+        showsExportToast = true
+    }
+
+    /// Shows the file the last Export wrote, selected in a Finder window.
+    func revealLastExport() {
+        guard let lastExport, FileManager.default.fileExists(atPath: lastExport.path) else {
+            Toast.error("Can't find the exported file. It may have been moved or deleted.")
+            lastExport = nil
+            return
+        }
+        NSWorkspace.shared.activateFileViewerSelecting([lastExport])
     }
 
     /// Whether the Export panel shows beside the video.
@@ -1091,6 +1126,7 @@ final class VideoEditorModel {
         if panel != .inspector {
             stylePreview = nil
         }
+        updateExportToast()
     }
 
     /// Stops the export in progress; false when there isn't one.

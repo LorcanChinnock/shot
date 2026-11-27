@@ -7659,6 +7659,58 @@
         }
       }
     },
+    "Can't find the exported file. It may have been moved or deleted." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die exportierte Datei wurde nicht gefunden. Sie wurde vielleicht verschoben oder gelöscht."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se encuentra el archivo exportado. Puede que se haya movido o eliminado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de trouver le fichier exporté. Il a peut-être été déplacé ou supprimé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile trovare il file esportato. Potrebbe essere stato spostato o eliminato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "書き出したファイルが見つかりません。移動または削除された可能性があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내보낸 파일을 찾을 수 없습니다. 이동되었거나 삭제되었을 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível encontrar o arquivo exportado. Ele pode ter sido movido ou apagado."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到导出的文件。它可能已被移动或删除。"
+          }
+        }
+      }
+    },
     "Can't line up" : {
       "localizations" : {
         "de" : {
@@ -45335,6 +45387,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重新显示片段的完整画面，不裁掉任何内容。"
+          }
+        }
+      }
+    },
+    "Shows the file you just exported, selected in Finder." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeigt die gerade exportierte Datei ausgewählt im Finder."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra en el Finder el archivo que acabas de exportar, seleccionado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affiche le fichier que vous venez d’exporter, sélectionné dans le Finder."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra il file appena esportato, selezionato nel Finder."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "書き出したばかりのファイルを Finder で選択して表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "방금 내보낸 파일을 Finder에서 선택해 보여줍니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra o arquivo que você acabou de exportar, selecionado no Finder."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在访达中显示并选中刚导出的文件。"
           }
         }
       }
